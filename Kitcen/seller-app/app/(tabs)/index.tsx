@@ -51,6 +51,28 @@ export default function SellerDashboard() {
     await updateOrderStatus(orderId, nextStatus);
   };
 
+  const isApproved = myKitchen?.isApproved === 'approved';
+
+  if (!isApproved) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 24 }]}>
+        <ChefHat size={64} color={theme.colors.warning} style={{ marginBottom: 20 }} />
+        <Text style={{ color: theme.colors.warning, fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 12 }}>
+          Approval Pending
+        </Text>
+        <Text style={{ color: '#FFF', fontSize: 13, textAlign: 'center', lineHeight: 20, paddingHorizontal: 10 }}>
+          Your kitchen "{kitchenInfo.name}" is pending approval from the SuperAdmin.
+        </Text>
+        <Text style={{ color: theme.colors.textSecondary, fontSize: 11, textAlign: 'center', marginTop: 8, lineHeight: 18, paddingHorizontal: 20 }}>
+          Once approved, you will be able to manage orders, setup categories, and add items to your menu.
+        </Text>
+      </View>
+    );
+  }
+
+  const soldOrders = kitchenOrders.filter(o => o.status === 'delivered');
+  const cancelledOrders = kitchenOrders.filter(o => o.status === 'cancelled');
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.sellerHeader}>
@@ -73,10 +95,18 @@ export default function SellerDashboard() {
           <Text style={styles.kpiValue}>{kitchenOrders.length}</Text>
           <Text style={styles.kpiLabel}>Total Orders</Text>
         </View>
+      </View>
+
+      <View style={[styles.kpiGrid, { marginTop: -12, marginBottom: 24 }]}>
         <View style={styles.kpiCard}>
-          <Store size={16} color="#00C49F" />
-          <Text style={styles.kpiValue}>{kitchenProducts.length}</Text>
-          <Text style={styles.kpiLabel}>Menu Items</Text>
+          <ShoppingBag size={16} color={theme.colors.veg} />
+          <Text style={styles.kpiValue}>{soldOrders.length}</Text>
+          <Text style={styles.kpiLabel}>Orders Sold</Text>
+        </View>
+        <View style={styles.kpiCard}>
+          <ShoppingBag size={16} color={theme.colors.nonVeg} />
+          <Text style={styles.kpiValue}>{cancelledOrders.length}</Text>
+          <Text style={styles.kpiLabel}>Returned/Rejected</Text>
         </View>
       </View>
 

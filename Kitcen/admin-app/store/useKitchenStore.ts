@@ -26,6 +26,13 @@ export interface Kitchen {
   offer: string;
   revenue: number;
   ordersCount: number;
+  isApproved?: string;
+  logoUrl?: string;
+  address?: string;
+  floor?: string;
+  officeGaliNumber?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface OrderItem {
@@ -73,7 +80,8 @@ interface KitchenState {
   fetchOrders: (customerId?: string, kitchenId?: string) => Promise<void>;
   
   // Kitchen actions
-  addKitchen: (kitchen: Omit<Kitchen, 'id' | 'rating' | 'ratingCount' | 'revenue' | 'ordersCount'>) => Promise<string>;
+  addKitchen: (kitchen: Omit<Kitchen, 'id' | 'rating' | 'ratingCount' | 'revenue' | 'ordersCount' | 'isApproved' | 'logoUrl' | 'address' | 'floor' | 'officeGaliNumber' | 'latitude' | 'longitude'>) => Promise<string>;
+  approveKitchen: (kitchenId: string) => Promise<void>;
   
   // Product actions
   addProduct: (kitchenId: string, product: Omit<ProductItem, 'id'>) => Promise<void>;
@@ -171,7 +179,14 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
           offer: k.offer,
           image: k.image,
           revenue: Number(k.revenue),
-          ordersCount: k.ordersCount
+          ordersCount: k.ordersCount,
+          isApproved: k.isApproved || 'pending',
+          logoUrl: k.logoUrl,
+          address: k.address,
+          floor: k.floor,
+          officeGaliNumber: k.officeGaliNumber,
+          latitude: k.latitude ? Number(k.latitude) : undefined,
+          longitude: k.longitude ? Number(k.longitude) : undefined
         }));
         set({ kitchens: mappedKitchens, isLoading: false });
       } else {
@@ -254,6 +269,46 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
     } catch (err: any) {
       console.warn('API Error, falling back to cached/mock orders:', err.message);
       set({ isLoading: false, error: err.message });
+    }
+  },
+
+  approveKitchen: async (kitchenId: string) => {
+    try {
+      const kitchen = get().kitchens.find(k => k.id === kitchenId);
+      if (!kitchen) return;
+
+      const res = await fetch(`${API_BASE_URL}/api/kitchens/${kitchenId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: kitchen.name,
+          type: kitchen.type,
+          cuisines: kitchen.cuisines,
+          time: kitchen.time,
+          distance: kitchen.distance,
+          offer: kitchen.offer,
+          image: kitchen.image,
+          logoUrl: kitchen.logoUrl,
+          address: kitchen.address,
+          floor: kitchen.floor,
+          officeGaliNumber: kitchen.officeGaliNumber,
+          latitude: kitchen.latitude,
+          longitude: kitchen.longitude,
+          isApproved: 'approved'
+        })
+      });
+
+      const json = await res.json();
+      if (json.success) {
+        await get().fetchKitchens();
+      } else {
+        throw new Error(json.message);
+      }
+    } catch (err: any) {
+      console.warn('API Error approving kitchen, doing fallback:', err.message);
+      set(state => ({
+        kitchens: state.kitchens.map(k => k.id === kitchenId ? { ...k, isApproved: 'approved' } : k)
+      }));
     }
   },
 

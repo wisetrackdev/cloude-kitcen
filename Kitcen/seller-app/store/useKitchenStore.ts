@@ -61,6 +61,7 @@ interface KitchenState {
   kitchens: Kitchen[];
   products: Record<string, ProductItem[]>; // Keyed by kitchenId
   orders: OrderRecord[];
+  categories: Array<{ id: string, name: string }>;
   isLoading: boolean;
   error: string | null;
 
@@ -71,6 +72,8 @@ interface KitchenState {
   fetchKitchens: () => Promise<void>;
   fetchProducts: (kitchenId: string) => Promise<void>;
   fetchOrders: (customerId?: string, kitchenId?: string) => Promise<void>;
+  fetchCategories: () => Promise<void>;
+  createCategory: (name: string) => Promise<void>;
   
   // Kitchen actions
   addKitchen: (kitchen: Omit<Kitchen, 'id' | 'rating' | 'ratingCount' | 'revenue' | 'ordersCount'>) => Promise<string>;
@@ -145,6 +148,7 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
   kitchens: initialKitchens,
   products: initialProducts,
   orders: [],
+  categories: [],
   isLoading: false,
   error: null,
 
@@ -254,6 +258,52 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
     } catch (err: any) {
       console.warn('API Error, falling back to cached/mock orders:', err.message);
       set({ isLoading: false, error: err.message });
+    }
+    }
+  },
+
+  fetchCategories: async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/categories`);
+      if (!res.ok) throw new Error('Failed to fetch categories');
+      const json = await res.json();
+      if (json.success) {
+        set({ categories: json.data });
+      } else {
+        set({ categories: [] });
+      }
+    } catch (err: any) {
+      console.warn('API Error fetching categories:', err.message);
+      set({ categories: [
+        { id: 'cat1', name: 'Tiffin Meals' },
+        { id: 'cat2', name: 'Pizzas' },
+        { id: 'cat3', name: 'Burgers' },
+        { id: 'cat4', name: 'Starters' }
+      ] });
+    }
+  },
+
+  createCategory: async (name: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/categories`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: 'cat-' + Math.floor(Math.random() * 10000),
+          name: name,
+          imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=120&auto=format&fit=crop&q=60',
+          isActive: true
+        })
+      });
+      const json = await res.json();
+      if (json.success) {
+        get().fetchCategories();
+      }
+    } catch (err) {
+      console.error('API Error creating category:', err);
+      set((state) => ({
+        categories: [...state.categories, { id: 'cat-' + Math.floor(Math.random() * 10000), name }]
+      }));
     }
   },
 

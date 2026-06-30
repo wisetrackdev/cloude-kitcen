@@ -38,6 +38,13 @@ namespace CloudeKicten.Models
         public string? Image { get; set; }
         public decimal Revenue { get; set; } = 0.0m;
         public int OrdersCount { get; set; } = 0;
+        public string? LogoUrl { get; set; }
+        public string? Address { get; set; }
+        public string? Floor { get; set; }
+        public string? OfficeGaliNumber { get; set; }
+        public decimal? Latitude { get; set; }
+        public decimal? Longitude { get; set; }
+        public string IsApproved { get; set; } = "pending"; // pending, approved, rejected
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 
@@ -176,6 +183,13 @@ namespace CloudeKicten.Models
         public string Distance { get; set; } = "1.0 km";
         public string? Offer { get; set; }
         public string? Image { get; set; }
+        public string? LogoUrl { get; set; }
+        public string? Address { get; set; }
+        public string? Floor { get; set; }
+        public string? OfficeGaliNumber { get; set; }
+        public decimal? Latitude { get; set; }
+        public decimal? Longitude { get; set; }
+        public string IsApproved { get; set; } = "pending";
     }
 
     public class KitchenUpdateDto
@@ -187,6 +201,13 @@ namespace CloudeKicten.Models
         public string Distance { get; set; } = "1.0 km";
         public string? Offer { get; set; }
         public string? Image { get; set; }
+        public string? LogoUrl { get; set; }
+        public string? Address { get; set; }
+        public string? Floor { get; set; }
+        public string? OfficeGaliNumber { get; set; }
+        public decimal? Latitude { get; set; }
+        public decimal? Longitude { get; set; }
+        public string IsApproved { get; set; } = "pending";
     }
 
     public class ProductCreateDto

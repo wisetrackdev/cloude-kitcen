@@ -14,6 +14,8 @@ namespace CloudeKicten.Models.DatabaseLayer
         Task<bool> UpdateKitchenAsync(string id, KitchenDb kitchen);
         Task<bool> DeleteKitchenAsync(string id);
         Task<bool> UpdateKitchenStatsAsync(string id, decimal totalAmount);
+        Task<List<string>> GetSuperAdminIdsAsync();
+        Task<bool> InsertNotificationAsync(string userId, string title, string body);
     }
 
     public class DatabaseLayer_KitchenController : IDatabaseLayer_KitchenController
@@ -66,8 +68,8 @@ namespace CloudeKicten.Models.DatabaseLayer
             await conn.OpenAsync();
             using var cmd = new NpgsqlCommand(Sql.InsertKitchen, conn);
             cmd.Parameters.AddWithValue("@Id", kitchen.Id);
+            cmd.Parameters.AddWithValue("@VendorId", kitchen.OwnerId);
             cmd.Parameters.AddWithValue("@Name", kitchen.Name);
-            cmd.Parameters.AddWithValue("@OwnerId", kitchen.OwnerId);
             cmd.Parameters.AddWithValue("@Type", kitchen.Type);
             cmd.Parameters.AddWithValue("@Cuisines", kitchen.Cuisines);
             cmd.Parameters.AddWithValue("@Rating", kitchen.Rating);
@@ -78,6 +80,13 @@ namespace CloudeKicten.Models.DatabaseLayer
             cmd.Parameters.AddWithValue("@Image", (object?)kitchen.Image ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@Revenue", kitchen.Revenue);
             cmd.Parameters.AddWithValue("@OrdersCount", kitchen.OrdersCount);
+            cmd.Parameters.AddWithValue("@LogoUrl", (object?)kitchen.LogoUrl ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@Address", (object?)kitchen.Address ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@Floor", (object?)kitchen.Floor ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@OfficeGaliNumber", (object?)kitchen.OfficeGaliNumber ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@Latitude", (object?)kitchen.Latitude ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@Longitude", (object?)kitchen.Longitude ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@IsApproved", kitchen.IsApproved ?? "pending");
 
             var result = await cmd.ExecuteNonQueryAsync();
             return result > 0;
@@ -96,6 +105,13 @@ namespace CloudeKicten.Models.DatabaseLayer
             cmd.Parameters.AddWithValue("@Distance", kitchen.Distance);
             cmd.Parameters.AddWithValue("@Offer", (object?)kitchen.Offer ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@Image", (object?)kitchen.Image ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@LogoUrl", (object?)kitchen.LogoUrl ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@Address", (object?)kitchen.Address ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@Floor", (object?)kitchen.Floor ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@OfficeGaliNumber", (object?)kitchen.OfficeGaliNumber ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@Latitude", (object?)kitchen.Latitude ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@Longitude", (object?)kitchen.Longitude ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@IsApproved", kitchen.IsApproved ?? "pending");
 
             var result = await cmd.ExecuteNonQueryAsync();
             return result > 0;
@@ -141,8 +157,62 @@ namespace CloudeKicten.Models.DatabaseLayer
                 Image = r.IsDBNull(r.GetOrdinal("image_url")) ? null : r.GetString(r.GetOrdinal("image_url")),
                 Revenue = r.GetDecimal(r.GetOrdinal("revenue")),
                 OrdersCount = r.GetInt32(r.GetOrdinal("orders_count")),
+                LogoUrl = r.IsDBNull(r.GetOrdinal("logo_url")) ? null : r.GetString(r.GetOrdinal("logo_url")),
+                Address = r.IsDBNull(r.GetOrdinal("address")) ? null : r.GetString(r.GetOrdinal("address")),
+                Floor = r.IsDBNull(r.GetOrdinal("floor")) ? null : r.GetString(r.GetOrdinal("floor")),
+                OfficeGaliNumber = r.IsDBNull(r.GetOrdinal("office_gali_number")) ? null : r.GetString(r.GetOrdinal("office_gali_number")),
+                Latitude = r.IsDBNull(r.GetOrdinal("latitude")) ? null : r.GetDecimal(r.GetOrdinal("latitude")),
+                Longitude = r.IsDBNull(r.GetOrdinal("longitude")) ? null : r.GetDecimal(r.GetOrdinal("longitude")),
+                IsApproved = r.IsDBNull(r.GetOrdinal("is_approved")) ? "pending" : r.GetString(r.GetOrdinal("is_approved")),
                 CreatedAt = r.GetDateTime(r.GetOrdinal("created_at"))
             };
+        }
+
+        public async Task<List<string>> GetSuperAdminIdsAsync()
+        {
+            var list = new List<string>();
+            try
+            {
+                using var conn = GetConnection();
+                await conn.OpenAsync();
+                using var cmd = new NpgsqlCommand("SELECT id FROM user_register WHERE role = 'superadmin';", conn);
+                using var reader = await cmd.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    list.Add(reader.GetString(0));
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error retrieving superadmins: {ex.Message}");
+            }
+
+            if (list.Count == 0)
+            {
+                list.Add("superadmin");
+            }
+            return list;
+        }
+
+        public async Task<bool> InsertNotificationAsync(string userId, string title, string body)
+        {
+            try
+            {
+                using var conn = GetConnection();
+                await conn.OpenAsync();
+                using var cmd = new NpgsqlCommand(Sql.InsertNotification, conn);
+                cmd.Parameters.AddWithValue("@Id", Guid.NewGuid().ToString("N"));
+                cmd.Parameters.AddWithValue("@UserId", userId);
+                cmd.Parameters.AddWithValue("@Title", title);
+                cmd.Parameters.AddWithValue("@Body", body);
+                var result = await cmd.ExecuteNonQueryAsync();
+                return result > 0;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error inserting notification: {ex.Message}");
+                return false;
+            }
         }
     }
 }

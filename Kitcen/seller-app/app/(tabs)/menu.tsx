@@ -9,7 +9,7 @@ import {
   Modal, 
   Alert 
 } from 'react-native';
-import { Plus, Trash2 } from 'lucide-react-native';
+import { Plus, Trash2, ChefHat, Tag } from 'lucide-react-native';
 import { theme } from '../../styles/theme';
 import { useKitchenStore } from '../../store/useKitchenStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -18,9 +18,12 @@ export default function SellerMenuScreen() {
   const user = useAuthStore(state => state.user);
   const kitchens = useKitchenStore(state => state.kitchens);
   const products = useKitchenStore(state => state.products);
+  const categories = useKitchenStore(state => state.categories);
   
   const fetchKitchens = useKitchenStore(state => state.fetchKitchens);
   const fetchProducts = useKitchenStore(state => state.fetchProducts);
+  const fetchCategories = useKitchenStore(state => state.fetchCategories);
+  const createCategory = useKitchenStore(state => state.createCategory);
   const addProduct = useKitchenStore(state => state.addProduct);
   const deleteProduct = useKitchenStore(state => state.deleteProduct);
 
@@ -28,12 +31,13 @@ export default function SellerMenuScreen() {
   const myKitchen = kitchens.find(k => k.owner === user?.id) || kitchens[0];
   const selectedKitchenId = myKitchen?.id || 'k3';
 
-  const kitchenInfo = myKitchen || kitchens[0] || { name: 'My Kitchen' };
+  const kitchenInfo = myKitchen || kitchens[0] || { name: 'My Kitchen', isApproved: 'pending' };
   const kitchenProducts = products[selectedKitchenId] || [];
 
-  // Fetch kitchens and products on mount or when selectedKitchenId changes
+  // Fetch kitchens, categories and products on mount
   useEffect(() => {
     fetchKitchens();
+    fetchCategories();
   }, []);
 
   useEffect(() => {
@@ -49,6 +53,7 @@ export default function SellerMenuScreen() {
   const [newDishDesc, setNewDishDesc] = useState('');
   const [newDishVeg, setNewDishVeg] = useState(true);
   const [newDishCat, setNewDishCat] = useState('Tiffin Meals');
+  const [customCategory, setCustomCategory] = useState('');
 
   const handleAddDish = async () => {
     if (!newDishName || !newDishPrice) {
@@ -56,11 +61,18 @@ export default function SellerMenuScreen() {
       return;
     }
 
+    let finalCategory = newDishCat;
+    if (customCategory.trim() !== '') {
+      finalCategory = customCategory.trim();
+      // Call store to create category in database dynamically
+      await createCategory(finalCategory);
+    }
+
     await addProduct(selectedKitchenId, {
       name: newDishName,
       price: parseFloat(newDishPrice),
       desc: newDishDesc,
-      category: newDishCat,
+      category: finalCategory,
       isVeg: newDishVeg,
       image: newDishVeg 
         ? 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&auto=format&fit=crop&q=80'
@@ -70,9 +82,29 @@ export default function SellerMenuScreen() {
     setNewDishName('');
     setNewDishPrice('');
     setNewDishDesc('');
+    setCustomCategory('');
     setShowAddDishModal(false);
     Alert.alert('Success', 'Dish added successfully to your kitchen!');
   };
+
+  const isApproved = myKitchen?.isApproved === 'approved';
+
+  if (!isApproved) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 24 }]}>
+        <ChefHat size={64} color={theme.colors.warning} style={{ marginBottom: 20 }} />
+        <Text style={{ color: theme.colors.warning, fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 12 }}>
+          Approval Pending
+        </Text>
+        <Text style={{ color: '#FFF', fontSize: 13, textAlign: 'center', lineHeight: 20, paddingHorizontal: 10 }}>
+          Your kitchen "{kitchenInfo.name}" is pending approval from the SuperAdmin.
+        </Text>
+        <Text style={{ color: theme.colors.textSecondary, fontSize: 11, textAlign: 'center', marginTop: 8, lineHeight: 18, paddingHorizontal: 20 }}>
+          Once approved, you will be able to manage orders, setup categories, and add items to your menu.
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -98,7 +130,7 @@ export default function SellerMenuScreen() {
               </View>
               <View style={{ marginLeft: 10 }}>
                 <Text style={styles.dishCardName}>{item.name}</Text>
-                <Text style={styles.dishCardPrice}>₹{item.price}</Text>
+                <Text style={styles.dishCardPrice}>₹{item.price} • {item.category}</Text>
               </View>
             </View>
             <TouchableOpacity onPress={() => deleteProduct(selectedKitchenId, item.id)}>
@@ -116,56 +148,94 @@ export default function SellerMenuScreen() {
         onRequestClose={() => setShowAddDishModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add Dish or Tiffin Package</Text>
+          <ScrollView contentContainerStyle={styles.modalScroll}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Add Dish or Tiffin Package</Text>
 
-            <TextInput
-              placeholder="Dish Name (e.g. Kadhai Paneer Tiffin)"
-              placeholderTextColor="#888"
-              value={newDishName}
-              onChangeText={setNewDishName}
-              style={styles.inputField}
-            />
+              <TextInput
+                placeholder="Dish Name (e.g. Kadhai Paneer Tiffin)"
+                placeholderTextColor="#888"
+                value={newDishName}
+                onChangeText={setNewDishName}
+                style={styles.inputField}
+              />
 
-            <TextInput
-              placeholder="Price (₹)"
-              placeholderTextColor="#888"
-              keyboardType="numeric"
-              value={newDishPrice}
-              onChangeText={setNewDishPrice}
-              style={styles.inputField}
-            />
+              <TextInput
+                placeholder="Price (₹)"
+                placeholderTextColor="#888"
+                keyboardType="numeric"
+                value={newDishPrice}
+                onChangeText={setNewDishPrice}
+                style={styles.inputField}
+              />
 
-            <TextInput
-              placeholder="Description (e.g. 4 rotis, paneer, salad)"
-              placeholderTextColor="#888"
-              value={newDishDesc}
-              onChangeText={setNewDishDesc}
-              style={styles.inputField}
-            />
+              <TextInput
+                placeholder="Description (e.g. 4 rotis, paneer, salad)"
+                placeholderTextColor="#888"
+                value={newDishDesc}
+                onChangeText={setNewDishDesc}
+                style={styles.inputField}
+              />
 
-            <View style={styles.switchRow}>
-              <Text style={styles.switchLabel}>Dietary Status: Veg Item</Text>
+              {/* Category Selection */}
+              <Text style={styles.sectionLabel}>Choose Category</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+                {categories.map((cat) => (
+                  <TouchableOpacity
+                    key={cat.id}
+                    style={[
+                      styles.categoryBubble,
+                      newDishCat === cat.name && styles.categoryBubbleActive
+                    ]}
+                    onPress={() => {
+                      setNewDishCat(cat.name);
+                      setCustomCategory('');
+                    }}
+                  >
+                    <Tag size={10} color={newDishCat === cat.name ? '#000' : '#888'} style={{ marginRight: 4 }} />
+                    <Text style={[
+                      styles.categoryBubbleText,
+                      newDishCat === cat.name && styles.categoryBubbleTextActive
+                    ]}>{cat.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
+              <TextInput
+                placeholder="Or create new category (e.g. Desserts)"
+                placeholderTextColor="#888"
+                value={customCategory}
+                onChangeText={(text) => {
+                  setCustomCategory(text);
+                  setNewDishCat(text);
+                }}
+                style={styles.inputField}
+              />
+
+              <View style={styles.switchRow}>
+                <Text style={styles.switchLabel}>Dietary Status: Veg Item</Text>
+                <TouchableOpacity 
+                  style={[styles.toggleBtn, newDishVeg && styles.toggleBtnActive]}
+                  onPress={() => setNewDishVeg(!newDishVeg)}
+                >
+                  <Text style={[styles.toggleBtnText, newDishVeg && styles.toggleBtnTextActive]}>
+                    {newDishVeg ? 'VEG' : 'NON-VEG'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity style={styles.saveDishBtn} onPress={handleAddDish}>
+                <Text style={styles.saveDishBtnText}>Save to Menu</Text>
+              </TouchableOpacity>
+              
               <TouchableOpacity 
-                style={[styles.toggleBtn, newDishVeg && styles.toggleBtnActive]}
-                onPress={() => setNewDishVeg(!newDishVeg)}
+                style={styles.cancelBtn} 
+                onPress={() => setShowAddDishModal(false)}
               >
-                <Text style={[styles.toggleBtnText, newDishVeg && styles.toggleBtnTextActive]}>
-                  {newDishVeg ? 'VEG' : 'NON-VEG'}
-                </Text>
+                <Text style={styles.cancelBtnText}>Cancel</Text>
               </TouchableOpacity>
             </View>
-
-            <TouchableOpacity style={styles.saveDishBtn} onPress={handleAddDish}>
-              <Text style={styles.saveDishBtnText}>Save to Menu</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.cancelBtn} 
-              onPress={() => setShowAddDishModal(false)}
-            >
-              <Text style={styles.cancelBtnText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
+          </ScrollView>
         </View>
       </Modal>
 
@@ -254,11 +324,47 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
     marginTop: 2,
   },
-
-  // Modal styles
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#FFF',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+  },
+  categoryScroll: {
+    flexDirection: 'row',
+    marginBottom: 14,
+  },
+  categoryBubble: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1F1F1F',
+    borderWidth: 1,
+    borderColor: '#2D2D2D',
+    borderRadius: 15,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    marginRight: 8,
+  },
+  categoryBubbleActive: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+  },
+  categoryBubbleText: {
+    fontSize: 11,
+    color: '#888',
+  },
+  categoryBubbleTextActive: {
+    color: '#000',
+    fontWeight: 'bold',
+  },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+  },
+  modalScroll: {
+    flexGrow: 1,
     justifyContent: 'center',
     padding: 24,
   },

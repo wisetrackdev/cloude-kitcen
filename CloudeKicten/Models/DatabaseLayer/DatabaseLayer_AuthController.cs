@@ -120,6 +120,16 @@ namespace CloudeKicten.Models.DatabaseLayer
 
             cmd.CommandText = Sql.CreateAuditLogsTable;
             await cmd.ExecuteNonQueryAsync();
+
+            try
+            {
+                cmd.CommandText = Sql.AlterShopsTable;
+                await cmd.ExecuteNonQueryAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[DB MIGRATION WARNING] Failed to alter shops table: {ex.Message}");
+            }
         }
 
         public async Task<UserDb?> GetUserByEmailAsync(string email)

@@ -75,8 +75,25 @@ namespace CloudeKicten
                 is_live BOOLEAN DEFAULT FALSE,
                 revenue NUMERIC(18,2) DEFAULT 0.0,
                 orders_count INT DEFAULT 0,
+                logo_url VARCHAR(500) NULL,
+                address VARCHAR(500) NULL,
+                floor VARCHAR(50) NULL,
+                office_gali_number VARCHAR(100) NULL,
+                latitude NUMERIC(10,8) NULL,
+                longitude NUMERIC(11,8) NULL,
+                is_approved VARCHAR(50) DEFAULT 'pending',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );";
+
+        public const string AlterShopsTable = @"
+            ALTER TABLE shops ADD COLUMN IF NOT EXISTS logo_url VARCHAR(500) NULL;
+            ALTER TABLE shops ADD COLUMN IF NOT EXISTS address VARCHAR(500) NULL;
+            ALTER TABLE shops ADD COLUMN IF NOT EXISTS floor VARCHAR(50) NULL;
+            ALTER TABLE shops ADD COLUMN IF NOT EXISTS office_gali_number VARCHAR(100) NULL;
+            ALTER TABLE shops ADD COLUMN IF NOT EXISTS latitude NUMERIC(10,8) NULL;
+            ALTER TABLE shops ADD COLUMN IF NOT EXISTS longitude NUMERIC(11,8) NULL;
+            ALTER TABLE shops ADD COLUMN IF NOT EXISTS is_approved VARCHAR(50) DEFAULT 'pending';
+        ";
 
         public const string CreateCategoriesTable = @"
             CREATE TABLE IF NOT EXISTS categories (
@@ -472,25 +489,25 @@ namespace CloudeKicten
         // ==========================================
 
         public const string InsertKitchen = @"
-            INSERT INTO shops (id, vendor_id, name, type, cuisines, rating, rating_count, prep_time, distance, offer, image_url, is_live, revenue, orders_count, created_at)
-            VALUES (@Id, @VendorId, @Name, @Type, @Cuisines, @Rating, @RatingCount, @Time, @Distance, @Offer, @Image, @IsLive, @Revenue, @OrdersCount, CURRENT_TIMESTAMP);
+            INSERT INTO shops (id, vendor_id, name, type, cuisines, rating, rating_count, prep_time, distance, offer, image_url, is_live, revenue, orders_count, logo_url, address, floor, office_gali_number, latitude, longitude, is_approved, created_at)
+            VALUES (@Id, @VendorId, @Name, @Type, @Cuisines, @Rating, @RatingCount, @Time, @Distance, @Offer, @Image, @IsLive, @Revenue, @OrdersCount, @LogoUrl, @Address, @Floor, @OfficeGaliNumber, @Latitude, @Longitude, @IsApproved, CURRENT_TIMESTAMP);
         ";
 
         public const string GetAllKitchens = @"
-            SELECT id, vendor_id, name, type, cuisines, rating, rating_count, prep_time, distance, offer, image_url, is_live, revenue, orders_count, created_at
+            SELECT id, vendor_id, name, type, cuisines, rating, rating_count, prep_time, distance, offer, image_url, is_live, revenue, orders_count, logo_url, address, floor, office_gali_number, latitude, longitude, is_approved, created_at
             FROM shops
             ORDER BY name ASC;
         ";
 
         public const string GetKitchenById = @"
-            SELECT id, vendor_id, name, type, cuisines, rating, rating_count, prep_time, distance, offer, image_url, is_live, revenue, orders_count, created_at
+            SELECT id, vendor_id, name, type, cuisines, rating, rating_count, prep_time, distance, offer, image_url, is_live, revenue, orders_count, logo_url, address, floor, office_gali_number, latitude, longitude, is_approved, created_at
             FROM shops
             WHERE id = @Id;
         ";
 
         public const string UpdateKitchen = @"
             UPDATE shops
-            SET name = @Name, type = @Type, cuisines = @Cuisines, prep_time = @Time, distance = @Distance, offer = @Offer, image_url = @Image, is_live = @IsLive
+            SET name = @Name, type = @Type, cuisines = @Cuisines, prep_time = @Time, distance = @Distance, offer = @Offer, image_url = @Image, is_live = @IsLive, logo_url = @LogoUrl, address = @Address, floor = @Floor, office_gali_number = @OfficeGaliNumber, latitude = @Latitude, longitude = @Longitude, is_approved = @IsApproved
             WHERE id = @Id;
         ";
 

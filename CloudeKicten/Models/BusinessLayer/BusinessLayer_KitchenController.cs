@@ -62,11 +62,37 @@ namespace CloudeKicten.Models.BusinessLayer
                 Distance = dto.Distance,
                 Offer = dto.Offer,
                 Image = dto.Image ?? "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&auto=format&fit=crop&q=80",
+                LogoUrl = dto.LogoUrl,
+                Address = dto.Address,
+                Floor = dto.Floor,
+                OfficeGaliNumber = dto.OfficeGaliNumber,
+                Latitude = dto.Latitude,
+                Longitude = dto.Longitude,
+                IsApproved = dto.IsApproved ?? "pending",
                 Revenue = 0.0m,
                 OrdersCount = 0
             };
 
             await _databaseLayer.InsertKitchenAsync(kitchen);
+
+            // Fire SuperAdmin notification
+            try
+            {
+                var superAdmins = await _databaseLayer.GetSuperAdminIdsAsync();
+                foreach (var adminId in superAdmins)
+                {
+                    await _databaseLayer.InsertNotificationAsync(
+                        adminId,
+                        "New Shop Request",
+                        $"Cloud Kitchen registration request: '{kitchen.Name}' was created by '{owner.FirstName} {owner.LastName}' and requires SuperAdmin approval."
+                    );
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to notify superadmins: {ex.Message}");
+            }
+
             return ApiResponse<KitchenDb>.Ok(kitchen, "Kitchen created successfully.");
         }
 
@@ -82,6 +108,13 @@ namespace CloudeKicten.Models.BusinessLayer
             kitchen.Distance = dto.Distance;
             kitchen.Offer = dto.Offer;
             kitchen.Image = dto.Image ?? kitchen.Image;
+            kitchen.LogoUrl = dto.LogoUrl ?? kitchen.LogoUrl;
+            kitchen.Address = dto.Address ?? kitchen.Address;
+            kitchen.Floor = dto.Floor ?? kitchen.Floor;
+            kitchen.OfficeGaliNumber = dto.OfficeGaliNumber ?? kitchen.OfficeGaliNumber;
+            kitchen.Latitude = dto.Latitude ?? kitchen.Latitude;
+            kitchen.Longitude = dto.Longitude ?? kitchen.Longitude;
+            kitchen.IsApproved = dto.IsApproved ?? kitchen.IsApproved;
 
             await _databaseLayer.UpdateKitchenAsync(id, kitchen);
             return ApiResponse<KitchenDb>.Ok(kitchen, "Kitchen updated successfully.");

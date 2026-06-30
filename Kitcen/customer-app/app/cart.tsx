@@ -189,7 +189,7 @@ export default function CartScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Payment Method</Text>
           <View style={styles.paymentMethodRow}>
-            {(['cod', 'wallet', 'card'] as const).map((method) => (
+            {(['cod'] as const).map((method) => (
               <TouchableOpacity
                 key={method}
                 style={[
