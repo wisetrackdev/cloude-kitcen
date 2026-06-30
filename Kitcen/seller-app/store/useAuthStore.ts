@@ -3,6 +3,32 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 
+// Safe storage fallback
+const memoryStorage: Record<string, string> = {};
+const safeAsyncStorage = {
+  getItem: async (name: string): Promise<string | null> => {
+    try {
+      return await AsyncStorage.getItem(name);
+    } catch (err) {
+      return memoryStorage[name] || null;
+    }
+  },
+  setItem: async (name: string, value: string): Promise<void> => {
+    try {
+      await AsyncStorage.setItem(name, value);
+    } catch (err) {
+      memoryStorage[name] = value;
+    }
+  },
+  removeItem: async (name: string): Promise<void> => {
+    try {
+      await AsyncStorage.removeItem(name);
+    } catch (err) {
+      delete memoryStorage[name];
+    }
+  }
+};
+
 interface UserProfile {
   id: string;
   name: string;
@@ -100,29 +126,3 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 );
-
-// Safe storage fallback
-const memoryStorage: Record<string, string> = {};
-const safeAsyncStorage = {
-  getItem: async (name: string): Promise<string | null> => {
-    try {
-      return await AsyncStorage.getItem(name);
-    } catch (err) {
-      return memoryStorage[name] || null;
-    }
-  },
-  setItem: async (name: string, value: string): Promise<void> => {
-    try {
-      await AsyncStorage.setItem(name, value);
-    } catch (err) {
-      memoryStorage[name] = value;
-    }
-  },
-  removeItem: async (name: string): Promise<void> => {
-    try {
-      await AsyncStorage.removeItem(name);
-    } catch (err) {
-      delete memoryStorage[name];
-    }
-  }
-};
