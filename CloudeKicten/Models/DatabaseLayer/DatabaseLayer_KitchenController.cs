@@ -87,6 +87,7 @@ namespace CloudeKicten.Models.DatabaseLayer
             cmd.Parameters.AddWithValue("@Latitude", (object?)kitchen.Latitude ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@Longitude", (object?)kitchen.Longitude ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@IsApproved", kitchen.IsApproved ?? "pending");
+            cmd.Parameters.AddWithValue("@IsLive", true);
 
             var result = await cmd.ExecuteNonQueryAsync();
             return result > 0;
@@ -112,6 +113,7 @@ namespace CloudeKicten.Models.DatabaseLayer
             cmd.Parameters.AddWithValue("@Latitude", (object?)kitchen.Latitude ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@Longitude", (object?)kitchen.Longitude ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@IsApproved", kitchen.IsApproved ?? "pending");
+            cmd.Parameters.AddWithValue("@IsLive", true);
 
             var result = await cmd.ExecuteNonQueryAsync();
             return result > 0;

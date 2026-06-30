@@ -323,7 +323,9 @@ export default function LoginScreen() {
       const json = await res.json();
       
       if (json.success) {
-        const userKitchen = json.data.find((k: any) => k.ownerId === user.id);
+        const userKitchen = json.data.find((k: any) => 
+          (k.ownerId || k.owner || '').toLowerCase() === (user.id || '').toLowerCase()
+        );
         
         if (!userKitchen) {
           // No kitchen found -> auto create the request first!
