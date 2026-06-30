@@ -62,7 +62,7 @@ namespace CloudeKicten
         public const string CreateShopsTable = @"
             CREATE TABLE IF NOT EXISTS shops (
                 id VARCHAR(50) PRIMARY KEY,
-                vendor_id VARCHAR(50) NOT NULL REFERENCES vendors(id) ON DELETE CASCADE,
+                vendor_id VARCHAR(50) NOT NULL REFERENCES user_register(id) ON DELETE CASCADE,
                 name VARCHAR(150) NOT NULL,
                 type VARCHAR(50) NOT NULL,
                 cuisines VARCHAR(250) NOT NULL,
@@ -93,6 +93,19 @@ namespace CloudeKicten
             ALTER TABLE shops ADD COLUMN IF NOT EXISTS latitude NUMERIC(10,8) NULL;
             ALTER TABLE shops ADD COLUMN IF NOT EXISTS longitude NUMERIC(11,8) NULL;
             ALTER TABLE shops ADD COLUMN IF NOT EXISTS is_approved VARCHAR(50) DEFAULT 'pending';
+
+            -- Re-bind vendor_id reference to user_register(id) instead of vendors(id)
+            DO $$
+            BEGIN
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.table_constraints 
+                    WHERE constraint_name = 'shops_vendor_id_fkey' AND table_name = 'shops'
+                ) THEN
+                    ALTER TABLE shops DROP CONSTRAINT shops_vendor_id_fkey;
+                END IF;
+                
+                ALTER TABLE shops ADD CONSTRAINT shops_vendor_id_fkey FOREIGN KEY (vendor_id) REFERENCES user_register(id) ON DELETE CASCADE;
+            END $$;
         ";
 
         public const string CreateCategoriesTable = @"

@@ -154,10 +154,10 @@ namespace CloudeKicten
 
             app.UseHttpsRedirection();
             
+            app.UseRouting();
+            
             // Enable CORS
             app.UseCors("AllowAll");
-
-            app.UseRouting();
 
             // Authentication & Authorization middlewares in order
             app.UseAuthentication();
