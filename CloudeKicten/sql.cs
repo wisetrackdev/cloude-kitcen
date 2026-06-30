@@ -457,7 +457,7 @@ namespace CloudeKicten
         public const string GetUserByEmail = @"
             SELECT id, email, first_name, last_name, phone_number, avatar, gender, role, reward_points, otp, otp_expires_at, is_verified, created_at
             FROM user_register 
-            WHERE email = @Email;
+            WHERE LOWER(email) = LOWER(@Email);
         ";
 
         public const string GetUserById = @"
@@ -469,13 +469,13 @@ namespace CloudeKicten
         public const string UpdateUserOtp = @"
             UPDATE user_register 
             SET otp = @Otp, otp_expires_at = @OtpExpiry 
-            WHERE email = @Email;
+            WHERE LOWER(email) = LOWER(@Email);
         ";
 
         public const string ClearUserOtp = @"
             UPDATE user_register 
             SET otp = NULL, otp_expires_at = NULL, is_verified = TRUE
-            WHERE email = @Email;
+            WHERE LOWER(email) = LOWER(@Email);
         ";
 
         public const string UpdateUserProfile = @"
