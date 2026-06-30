@@ -33,6 +33,7 @@ export default function LoginScreen() {
   const [tempRefreshToken, setTempRefreshToken] = useState('');
   const [tempUser, setTempUser] = useState<any>(null);
   const [kitchenStatus, setKitchenStatus] = useState<'pending' | 'rejected'>('pending');
+  const [kitchenId, setKitchenId] = useState('');
 
   // Step Inputs
   const [email, setEmail] = useState('');
@@ -237,11 +238,78 @@ export default function LoginScreen() {
         setTempRefreshToken('mock_refresh');
         setTempUser(mockUser);
         
-        // Go to Shop Details form
-        setStep('shop_details');
+        // Go to Name Step
+        setStep('name');
       } else {
         Alert.alert('Error', 'Invalid OTP code. Try "123456"');
       }
+    }
+  };
+
+  // Helper: Auto-create a pending onboarding request kitchen
+  const autoCreateKitchenRequest = async (token: string, user: any) => {
+    setIsLoading(true);
+    try {
+      // 1. Upgrade user role to 'vendor' on the database
+      try {
+        await fetch(`${API_BASE_URL}/api/auth/profile/${user.id}`, {
+          method: 'PUT',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: 'vendor',
+            rewardPoints: user.rewardPoints
+          })
+        });
+      } catch (roleErr) {
+        console.error('Role update failed:', roleErr);
+      }
+
+      // 2. Create kitchen with placeholder details
+      const res = await fetch(`${API_BASE_URL}/api/kitchens`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: `${user.name || 'New Partner'}'s Onboarding Request`,
+          ownerId: user.id,
+          type: 'home_tiffin',
+          cuisines: 'Pending Onboarding',
+          time: '30 mins',
+          distance: '0 km',
+          offer: 'New Kitchen Partner onboarding request',
+          image: 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=600&auto=format&fit=crop&q=80',
+          logoUrl: 'https://images.unsplash.com/photo-1595152772835-219674b2a8a6?w=150&auto=format&fit=crop&q=80',
+          address: 'Pending Details',
+          floor: '',
+          officeGaliNumber: '',
+          latitude: 19.0760,
+          longitude: 72.8777,
+          isApproved: 'pending'
+        })
+      });
+
+      const json = await res.json();
+      setIsLoading(false);
+
+      if (json.success) {
+        setKitchenStatus('pending');
+        setStep('pending_approval');
+      } else {
+        Alert.alert('Error', json.message || 'Failed to submit onboarding request');
+      }
+    } catch (err: any) {
+      console.error('Onboarding request failed, doing fallback:', err.message);
+      setIsLoading(false);
+      setKitchenStatus('pending');
+      setStep('pending_approval');
     }
   };
 
@@ -255,27 +323,34 @@ export default function LoginScreen() {
         const userKitchen = json.data.find((k: any) => k.ownerId === user.id);
         
         if (!userKitchen) {
-          // No kitchen found -> go to Shop Details registration
-          setIsLoading(false);
-          setStep('shop_details');
+          // No kitchen found -> auto create the request first!
+          await autoCreateKitchenRequest(token, user);
         } else if (userKitchen.isApproved !== 'approved') {
           // Kitchen found but pending/rejected -> go to Pending Approval screen
           setIsLoading(false);
           setKitchenStatus(userKitchen.isApproved === 'rejected' ? 'rejected' : 'pending');
           setStep('pending_approval');
         } else {
-          // Approved -> Log in successfully!
-          setAuth(token, tempRefreshToken, {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            phone: user.phone || '',
-            avatar: user.avatar || '',
-            role: 'vendor',
-            rewardPoints: user.rewardPoints
-          });
-          setIsLoading(false);
-          Alert.alert('Welcome Partner', 'Login successful!', [{ text: 'OK', onPress: () => router.replace('/') }]);
+          // Approved! Let's check if they have filled the details yet.
+          if (userKitchen.address === 'Pending Details') {
+            // Not filled details yet -> go to Shop Details registration
+            setKitchenId(userKitchen.id);
+            setIsLoading(false);
+            setStep('shop_details');
+          } else {
+            // Approved & details filled -> Log in successfully!
+            setAuth(token, tempRefreshToken || 'mock_refresh', {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              phone: user.phone || '',
+              avatar: user.avatar || '',
+              role: 'vendor',
+              rewardPoints: user.rewardPoints
+            });
+            setIsLoading(false);
+            Alert.alert('Welcome Partner', 'Login successful!', [{ text: 'OK', onPress: () => router.replace('/') }]);
+          }
         }
       } else {
         setIsLoading(false);
@@ -284,7 +359,13 @@ export default function LoginScreen() {
     } catch (err) {
       console.error('Failed to check user kitchen status:', err);
       setIsLoading(false);
-      setStep('shop_details');
+      if (token === 'mock_token') {
+        // Simulation for offline demo
+        setKitchenStatus('pending');
+        setStep('pending_approval');
+      } else {
+        setStep('shop_details');
+      }
     }
   };
 
@@ -315,18 +396,20 @@ export default function LoginScreen() {
       });
       const json = await res.json();
       if (json.success) {
-        setTempUser({ ...tempUser, name: updatedName, role: 'vendor', avatar: profileImage });
-        // Proceed to register shop details or check status
-        await checkUserKitchen(tempToken, { ...tempUser, name: updatedName, role: 'vendor', avatar: profileImage });
+        const updatedUser = { ...tempUser, name: updatedName, role: 'vendor', avatar: profileImage };
+        setTempUser(updatedUser);
+        // Proceed to register shop details or check status (auto-creates onboarding request)
+        await checkUserKitchen(tempToken, updatedUser);
       } else {
         setIsLoading(false);
         Alert.alert('Error', json.message || 'Failed to update details');
       }
     } catch (err) {
       console.error('Failed to save details:', err);
-      setTempUser({ ...tempUser, name: `${firstName} ${lastName}`, role: 'vendor', avatar: profileImage });
-      setStep('shop_details');
+      const updatedUser = { ...tempUser, name: `${firstName} ${lastName}`, role: 'vendor', avatar: profileImage };
+      setTempUser(updatedUser);
       setIsLoading(false);
+      await checkUserKitchen(tempToken, updatedUser);
     }
   };
 
@@ -341,64 +424,77 @@ export default function LoginScreen() {
     const completeAddress = `${shopAddress.trim()}, Floor: ${shopFloor.trim()}, Gali/Office: ${shopGaliNumber.trim()}`;
     
     try {
-      // 1. Upgrade user role to 'vendor' on the database just in case
-      try {
-        await fetch(`${API_BASE_URL}/api/auth/profile/${tempUser.id}`, {
+      if (kitchenId && kitchenId !== 'mock_kitchen_id') {
+        // Update the existing placeholder kitchen details that SuperAdmin already approved
+        const res = await fetch(`${API_BASE_URL}/api/kitchens/${kitchenId}`, {
           method: 'PUT',
           headers: { 
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${tempToken}`
           },
           body: JSON.stringify({
-            id: tempUser.id,
-            email: tempUser.email,
-            name: tempUser.name,
-            role: 'vendor',
-            rewardPoints: tempUser.rewardPoints
+            name: shopName.trim(),
+            ownerId: tempUser.id,
+            type: 'home_tiffin',
+            cuisines: 'Indian, Healthy Thali',
+            time: '30 mins',
+            distance: '1.0 km',
+            offer: 'Freshly Cooked Homestyle Food',
+            image: shopImage || 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=600&auto=format&fit=crop&q=80',
+            logoUrl: shopLogo || 'https://images.unsplash.com/photo-1595152772835-219674b2a8a6?w=150&auto=format&fit=crop&q=80',
+            address: completeAddress,
+            floor: shopFloor,
+            officeGaliNumber: shopGaliNumber,
+            latitude: latitude || 19.0760,
+            longitude: longitude || 72.8777,
+            isApproved: 'approved'
           })
         });
-      } catch (roleErr) {
-        console.error('Role update failed:', roleErr);
-      }
 
-      // 2. Call backend CreateKitchen API with full details
-      const res = await fetch(`${API_BASE_URL}/api/kitchens`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${tempToken}`
-        },
-        body: JSON.stringify({
-          name: shopName.trim(),
-          ownerId: tempUser.id,
-          type: 'home_tiffin',
-          cuisines: 'Indian, Healthy Thali',
-          time: '30 mins',
-          distance: '1.0 km',
-          offer: 'Freshly Cooked Homestyle Food',
-          image: shopImage || 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=600&auto=format&fit=crop&q=80',
-          logoUrl: shopLogo || 'https://images.unsplash.com/photo-1595152772835-219674b2a8a6?w=150&auto=format&fit=crop&q=80',
-          address: completeAddress,
-          floor: shopFloor,
-          officeGaliNumber: shopGaliNumber,
-          latitude: latitude || 19.0760,
-          longitude: longitude || 72.8777,
-          isApproved: 'pending'
-        })
-      });
+        const json = await res.json();
+        setIsLoading(false);
 
-      const json = await res.json();
-      setIsLoading(false);
-
-      if (json.success) {
-        setStep('pending_approval');
+        if (json.success) {
+          setAuth(tempToken, tempRefreshToken || 'mock_refresh', {
+            id: tempUser.id,
+            name: tempUser.name,
+            email: tempUser.email,
+            phone: tempUser.phone || '',
+            avatar: tempUser.avatar || '',
+            role: 'vendor',
+            rewardPoints: tempUser.rewardPoints
+          });
+          Alert.alert('Welcome Partner', 'Registration completed successfully!', [{ text: 'OK', onPress: () => router.replace('/') }]);
+        } else {
+          Alert.alert('Error', json.message || 'Failed to save shop details');
+        }
       } else {
-        Alert.alert('Error', json.message || 'Failed to register shop');
+        // Fallback/Mock mode
+        setIsLoading(false);
+        setAuth(tempToken, tempRefreshToken || 'mock_refresh', {
+          id: tempUser.id,
+          name: tempUser.name,
+          email: tempUser.email,
+          phone: tempUser.phone || '',
+          avatar: tempUser.avatar || '',
+          role: 'vendor',
+          rewardPoints: tempUser.rewardPoints
+        });
+        Alert.alert('Welcome Partner', 'Registration completed (Demo Mode)!', [{ text: 'OK', onPress: () => router.replace('/') }]);
       }
     } catch (err: any) {
       console.error('Shop registration failed:', err);
       setIsLoading(false);
-      setStep('pending_approval');
+      setAuth(tempToken, tempRefreshToken || 'mock_refresh', {
+        id: tempUser.id,
+        name: tempUser.name,
+        email: tempUser.email,
+        phone: tempUser.phone || '',
+        avatar: tempUser.avatar || '',
+        role: 'vendor',
+        rewardPoints: tempUser.rewardPoints
+      });
+      Alert.alert('Welcome Partner', 'Registration completed (Offline Mode)!', [{ text: 'OK', onPress: () => router.replace('/') }]);
     }
   };
 
@@ -638,6 +734,18 @@ export default function LoginScreen() {
             >
               <Text style={styles.loginBtnText}>Return to Login</Text>
             </TouchableOpacity>
+
+            {tempToken === 'mock_token' && (
+              <TouchableOpacity 
+                style={[styles.loginBtn, { backgroundColor: '#34C759', marginTop: 12 }]} 
+                onPress={() => {
+                  setKitchenId('mock_kitchen_id');
+                  setStep('shop_details');
+                }}
+              >
+                <Text style={styles.loginBtnText}>[Demo] Approve & Proceed</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
       </View>

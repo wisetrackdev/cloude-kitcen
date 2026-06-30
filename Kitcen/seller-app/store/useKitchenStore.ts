@@ -26,6 +26,13 @@ export interface Kitchen {
   offer: string;
   revenue: number;
   ordersCount: number;
+  isApproved?: string;
+  logoUrl?: string;
+  address?: string;
+  floor?: string;
+  officeGaliNumber?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface OrderItem {
@@ -175,7 +182,14 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
           offer: k.offer,
           image: k.image,
           revenue: Number(k.revenue),
-          ordersCount: k.ordersCount
+          ordersCount: k.ordersCount,
+          isApproved: k.isApproved || 'pending',
+          logoUrl: k.logoUrl,
+          address: k.address,
+          floor: k.floor,
+          officeGaliNumber: k.officeGaliNumber,
+          latitude: k.latitude ? Number(k.latitude) : undefined,
+          longitude: k.longitude ? Number(k.longitude) : undefined
         }));
         set({ kitchens: mappedKitchens, isLoading: false });
       } else {
