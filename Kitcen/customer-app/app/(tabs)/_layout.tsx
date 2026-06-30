@@ -1,9 +1,16 @@
 import React from 'react';
-import { Tabs } from 'expo-router';
+import { Tabs, Redirect } from 'expo-router';
 import { Home, Search, ShoppingBag, User } from 'lucide-react-native';
 import { theme } from '../../styles/theme';
+import { useAuthStore } from '../../store/useAuthStore';
 
 export default function TabLayout() {
+  const token = useAuthStore(state => state.token);
+
+  if (!token) {
+    return <Redirect href="/login" />;
+  }
+
   return (
     <Tabs
       screenOptions={{

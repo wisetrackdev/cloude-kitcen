@@ -259,7 +259,6 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
       console.warn('API Error, falling back to cached/mock orders:', err.message);
       set({ isLoading: false, error: err.message });
     }
-    }
   },
 
   fetchCategories: async () => {
