@@ -194,6 +194,26 @@ export default function LoginScreen() {
     }
 
     setIsLoading(true);
+
+    // Simulated OTP bypass for development
+    if (otpCode === '123456') {
+      setIsLoading(false);
+      const mockUser = {
+        id: 'usr-chef-9281',
+        name: 'Cloud Chef',
+        email: email,
+        role: 'vendor',
+        rewardPoints: 10
+      };
+      setTempToken('mock_token');
+      setTempRefreshToken('mock_refresh');
+      setTempUser(mockUser);
+      
+      // Go to Name Step
+      setStep('name');
+      return;
+    }
+
     try {
       const res = await fetch(`${API_BASE_URL}/api/auth/verify-otp`, {
         method: 'POST',
@@ -225,24 +245,7 @@ export default function LoginScreen() {
     } catch (err: any) {
       console.warn('Verification failed, doing mock fallback:', err.message);
       setIsLoading(false);
-
-      if (otpCode === '123456') {
-        const mockUser = {
-          id: 'usr-chef-9281',
-          name: 'Cloud Chef',
-          email: email,
-          role: 'vendor',
-          rewardPoints: 10
-        };
-        setTempToken('mock_token');
-        setTempRefreshToken('mock_refresh');
-        setTempUser(mockUser);
-        
-        // Go to Name Step
-        setStep('name');
-      } else {
-        Alert.alert('Error', 'Invalid OTP code. Try "123456"');
-      }
+      Alert.alert('Error', 'Verification failed and could not connect to server.');
     }
   };
 

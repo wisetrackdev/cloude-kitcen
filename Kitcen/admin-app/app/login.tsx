@@ -98,6 +98,24 @@ export default function AdminLoginScreen() {
     }
 
     setIsLoading(true);
+
+    // Simulated OTP bypass for development
+    if (otpCode === '123456') {
+      setIsLoading(false);
+      const mockUser = {
+        id: 'usr-admin-7711',
+        name: 'Super Admin',
+        email: email,
+        role: 'superadmin',
+        rewardPoints: 100
+      };
+      setAuth('mock_token', 'mock_refresh', mockUser);
+      Alert.alert('Authentication Successful', 'Welcome SuperAdmin!', [
+        { text: 'OK', onPress: () => router.replace('/') }
+      ]);
+      return;
+    }
+
     try {
       const res = await fetch(`${API_BASE_URL}/api/auth/verify-otp`, {
         method: 'POST',
@@ -140,21 +158,7 @@ export default function AdminLoginScreen() {
     } catch (err: any) {
       console.warn('Verify failed, doing fallback:', err.message);
       setIsLoading(false);
-      if (otpCode === '123456') {
-        const mockUser = {
-          id: 'usr-admin-7711',
-          name: 'Super Admin',
-          email: email,
-          role: 'superadmin',
-          rewardPoints: 100
-        };
-        setAuth('mock_token', 'mock_refresh', mockUser);
-        Alert.alert('Authentication Successful', 'Welcome SuperAdmin!', [
-          { text: 'OK', onPress: () => router.replace('/') }
-        ]);
-      } else {
-        Alert.alert('Error', 'Invalid OTP code. Try "123456"');
-      }
+      Alert.alert('Error', 'Verification failed and could not connect to server.');
     }
   };
 
