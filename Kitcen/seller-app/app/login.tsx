@@ -249,73 +249,6 @@ export default function LoginScreen() {
     }
   };
 
-  // Helper: Auto-create a pending onboarding request kitchen
-  const autoCreateKitchenRequest = async (token: string, user: any) => {
-    setIsLoading(true);
-    try {
-      // 1. Upgrade user role to 'vendor' on the database
-      try {
-        await fetch(`${API_BASE_URL}/api/auth/profile/${user.id}`, {
-          method: 'PUT',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            role: 'vendor',
-            rewardPoints: user.rewardPoints
-          })
-        });
-      } catch (roleErr) {
-        console.error('Role update failed:', roleErr);
-      }
-
-      // 2. Create kitchen with placeholder details
-      const res = await fetch(`${API_BASE_URL}/api/kitchens`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          name: `${user.name || 'New Partner'}'s Onboarding Request`,
-          ownerId: user.id,
-          type: 'home_tiffin',
-          cuisines: 'Pending Onboarding',
-          time: '30 mins',
-          distance: '0 km',
-          offer: 'New Kitchen Partner onboarding request',
-          image: 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=600&auto=format&fit=crop&q=80',
-          logoUrl: 'https://images.unsplash.com/photo-1595152772835-219674b2a8a6?w=150&auto=format&fit=crop&q=80',
-          address: 'Pending Details',
-          floor: '',
-          officeGaliNumber: '',
-          latitude: 19.0760,
-          longitude: 72.8777,
-          isApproved: 'pending'
-        })
-      });
-
-      const json = await res.json();
-      setIsLoading(false);
-
-      if (json.success) {
-        setKitchenStatus('pending');
-        setStep('pending_approval');
-      } else {
-        Alert.alert('Error', json.message || 'Failed to submit onboarding request');
-      }
-    } catch (err: any) {
-      console.error('Onboarding request failed, doing fallback:', err.message);
-      setIsLoading(false);
-      setKitchenStatus('pending');
-      setStep('pending_approval');
-    }
-  };
-
   // Helper: Check if user has registered a kitchen & its approval status
   const checkUserKitchen = async (token: string, user: any) => {
     try {
@@ -328,34 +261,28 @@ export default function LoginScreen() {
         );
         
         if (!userKitchen) {
-          // No kitchen found -> auto create the request first!
-          await autoCreateKitchenRequest(token, user);
+          // No kitchen found -> go directly to Shop Details registration to fill form
+          setIsLoading(false);
+          setStep('shop_details');
         } else if (userKitchen.isApproved !== 'approved') {
           // Kitchen found but pending/rejected -> go to Pending Approval screen
           setIsLoading(false);
+          setKitchenId(userKitchen.id);
           setKitchenStatus(userKitchen.isApproved === 'rejected' ? 'rejected' : 'pending');
           setStep('pending_approval');
         } else {
-          // Approved! Let's check if they have filled the details yet.
-          if (userKitchen.address === 'Pending Details') {
-            // Not filled details yet -> go to Shop Details registration
-            setKitchenId(userKitchen.id);
-            setIsLoading(false);
-            setStep('shop_details');
-          } else {
-            // Approved & details filled -> Log in successfully!
-            setAuth(token, tempRefreshToken || 'mock_refresh', {
-              id: user.id,
-              name: user.name,
-              email: user.email,
-              phone: user.phone || '',
-              avatar: user.avatar || '',
-              role: 'vendor',
-              rewardPoints: user.rewardPoints
-            });
-            setIsLoading(false);
-            Alert.alert('Welcome Partner', 'Login successful!', [{ text: 'OK', onPress: () => router.replace('/') }]);
-          }
+          // Approved! Log in successfully!
+          setAuth(token, tempRefreshToken || 'mock_refresh', {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            phone: user.phone || '',
+            avatar: user.avatar || '',
+            role: 'vendor',
+            rewardPoints: user.rewardPoints
+          });
+          setIsLoading(false);
+          Alert.alert('Welcome Partner', 'Login successful!', [{ text: 'OK', onPress: () => router.replace('/') }]);
         }
       } else {
         setIsLoading(false);
@@ -365,7 +292,6 @@ export default function LoginScreen() {
       console.error('Failed to check user kitchen status:', err);
       setIsLoading(false);
       if (token === 'mock_token') {
-        // Simulation for offline demo
         setKitchenStatus('pending');
         setStep('pending_approval');
       } else {
@@ -418,7 +344,7 @@ export default function LoginScreen() {
     }
   };
 
-  // Step 4: Register Shop Details
+  // Step 4: Register Shop Details (Submits pending request)
   const handleRegisterShop = async () => {
     if (!shopName.trim() || !shopAddress.trim()) {
       Alert.alert('Error', 'Shop Name and Street Address are required.');
@@ -429,77 +355,49 @@ export default function LoginScreen() {
     const completeAddress = `${shopAddress.trim()}, Floor: ${shopFloor.trim()}, Gali/Office: ${shopGaliNumber.trim()}`;
     
     try {
-      if (kitchenId && kitchenId !== 'mock_kitchen_id') {
-        // Update the existing placeholder kitchen details that SuperAdmin already approved
-        const res = await fetch(`${API_BASE_URL}/api/kitchens/${kitchenId}`, {
-          method: 'PUT',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${tempToken}`
-          },
-          body: JSON.stringify({
-            name: shopName.trim(),
-            ownerId: tempUser.id,
-            type: 'home_tiffin',
-            cuisines: 'Indian, Healthy Thali',
-            time: '30 mins',
-            distance: '1.0 km',
-            offer: 'Freshly Cooked Homestyle Food',
-            image: shopImage || 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=600&auto=format&fit=crop&q=80',
-            logoUrl: shopLogo || 'https://images.unsplash.com/photo-1595152772835-219674b2a8a6?w=150&auto=format&fit=crop&q=80',
-            address: completeAddress,
-            floor: shopFloor,
-            officeGaliNumber: shopGaliNumber,
-            latitude: latitude || 19.0760,
-            longitude: longitude || 72.8777,
-            isApproved: 'approved'
-          })
-        });
+      // POST new kitchen request to backend (initially pending, is_live=false)
+      const res = await fetch(`${API_BASE_URL}/api/kitchens`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tempToken}`
+        },
+        body: JSON.stringify({
+          name: shopName.trim(),
+          ownerId: tempUser.id,
+          type: 'home_tiffin',
+          cuisines: 'Indian, Healthy Thali',
+          time: '30 mins',
+          distance: '1.0 km',
+          offer: 'Freshly Cooked Homestyle Food',
+          image: shopImage || 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=600&auto=format&fit=crop&q=80',
+          logoUrl: shopLogo || 'https://images.unsplash.com/photo-1595152772835-219674b2a8a6?w=150&auto=format&fit=crop&q=80',
+          address: completeAddress,
+          floor: shopFloor,
+          officeGaliNumber: shopGaliNumber,
+          latitude: latitude || 19.0760,
+          longitude: longitude || 72.8777,
+          isApproved: 'pending'
+        })
+      });
 
-        const json = await res.json();
-        setIsLoading(false);
+      const json = await res.json();
+      setIsLoading(false);
 
-        if (json.success) {
-          setAuth(tempToken, tempRefreshToken || 'mock_refresh', {
-            id: tempUser.id,
-            name: tempUser.name,
-            email: tempUser.email,
-            phone: tempUser.phone || '',
-            avatar: tempUser.avatar || '',
-            role: 'vendor',
-            rewardPoints: tempUser.rewardPoints
-          });
-          Alert.alert('Welcome Partner', 'Registration completed successfully!', [{ text: 'OK', onPress: () => router.replace('/') }]);
-        } else {
-          Alert.alert('Error', json.message || 'Failed to save shop details');
-        }
+      if (json.success) {
+        setKitchenId(json.data.id);
+        setKitchenStatus('pending');
+        setStep('pending_approval');
+        Alert.alert('Onboarding Submitted', 'Your shop has been registered and is pending approval by the Admin.');
       } else {
-        // Fallback/Mock mode
-        setIsLoading(false);
-        setAuth(tempToken, tempRefreshToken || 'mock_refresh', {
-          id: tempUser.id,
-          name: tempUser.name,
-          email: tempUser.email,
-          phone: tempUser.phone || '',
-          avatar: tempUser.avatar || '',
-          role: 'vendor',
-          rewardPoints: tempUser.rewardPoints
-        });
-        Alert.alert('Welcome Partner', 'Registration completed (Demo Mode)!', [{ text: 'OK', onPress: () => router.replace('/') }]);
+        Alert.alert('Error', json.message || 'Failed to submit shop registration details');
       }
     } catch (err: any) {
       console.error('Shop registration failed:', err);
       setIsLoading(false);
-      setAuth(tempToken, tempRefreshToken || 'mock_refresh', {
-        id: tempUser.id,
-        name: tempUser.name,
-        email: tempUser.email,
-        phone: tempUser.phone || '',
-        avatar: tempUser.avatar || '',
-        role: 'vendor',
-        rewardPoints: tempUser.rewardPoints
-      });
-      Alert.alert('Welcome Partner', 'Registration completed (Offline Mode)!', [{ text: 'OK', onPress: () => router.replace('/') }]);
+      // Demo fallback
+      setKitchenStatus('pending');
+      setStep('pending_approval');
     }
   };
 
