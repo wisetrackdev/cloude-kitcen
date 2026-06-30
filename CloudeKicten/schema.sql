@@ -165,6 +165,7 @@ CREATE TABLE IF NOT EXISTS order_status_history (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+
 -- 15. Monthly Subscriptions Table
 CREATE TABLE IF NOT EXISTS monthly_subscriptions (
     id VARCHAR(50) PRIMARY KEY,

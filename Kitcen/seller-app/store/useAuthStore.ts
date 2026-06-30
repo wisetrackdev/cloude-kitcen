@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 
 interface UserProfile {
@@ -31,62 +33,96 @@ interface AuthState {
   logout: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  token: null,
-  refreshToken: null,
-  user: null,
-  location: {
-    latitude: 19.0760, // Default to Mumbai / Bandra coordinates
-    longitude: 72.8777,
-    addressName: 'Bandra West, Mumbai, Maharashtra'
-  },
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set, get) => ({
+      token: null,
+      refreshToken: null,
+      user: null,
+      location: {
+        latitude: 19.0760, // Default to Mumbai / Bandra coordinates
+        longitude: 72.8777,
+        addressName: 'Bandra West, Mumbai, Maharashtra'
+      },
 
-  setAuth: (token, refreshToken, user) => set({ token, refreshToken, user }),
-  
-  updateUser: (updatedFields) => set((state) => ({
-    user: state.user ? { ...state.user, ...updatedFields } : null
-  })),
+      setAuth: (token, refreshToken, user) => set({ token, refreshToken, user }),
+      
+      updateUser: (updatedFields) => set((state) => ({
+        user: state.user ? { ...state.user, ...updatedFields } : null
+      })),
 
-  setLocation: (location) => set({ location }),
+      setLocation: (location) => set({ location }),
 
-  detectLocation: async () => {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        console.warn('GPS permission denied by user. Falling back to default location.');
-        return;
-      }
+      detectLocation: async () => {
+        try {
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          if (status !== 'granted') {
+            console.warn('GPS permission denied by user. Falling back to default location.');
+            return;
+          }
 
-      const currentLoc = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
+          const currentLoc = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          });
 
-      const { latitude, longitude } = currentLoc.coords;
+          const { latitude, longitude } = currentLoc.coords;
 
-      // Reverse geocoding to get human-readable street/locality name
-      const geocode = await Location.reverseGeocodeAsync({ latitude, longitude });
-      let addressName = 'My Location';
-      if (geocode && geocode.length > 0) {
-        const place = geocode[0];
-        const parts = [
-          place.name || place.street,
-          place.district || place.subregion,
-          place.city || place.region
-        ];
-        addressName = parts.filter(p => !!p).join(', ') || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-      }
+          // Reverse geocoding to get human-readable street/locality name
+          const geocode = await Location.reverseGeocodeAsync({ latitude, longitude });
+          let addressName = 'My Location';
+          if (geocode && geocode.length > 0) {
+            const place = geocode[0];
+            const parts = [
+              place.name || place.street,
+              place.district || place.subregion,
+              place.city || place.region
+            ];
+            addressName = parts.filter(p => !!p).join(', ') || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+          }
 
-      set({
-        location: {
-          latitude,
-          longitude,
-          addressName
+          set({
+            location: {
+              latitude,
+              longitude,
+              addressName
+            }
+          });
+        } catch (err: any) {
+          console.warn('Error fetching GPS coordinates: ', err.message);
         }
-      });
-    } catch (err: any) {
-      console.warn('Error fetching GPS coordinates: ', err.message);
+      },
+
+      logout: () => set({ token: null, refreshToken: null, user: null })
+    }),
+    {
+      name: 'auth-storage',
+      storage: createJSONStorage(() => safeAsyncStorage)
+    }
+  )
+);
+
+// Safe storage fallback
+const memoryStorage: Record<string, string> = {};
+const safeAsyncStorage = {
+  getItem: async (name: string): Promise<string | null> => {
+    try {
+      return await AsyncStorage.getItem(name);
+    } catch (err) {
+      return memoryStorage[name] || null;
     }
   },
-
-  logout: () => set({ token: null, refreshToken: null, user: null })
-}));
+  setItem: async (name: string, value: string): Promise<void> => {
+    try {
+      await AsyncStorage.setItem(name, value);
+    } catch (err) {
+      memoryStorage[name] = value;
+    }
+  },
+  removeItem: async (name: string): Promise<void> => {
+    try {
+      await AsyncStorage.removeItem(name);
+    } catch (err) {
+      delete memoryStorage[name];
+    }
+  }
+};
