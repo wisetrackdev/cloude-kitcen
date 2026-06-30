@@ -106,6 +106,24 @@ namespace CloudeKicten
                 
                 ALTER TABLE shops ADD CONSTRAINT shops_vendor_id_fkey FOREIGN KEY (vendor_id) REFERENCES user_register(id) ON DELETE CASCADE;
             END $$;
+
+            -- Flow Document Table Alignments
+            ALTER TABLE user_register ADD COLUMN IF NOT EXISTS latitude NUMERIC(10,8) NULL;
+            ALTER TABLE user_register ADD COLUMN IF NOT EXISTS longitude NUMERIC(11,8) NULL;
+            ALTER TABLE user_register ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'active';
+
+            ALTER TABLE shops ADD COLUMN IF NOT EXISTS category_id VARCHAR(50) NULL;
+
+            ALTER TABLE products ADD COLUMN IF NOT EXISTS category_id VARCHAR(50) NULL;
+
+            ALTER TABLE orders ADD COLUMN IF NOT EXISTS distance_km NUMERIC(5,2) DEFAULT 0.0;
+            ALTER TABLE orders ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+
+            ALTER TABLE delivery_partners ADD COLUMN IF NOT EXISTS vehicle_type VARCHAR(50) NULL;
+            ALTER TABLE delivery_partners ADD COLUMN IF NOT EXISTS documents_url VARCHAR(500) NULL;
+            ALTER TABLE delivery_partners ADD COLUMN IF NOT EXISTS is_available BOOLEAN DEFAULT TRUE;
+
+            ALTER TABLE wallet_transactions ADD COLUMN IF NOT EXISTS order_id VARCHAR(50) NULL;
         ";
 
         public const string CreateCategoriesTable = @"
