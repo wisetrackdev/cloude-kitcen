@@ -10,10 +10,11 @@ import {
   ScrollView
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Users, Mail, Key, User } from 'lucide-react-native';
+import { Users, Mail, Key, User, Camera } from 'lucide-react-native';
 import { theme } from '../styles/theme';
 import { useAuthStore } from '../store/useAuthStore';
 import { API_BASE_URL } from '../store/apiConfig';
+import * as ImagePicker from 'expo-image-picker';
 
 type LoginStep = 'email' | 'otp' | 'name';
 
@@ -29,9 +30,34 @@ export default function AdminLoginScreen() {
   // Basic Details
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [profileImage, setProfileImage] = useState('');
   const [tempToken, setTempToken] = useState('');
   const [tempRefreshToken, setTempRefreshToken] = useState('');
   const [tempUser, setTempUser] = useState<any>(null);
+
+  // Capture Profile Image via Camera
+  const captureProfileImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Camera permissions are required to take a profile picture.');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setProfileImage(result.assets[0].uri);
+      }
+    } catch (err) {
+      console.warn('Camera failed:', err);
+      Alert.alert('Camera Error', 'Could not open camera.');
+    }
+  };
 
   // Step 1: Send OTP
   const handleRequestOtp = async () => {
@@ -154,6 +180,7 @@ export default function AdminLoginScreen() {
           email: tempUser.email,
           name: updatedName,
           role: 'superadmin',
+          avatar: profileImage || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
           rewardPoints: tempUser.rewardPoints
         })
       });
@@ -166,7 +193,7 @@ export default function AdminLoginScreen() {
           name: updatedName,
           email: tempUser.email,
           phone: tempUser.phone || '',
-          avatar: tempUser.avatar || '',
+          avatar: profileImage || tempUser.avatar || '',
           role: 'superadmin',
           rewardPoints: tempUser.rewardPoints
         });
@@ -184,7 +211,7 @@ export default function AdminLoginScreen() {
         name: updatedName,
         email: tempUser.email,
         phone: '',
-        avatar: '',
+        avatar: profileImage,
         role: 'superadmin',
         rewardPoints: 0
       });
@@ -279,6 +306,22 @@ export default function AdminLoginScreen() {
             />
           </View>
 
+          {/* Profile Photo Capture */}
+          <View style={styles.captureContainer}>
+            <View style={styles.imagePlaceholder}>
+              <Text style={styles.imagePlaceholderText}>Profile Photo</Text>
+              {profileImage ? (
+                <Text style={styles.imagePlaceholderSubText} numberOfLines={1}>✓ Clicked: {profileImage.substring(profileImage.lastIndexOf('/') + 1)}</Text>
+              ) : (
+                <Text style={styles.imagePlaceholderSubText}>No photo captured</Text>
+              )}
+            </View>
+            <TouchableOpacity style={styles.captureBtn} onPress={captureProfileImage}>
+              <Camera size={14} color={theme.colors.primary} style={{ marginRight: 6 }} />
+              <Text style={styles.captureBtnText}>Open Camera</Text>
+            </TouchableOpacity>
+          </View>
+
           <TouchableOpacity style={styles.loginBtn} onPress={handleRegisterAdminDetails}>
             <Text style={styles.loginBtnText}>Submit & Access Panel</Text>
           </TouchableOpacity>
@@ -358,5 +401,44 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     marginTop: 16,
+  },
+  captureContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#1F1F1F',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  imagePlaceholder: {
+    flex: 1,
+  },
+  imagePlaceholderText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#FFF',
+  },
+  imagePlaceholderSubText: {
+    fontSize: 10,
+    color: theme.colors.textSecondary,
+    marginTop: 2,
+  },
+  captureBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,107,0,0.1)',
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  captureBtnText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: theme.colors.primary,
   }
 });

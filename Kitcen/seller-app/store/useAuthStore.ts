@@ -96,7 +96,33 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
-      storage: createJSONStorage(() => AsyncStorage)
+      storage: createJSONStorage(() => safeAsyncStorage)
     }
   )
 );
+
+// Safe storage fallback
+const memoryStorage: Record<string, string> = {};
+const safeAsyncStorage = {
+  getItem: async (name: string): Promise<string | null> => {
+    try {
+      return await AsyncStorage.getItem(name);
+    } catch (err) {
+      return memoryStorage[name] || null;
+    }
+  },
+  setItem: async (name: string, value: string): Promise<void> => {
+    try {
+      await AsyncStorage.setItem(name, value);
+    } catch (err) {
+      memoryStorage[name] = value;
+    }
+  },
+  removeItem: async (name: string): Promise<void> => {
+    try {
+      await AsyncStorage.removeItem(name);
+    } catch (err) {
+      delete memoryStorage[name];
+    }
+  }
+};

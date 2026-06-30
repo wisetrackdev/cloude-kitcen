@@ -32,6 +32,7 @@ export default function LoginScreen() {
   const [tempToken, setTempToken] = useState('');
   const [tempRefreshToken, setTempRefreshToken] = useState('');
   const [tempUser, setTempUser] = useState<any>(null);
+  const [kitchenStatus, setKitchenStatus] = useState<'pending' | 'rejected'>('pending');
 
   // Step Inputs
   const [email, setEmail] = useState('');
@@ -40,6 +41,7 @@ export default function LoginScreen() {
   // Name Step Inputs
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [profileImage, setProfileImage] = useState('');
 
   // Shop Details Step Inputs
   const [shopName, setShopName] = useState('');
@@ -120,6 +122,30 @@ export default function LoginScreen() {
         } else {
           setShopLogo(localUri);
         }
+      }
+    } catch (err) {
+      console.warn('Camera failed:', err);
+      Alert.alert('Camera Error', 'Could not open camera.');
+    }
+  };
+
+  // Capture Profile Image via Camera
+  const captureProfileImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Camera permissions are required to take a profile picture.');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setProfileImage(result.assets[0].uri);
       }
     } catch (err) {
       console.warn('Camera failed:', err);
@@ -235,6 +261,7 @@ export default function LoginScreen() {
         } else if (userKitchen.isApproved !== 'approved') {
           // Kitchen found but pending/rejected -> go to Pending Approval screen
           setIsLoading(false);
+          setKitchenStatus(userKitchen.isApproved === 'rejected' ? 'rejected' : 'pending');
           setStep('pending_approval');
         } else {
           // Approved -> Log in successfully!
@@ -282,21 +309,22 @@ export default function LoginScreen() {
           email: tempUser.email,
           name: updatedName,
           role: 'vendor',
+          avatar: profileImage || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
           rewardPoints: tempUser.rewardPoints
         })
       });
       const json = await res.json();
       if (json.success) {
-        setTempUser({ ...tempUser, name: updatedName, role: 'vendor' });
-        // Proceed to register shop details
-        await checkUserKitchen(tempToken, { ...tempUser, name: updatedName });
+        setTempUser({ ...tempUser, name: updatedName, role: 'vendor', avatar: profileImage });
+        // Proceed to register shop details or check status
+        await checkUserKitchen(tempToken, { ...tempUser, name: updatedName, role: 'vendor', avatar: profileImage });
       } else {
         setIsLoading(false);
-        Alert.alert('Error', json.message || 'Failed to update name');
+        Alert.alert('Error', json.message || 'Failed to update details');
       }
     } catch (err) {
-      console.error('Failed to save name:', err);
-      setTempUser({ ...tempUser, name: `${firstName} ${lastName}`, role: 'vendor' });
+      console.error('Failed to save details:', err);
+      setTempUser({ ...tempUser, name: `${firstName} ${lastName}`, role: 'vendor', avatar: profileImage });
       setStep('shop_details');
       setIsLoading(false);
     }
@@ -461,6 +489,22 @@ export default function LoginScreen() {
               />
             </View>
 
+            {/* Profile Photo Capture */}
+            <View style={styles.captureContainer}>
+              <View style={styles.imagePlaceholder}>
+                <Text style={styles.imagePlaceholderText}>Profile Photo</Text>
+                {profileImage ? (
+                  <Text style={styles.imagePlaceholderSubText} numberOfLines={1}>✓ Clicked: {profileImage.substring(profileImage.lastIndexOf('/') + 1)}</Text>
+                ) : (
+                  <Text style={styles.imagePlaceholderSubText}>No photo captured</Text>
+                )}
+              </View>
+              <TouchableOpacity style={styles.captureBtn} onPress={captureProfileImage}>
+                <Camera size={14} color={theme.colors.primary} style={{ marginRight: 6 }} />
+                <Text style={styles.captureBtnText}>Open Camera</Text>
+              </TouchableOpacity>
+            </View>
+
             <TouchableOpacity style={styles.loginBtn} onPress={handleRegisterName}>
               <Text style={styles.loginBtnText}>Continue to Shop Details</Text>
             </TouchableOpacity>
@@ -569,13 +613,19 @@ export default function LoginScreen() {
         {/* STEP 5: Pending Approval Screen */}
         {step === 'pending_approval' && (
           <View style={styles.approvalSection}>
-            <CheckCircle size={64} color={theme.colors.warning} style={{ marginBottom: 20 }} />
-            <Text style={styles.approvalTitle}>Registration Submitted</Text>
+            <CheckCircle size={64} color={kitchenStatus === 'rejected' ? '#FF3B30' : theme.colors.warning} style={{ marginBottom: 20 }} />
+            <Text style={[styles.approvalTitle, kitchenStatus === 'rejected' && { color: '#FF3B30' }]}>
+              {kitchenStatus === 'rejected' ? 'Registration Rejected' : 'Registration Submitted'}
+            </Text>
             <Text style={styles.approvalText}>
-              Your shop registration is successfully submitted and is currently **PENDING APPROVAL** by SuperAdmin. 
+              {kitchenStatus === 'rejected' 
+                ? 'Your shop registration has been REJECTED by the SuperAdmin.'
+                : 'Your shop registration is successfully submitted and is currently PENDING APPROVAL by SuperAdmin.'}
             </Text>
             <Text style={styles.approvalSubtext}>
-              You will be granted access to add menu items and view dashboard earnings once the SuperAdmin approves your request.
+              {kitchenStatus === 'rejected'
+                ? 'Please check details with support or try re-submitting with correct information.'
+                : 'You will be granted access to add menu items and view dashboard earnings once the SuperAdmin approves your request.'}
             </Text>
 
             <TouchableOpacity 

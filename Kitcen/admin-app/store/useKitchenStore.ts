@@ -81,7 +81,7 @@ interface KitchenState {
   
   // Kitchen actions
   addKitchen: (kitchen: Omit<Kitchen, 'id' | 'rating' | 'ratingCount' | 'revenue' | 'ordersCount' | 'isApproved' | 'logoUrl' | 'address' | 'floor' | 'officeGaliNumber' | 'latitude' | 'longitude'>) => Promise<string>;
-  approveKitchen: (kitchenId: string) => Promise<void>;
+  approveKitchen: (kitchenId: string, status?: string) => Promise<void>;
   
   // Product actions
   addProduct: (kitchenId: string, product: Omit<ProductItem, 'id'>) => Promise<void>;
@@ -272,7 +272,7 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
     }
   },
 
-  approveKitchen: async (kitchenId: string) => {
+  approveKitchen: async (kitchenId: string, status: string = 'approved') => {
     try {
       const kitchen = get().kitchens.find(k => k.id === kitchenId);
       if (!kitchen) return;
@@ -294,7 +294,7 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
           officeGaliNumber: kitchen.officeGaliNumber,
           latitude: kitchen.latitude,
           longitude: kitchen.longitude,
-          isApproved: 'approved'
+          isApproved: status
         })
       });
 
@@ -305,9 +305,9 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
         throw new Error(json.message);
       }
     } catch (err: any) {
-      console.warn('API Error approving kitchen, doing fallback:', err.message);
+      console.warn('API Error updating kitchen status, doing fallback:', err.message);
       set(state => ({
-        kitchens: state.kitchens.map(k => k.id === kitchenId ? { ...k, isApproved: 'approved' } : k)
+        kitchens: state.kitchens.map(k => k.id === kitchenId ? { ...k, isApproved: status } : k)
       }));
     }
   },

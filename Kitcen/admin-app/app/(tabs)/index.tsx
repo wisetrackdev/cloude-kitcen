@@ -86,6 +86,11 @@ export default function AdminDashboard() {
                       <CheckCircle size={10} color={theme.colors.veg} />
                       <Text style={styles.statusApprovedText}>APPROVED</Text>
                     </View>
+                  ) : kitchen.isApproved === 'rejected' ? (
+                    <View style={styles.statusRejectedBadge}>
+                      <Clock size={10} color="#FF3B30" />
+                      <Text style={styles.statusRejectedText}>REJECTED</Text>
+                    </View>
                   ) : (
                     <View style={styles.statusPendingBadge}>
                       <Clock size={10} color={theme.colors.warning} />
@@ -99,16 +104,27 @@ export default function AdminDashboard() {
               <Text style={styles.adminStatVal}>₹{kitchen.revenue}</Text>
               <Text style={styles.adminStatLabel}>{kitchen.ordersCount} Orders</Text>
               
-              {kitchen.isApproved !== 'approved' && (
-                <TouchableOpacity
-                  style={styles.approveActionBtn}
-                  onPress={() => {
-                    approveKitchen(kitchen.id);
-                    Alert.alert('Approved', `Kitchen "${kitchen.name}" has been approved!`);
-                  }}
-                >
-                  <Text style={styles.approveActionText}>Approve</Text>
-                </TouchableOpacity>
+              {kitchen.isApproved !== 'approved' && kitchen.isApproved !== 'rejected' && (
+                <View style={{ marginTop: 8, flexDirection: 'row' }}>
+                  <TouchableOpacity
+                    style={[styles.approveActionBtn, { marginRight: 6 }]}
+                    onPress={() => {
+                      approveKitchen(kitchen.id, 'approved');
+                      Alert.alert('Approved', `Kitchen "${kitchen.name}" has been approved!`);
+                    }}
+                  >
+                    <Text style={styles.approveActionText}>Approve</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.approveActionBtn, { backgroundColor: '#FF3B30' }]}
+                    onPress={() => {
+                      approveKitchen(kitchen.id, 'rejected');
+                      Alert.alert('Rejected', `Kitchen "${kitchen.name}" has been rejected.`);
+                    }}
+                  >
+                    <Text style={[styles.approveActionText, { color: '#FFF' }]}>Reject</Text>
+                  </TouchableOpacity>
+                </View>
               )}
             </View>
           </View>
@@ -314,6 +330,20 @@ const styles = StyleSheet.create({
     fontSize: 8,
     fontWeight: 'bold',
     color: theme.colors.warning,
+    marginLeft: 4,
+  },
+  statusRejectedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,59,48,0.1)',
+    borderRadius: 4,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+  },
+  statusRejectedText: {
+    fontSize: 8,
+    fontWeight: 'bold',
+    color: '#FF3B30',
     marginLeft: 4,
   },
   approveActionBtn: {
