@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "name": "Clude Kitchen - Partner",
+    "slug": "clude-kitchen-partner",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "scheme": "cludekitchen-partner",
+    "plugins": [
+      "expo-router"
+    ]
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "name": "Clude Kitchen - Admin",
+    "slug": "clude-kitchen-admin",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "scheme": "cludekitchen-admin",
+    "plugins": [
+      "expo-router"
+    ]
+  }
+}

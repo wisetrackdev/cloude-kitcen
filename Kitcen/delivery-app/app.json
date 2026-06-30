@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "name": "Clude Kitchen - Rider",
+    "slug": "clude-kitchen-rider",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "scheme": "cludekitchen-rider",
+    "plugins": [
+      "expo-router"
+    ]
+  }
+}

@@ -1,0 +1,365 @@
+using System;
+using System.Collections.Generic;
+
+namespace CloudeKicten.Models
+{
+    // ==========================================
+    // Database Entity Models
+    // ==========================================
+
+    public class UserDb
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string? Phone { get; set; }
+        public string? Avatar { get; set; }
+        public string? Gender { get; set; }
+        public string Role { get; set; } = "customer"; // customer, seller (vendor), rider, superadmin
+        public int RewardPoints { get; set; } = 0;
+        public string? Otp { get; set; }
+        public DateTime? OtpExpiry { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    }
+
+    public class KitchenDb
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string OwnerId { get; set; } = string.Empty;
+        public string Type { get; set; } = "restaurant"; // restaurant, home_tiffin
+        public string Cuisines { get; set; } = string.Empty;
+        public decimal Rating { get; set; } = 5.0m;
+        public int RatingCount { get; set; } = 0;
+        public string Time { get; set; } = "20-25 mins";
+        public string Distance { get; set; } = "1.0 km";
+        public string? Offer { get; set; }
+        public string? Image { get; set; }
+        public decimal Revenue { get; set; } = 0.0m;
+        public int OrdersCount { get; set; } = 0;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    }
+
+    public class ProductDb
+    {
+        public string Id { get; set; } = string.Empty;
+        public string KitchenId { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public decimal Price { get; set; }
+        public string? Description { get; set; }
+        public string Category { get; set; } = string.Empty;
+        public bool IsVeg { get; set; }
+        public string? Image { get; set; }
+        public bool Customizable { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    }
+
+    public class OrderDb
+    {
+        public string Id { get; set; } = string.Empty;
+        public string KitchenId { get; set; } = string.Empty;
+        public string CustomerId { get; set; } = string.Empty;
+        public string ItemsJson { get; set; } = "[]"; // Serialized JSON array of OrderItemDto
+        public decimal Subtotal { get; set; }
+        public decimal DeliveryCharge { get; set; }
+        public decimal Tax { get; set; }
+        public decimal Discount { get; set; }
+        public decimal Total { get; set; }
+        public string Status { get; set; } = "placed"; // placed, preparing, ready, on_the_way, delivered, cancelled
+        public string PaymentMethod { get; set; } = "cod"; // cod, card, wallet
+        public string OrderDate { get; set; } = string.Empty;
+        public string? RiderId { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    }
+
+    public class SubscriptionDb
+    {
+        public string Id { get; set; } = string.Empty;
+        public string CustomerId { get; set; } = string.Empty;
+        public string KitchenId { get; set; } = string.Empty;
+        public string PlanName { get; set; } = string.Empty; // e.g. "Monthly Homestyle Veg Meals"
+        public int Frequency { get; set; } // 1, 2, or 3 times a day
+        public int DurationDays { get; set; } // 7 (weekly) or 30 (monthly)
+        public string MealsSelected { get; set; } = string.Empty; // e.g. "Lunch, Dinner"
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+        public decimal Price { get; set; }
+        public decimal PaidAmount { get; set; }
+        public string PaymentStatus { get; set; } = "unpaid"; // half_paid, fully_paid, unpaid
+        public string Status { get; set; } = "active"; // active, suspended, completed
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    }
+
+    public class BookingDb
+    {
+        public string Id { get; set; } = string.Empty;
+        public string CustomerId { get; set; } = string.Empty;
+        public string KitchenId { get; set; } = string.Empty;
+        public DateTime BookingDate { get; set; }
+        public int GuestCount { get; set; }
+        public string? SpecialNotes { get; set; }
+        public decimal TotalPrice { get; set; }
+        public decimal PaidAmount { get; set; }
+        public string PaymentStatus { get; set; } = "unpaid"; // half_paid, fully_paid, unpaid
+        public string Status { get; set; } = "pending"; // pending, confirmed, completed, cancelled
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    }
+
+    public class RiderDb
+    {
+        public string Id { get; set; } = string.Empty;
+        public string VehicleNumber { get; set; } = string.Empty;
+        public string LicenseNumber { get; set; } = string.Empty;
+        public bool IsActive { get; set; } = true;
+        public decimal? CurrentLatitude { get; set; }
+        public decimal? CurrentLongitude { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    }
+
+    // ==========================================
+    // API Request / Response DTOs
+    // ==========================================
+
+    public class RequestOtpDto
+    {
+        public string Email { get; set; } = string.Empty;
+    }
+
+    public class VerifyOtpDto
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Otp { get; set; } = string.Empty;
+    }
+
+    public class UserDto
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string? Phone { get; set; }
+        public string? Avatar { get; set; }
+        public string? Gender { get; set; }
+        public string Role { get; set; } = "customer";
+        public int RewardPoints { get; set; }
+    }
+
+    public class AuthResponseDto
+    {
+        public string Token { get; set; } = string.Empty;
+        public string RefreshToken { get; set; } = string.Empty;
+        public UserDto User { get; set; } = new();
+    }
+
+    public class RiderRegisterDto
+    {
+        public string UserId { get; set; } = string.Empty;
+        public string VehicleNumber { get; set; } = string.Empty;
+        public string LicenseNumber { get; set; } = string.Empty;
+    }
+
+    public class VendorRegisterDto
+    {
+        public string UserId { get; set; } = string.Empty;
+        public string KitchenName { get; set; } = string.Empty;
+        public string Type { get; set; } = "home_tiffin"; // restaurant, home_tiffin
+        public string Cuisines { get; set; } = string.Empty;
+    }
+
+    public class KitchenCreateDto
+    {
+        public string Name { get; set; } = string.Empty;
+        public string OwnerId { get; set; } = string.Empty;
+        public string Type { get; set; } = "restaurant";
+        public string Cuisines { get; set; } = string.Empty;
+        public string Time { get; set; } = "20-25 mins";
+        public string Distance { get; set; } = "1.0 km";
+        public string? Offer { get; set; }
+        public string? Image { get; set; }
+    }
+
+    public class KitchenUpdateDto
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Type { get; set; } = "restaurant";
+        public string Cuisines { get; set; } = string.Empty;
+        public string Time { get; set; } = "20-25 mins";
+        public string Distance { get; set; } = "1.0 km";
+        public string? Offer { get; set; }
+        public string? Image { get; set; }
+    }
+
+    public class ProductCreateDto
+    {
+        public string KitchenId { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public decimal Price { get; set; }
+        public string? Description { get; set; }
+        public string Category { get; set; } = string.Empty;
+        public bool IsVeg { get; set; }
+        public string? Image { get; set; }
+        public bool Customizable { get; set; }
+    }
+
+    public class ProductUpdateDto
+    {
+        public string Name { get; set; } = string.Empty;
+        public decimal Price { get; set; }
+        public string? Description { get; set; }
+        public string Category { get; set; } = string.Empty;
+        public bool IsVeg { get; set; }
+        public string? Image { get; set; }
+        public bool Customizable { get; set; }
+    }
+
+    public class OrderItemDto
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public decimal Price { get; set; }
+        public int Quantity { get; set; }
+    }
+
+    public class OrderCreateDto
+    {
+        public string KitchenId { get; set; } = string.Empty;
+        public string KitchenName { get; set; } = string.Empty;
+        public string CustomerId { get; set; } = string.Empty;
+        public string CustomerName { get; set; } = string.Empty;
+        public List<OrderItemDto> Items { get; set; } = new();
+        public decimal Subtotal { get; set; }
+        public decimal DeliveryCharge { get; set; }
+        public decimal Tax { get; set; }
+        public decimal Discount { get; set; }
+        public decimal Total { get; set; }
+        public string PaymentMethod { get; set; } = "cod";
+    }
+
+    public class OrderResponseDto
+    {
+        public string Id { get; set; } = string.Empty;
+        public string KitchenId { get; set; } = string.Empty;
+        public string KitchenName { get; set; } = string.Empty;
+        public string CustomerId { get; set; } = string.Empty;
+        public string CustomerName { get; set; } = string.Empty;
+        public List<OrderItemDto> Items { get; set; } = new();
+        public decimal Subtotal { get; set; }
+        public decimal DeliveryCharge { get; set; }
+        public decimal Tax { get; set; }
+        public decimal Discount { get; set; }
+        public decimal Total { get; set; }
+        public string Status { get; set; } = "placed";
+        public string PaymentMethod { get; set; } = "cod";
+        public string Date { get; set; } = string.Empty;
+        public string? RiderId { get; set; }
+        public string? RiderName { get; set; }
+        public string? RiderPhone { get; set; }
+    }
+
+    public class OrderStatusUpdateDto
+    {
+        public string Status { get; set; } = string.Empty;
+    }
+
+    public class AssignRiderDto
+    {
+        public string RiderId { get; set; } = string.Empty;
+    }
+
+    // Subscriptions
+    public class SubscriptionCreateDto
+    {
+        public string CustomerId { get; set; } = string.Empty;
+        public string KitchenId { get; set; } = string.Empty;
+        public string PlanName { get; set; } = string.Empty;
+        public int Frequency { get; set; } // 1, 2, or 3 times a day
+        public int DurationDays { get; set; } // 7 or 30 days
+        public string MealsSelected { get; set; } = string.Empty; // e.g. "Lunch, Dinner"
+        public decimal Price { get; set; }
+        public decimal PaidAmount { get; set; }
+        public string PaymentStatus { get; set; } = "unpaid"; // half_paid, fully_paid, unpaid
+    }
+
+    public class SubscriptionResponseDto
+    {
+        public string Id { get; set; } = string.Empty;
+        public string CustomerId { get; set; } = string.Empty;
+        public string CustomerName { get; set; } = string.Empty;
+        public string KitchenId { get; set; } = string.Empty;
+        public string KitchenName { get; set; } = string.Empty;
+        public string PlanName { get; set; } = string.Empty;
+        public int Frequency { get; set; }
+        public int DurationDays { get; set; }
+        public string MealsSelected { get; set; } = string.Empty;
+        public string StartDate { get; set; } = string.Empty;
+        public string EndDate { get; set; } = string.Empty;
+        public decimal Price { get; set; }
+        public decimal PaidAmount { get; set; }
+        public string PaymentStatus { get; set; } = "unpaid";
+        public string Status { get; set; } = "active";
+    }
+
+    public class SubscriptionStatusUpdateDto
+    {
+        public string Status { get; set; } = string.Empty; // active, suspended, completed
+    }
+
+    // Bookings
+    public class BookingCreateDto
+    {
+        public string CustomerId { get; set; } = string.Empty;
+        public string KitchenId { get; set; } = string.Empty;
+        public string BookingDateString { get; set; } = string.Empty; // ISO Date String
+        public int GuestCount { get; set; }
+        public string? SpecialNotes { get; set; }
+        public decimal TotalPrice { get; set; }
+        public decimal PaidAmount { get; set; }
+        public string PaymentStatus { get; set; } = "unpaid"; // half_paid, fully_paid
+    }
+
+    public class BookingResponseDto
+    {
+        public string Id { get; set; } = string.Empty;
+        public string CustomerId { get; set; } = string.Empty;
+        public string CustomerName { get; set; } = string.Empty;
+        public string KitchenId { get; set; } = string.Empty;
+        public string KitchenName { get; set; } = string.Empty;
+        public string BookingDate { get; set; } = string.Empty;
+        public int GuestCount { get; set; }
+        public string? SpecialNotes { get; set; }
+        public decimal TotalPrice { get; set; }
+        public decimal PaidAmount { get; set; }
+        public string PaymentStatus { get; set; } = "unpaid";
+        public string Status { get; set; } = "pending";
+    }
+
+    public class BookingStatusUpdateDto
+    {
+        public string Status { get; set; } = string.Empty; // pending, confirmed, completed, cancelled
+    }
+
+    // Rider DTOs
+    public class RiderLocationUpdateDto
+    {
+        public decimal Latitude { get; set; }
+        public decimal Longitude { get; set; }
+    }
+
+    public class RiderStatusUpdateDto
+    {
+        public bool IsActive { get; set; }
+    }
+
+    public class ApiResponse<T>
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public T? Data { get; set; }
+
+        public static ApiResponse<T> Ok(T data, string message = "Success") => 
+            new() { Success = true, Data = data, Message = message };
+
+        public static ApiResponse<T> Fail(string message) => 
+            new() { Success = false, Message = message };
+    }
+}
