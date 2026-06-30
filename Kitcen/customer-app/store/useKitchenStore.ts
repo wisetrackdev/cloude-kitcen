@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { API_BASE_URL } from './apiConfig';
+import { useAuthStore } from './useAuthStore';
 
 export interface ProductItem {
   id: string;
@@ -220,7 +221,8 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       let queryStr = '';
-      if (customerId) queryStr += `customerId=${customerId}`;
+      const activeCustomerId = customerId || useAuthStore.getState().user?.id;
+      if (activeCustomerId) queryStr += `customerId=${activeCustomerId}`;
       if (kitchenId) queryStr += `${queryStr ? '&' : ''}kitchenId=${kitchenId}`;
 
       const res = await fetch(`${API_BASE_URL}/api/orders?${queryStr}`);
@@ -366,6 +368,7 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
   },
 
   placeOrder: async (newOrder) => {
+    const currentUser = useAuthStore.getState().user;
     try {
       const res = await fetch(`${API_BASE_URL}/api/orders`, {
         method: 'POST',
@@ -373,8 +376,8 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
         body: JSON.stringify({
           kitchenId: newOrder.kitchenId,
           kitchenName: newOrder.kitchenName,
-          customerId: 'usr-9281', // Map customer representation, or dynamically read from auth store
-          customerName: newOrder.customerName || 'Customer User',
+          customerId: currentUser?.id || 'usr-9281',
+          customerName: currentUser?.name || newOrder.customerName || 'Customer User',
           items: newOrder.items.map(i => ({
             id: i.id,
             name: i.name,
@@ -393,7 +396,7 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
       if (json.success) {
         // Refresh local kitchen list to update revenues/stats
         get().fetchKitchens();
-        get().fetchOrders('usr-9281');
+        get().fetchOrders(currentUser?.id);
         return json.data.id;
       }
     } catch (err) {

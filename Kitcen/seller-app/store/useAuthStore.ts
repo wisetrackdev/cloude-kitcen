@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import * as Location from 'expo-location';
 
 interface UserProfile {
   id: string;
@@ -26,6 +27,7 @@ interface AuthState {
   setAuth: (token: string, refreshToken: string, user: UserProfile) => void;
   updateUser: (user: Partial<UserProfile>) => void;
   setLocation: (location: LocationCoords) => void;
+  detectLocation: () => Promise<void>;
   logout: () => void;
 }
 
@@ -46,6 +48,45 @@ export const useAuthStore = create<AuthState>((set) => ({
   })),
 
   setLocation: (location) => set({ location }),
+
+  detectLocation: async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        console.warn('GPS permission denied by user. Falling back to default location.');
+        return;
+      }
+
+      const currentLoc = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      const { latitude, longitude } = currentLoc.coords;
+
+      // Reverse geocoding to get human-readable street/locality name
+      const geocode = await Location.reverseGeocodeAsync({ latitude, longitude });
+      let addressName = 'My Location';
+      if (geocode && geocode.length > 0) {
+        const place = geocode[0];
+        const parts = [
+          place.name || place.street,
+          place.district || place.subregion,
+          place.city || place.region
+        ];
+        addressName = parts.filter(p => !!p).join(', ') || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+      }
+
+      set({
+        location: {
+          latitude,
+          longitude,
+          addressName
+        }
+      });
+    } catch (err: any) {
+      console.warn('Error fetching GPS coordinates: ', err.message);
+    }
+  },
 
   logout: () => set({ token: null, refreshToken: null, user: null })
 }));

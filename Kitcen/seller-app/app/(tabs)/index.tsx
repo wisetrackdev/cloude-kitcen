@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -15,28 +15,40 @@ import {
 } from 'lucide-react-native';
 import { theme } from '../../styles/theme';
 import { useKitchenStore } from '../../store/useKitchenStore';
+import { useAuthStore } from '../../store/useAuthStore';
 
 export default function SellerDashboard() {
-  const selectedKitchenId = 'k3'; // default to Auntie's Homely Tiffin for housewife tiffin demo
-  
+  const user = useAuthStore(state => state.user);
   const kitchens = useKitchenStore(state => state.kitchens);
   const products = useKitchenStore(state => state.products);
   const orders = useKitchenStore(state => state.orders);
   
+  const fetchKitchens = useKitchenStore(state => state.fetchKitchens);
+  const fetchOrders = useKitchenStore(state => state.fetchOrders);
   const updateOrderStatus = useKitchenStore(state => state.updateOrderStatus);
 
-  const kitchenInfo = kitchens.find(k => k.id === selectedKitchenId) || kitchens[0];
+  // Fetch kitchens and orders on mount
+  useEffect(() => {
+    fetchKitchens();
+    fetchOrders(); // Fetches all orders so we can filter by kitchenId
+  }, []);
+
+  // Find user's kitchen by matching ownerId
+  const myKitchen = kitchens.find(k => k.owner === user?.id) || kitchens[0];
+  const selectedKitchenId = myKitchen?.id || 'k3';
+
+  const kitchenInfo = myKitchen || kitchens[0] || { name: 'My Kitchen', revenue: 0 };
   const kitchenProducts = products[selectedKitchenId] || [];
   const kitchenOrders = orders.filter(o => o.kitchenId === selectedKitchenId);
 
-  const handleOrderStatusToggle = (orderId: string, currentStatus: string) => {
+  const handleOrderStatusToggle = async (orderId: string, currentStatus: string) => {
     let nextStatus: typeof orders[0]['status'] = 'placed';
     if (currentStatus === 'placed') nextStatus = 'preparing';
     else if (currentStatus === 'preparing') nextStatus = 'ready';
     else if (currentStatus === 'ready') nextStatus = 'on_the_way';
     else if (currentStatus === 'on_the_way') nextStatus = 'delivered';
     
-    updateOrderStatus(orderId, nextStatus);
+    await updateOrderStatus(orderId, nextStatus);
   };
 
   return (

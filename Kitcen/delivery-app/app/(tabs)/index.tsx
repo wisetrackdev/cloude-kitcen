@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -13,12 +13,17 @@ import { useKitchenStore } from '../../store/useKitchenStore';
 
 export default function RiderDashboard() {
   const orders = useKitchenStore(state => state.orders);
+  const fetchOrders = useKitchenStore(state => state.fetchOrders);
   const updateOrderStatus = useKitchenStore(state => state.updateOrderStatus);
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
 
   // Active deliveries for rider Vikram (orders not delivered or cancelled)
   const activeDeliveries = orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled' && o.status !== 'placed');
 
-  const handleUpdateStatus = (orderId: string, currentStatus: string) => {
+  const handleUpdateStatus = async (orderId: string, currentStatus: string) => {
     let nextStatus: typeof orders[0]['status'] = 'on_the_way';
     if (currentStatus === 'preparing' || currentStatus === 'ready') {
       nextStatus = 'on_the_way';
@@ -28,7 +33,7 @@ export default function RiderDashboard() {
       Alert.alert('Status Updated', 'Order delivered successfully! Earnings added.');
     }
 
-    updateOrderStatus(orderId, nextStatus);
+    await updateOrderStatus(orderId, nextStatus);
   };
 
   return (

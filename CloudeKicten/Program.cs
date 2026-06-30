@@ -29,9 +29,20 @@ namespace CloudeKicten
             {
                 options.AddPolicy("AllowAll", policy =>
                 {
-                    policy.AllowAnyOrigin()
-                          .AllowAnyMethod()
-                          .AllowAnyHeader();
+                    var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+                    if (allowedOrigins != null && allowedOrigins.Length > 0 && allowedOrigins[0] != "*")
+                    {
+                        policy.WithOrigins(allowedOrigins)
+                              .AllowAnyMethod()
+                              .AllowAnyHeader()
+                              .AllowCredentials();
+                    }
+                    else
+                    {
+                        policy.AllowAnyOrigin()
+                              .AllowAnyMethod()
+                              .AllowAnyHeader();
+                    }
                 });
             });
 

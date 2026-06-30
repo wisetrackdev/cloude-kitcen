@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -12,18 +12,35 @@ import {
 import { Plus, Trash2 } from 'lucide-react-native';
 import { theme } from '../../styles/theme';
 import { useKitchenStore } from '../../store/useKitchenStore';
+import { useAuthStore } from '../../store/useAuthStore';
 
 export default function SellerMenuScreen() {
-  const selectedKitchenId = 'k3'; // default to Auntie's Homely Tiffin for housewife tiffin demo
-  
+  const user = useAuthStore(state => state.user);
   const kitchens = useKitchenStore(state => state.kitchens);
   const products = useKitchenStore(state => state.products);
   
+  const fetchKitchens = useKitchenStore(state => state.fetchKitchens);
+  const fetchProducts = useKitchenStore(state => state.fetchProducts);
   const addProduct = useKitchenStore(state => state.addProduct);
   const deleteProduct = useKitchenStore(state => state.deleteProduct);
 
-  const kitchenInfo = kitchens.find(k => k.id === selectedKitchenId) || kitchens[0];
+  // Find user's kitchen by ownerId
+  const myKitchen = kitchens.find(k => k.owner === user?.id) || kitchens[0];
+  const selectedKitchenId = myKitchen?.id || 'k3';
+
+  const kitchenInfo = myKitchen || kitchens[0] || { name: 'My Kitchen' };
   const kitchenProducts = products[selectedKitchenId] || [];
+
+  // Fetch kitchens and products on mount or when selectedKitchenId changes
+  useEffect(() => {
+    fetchKitchens();
+  }, []);
+
+  useEffect(() => {
+    if (selectedKitchenId) {
+      fetchProducts(selectedKitchenId);
+    }
+  }, [selectedKitchenId]);
 
   // Local Form states
   const [showAddDishModal, setShowAddDishModal] = useState(false);
@@ -33,13 +50,13 @@ export default function SellerMenuScreen() {
   const [newDishVeg, setNewDishVeg] = useState(true);
   const [newDishCat, setNewDishCat] = useState('Tiffin Meals');
 
-  const handleAddDish = () => {
+  const handleAddDish = async () => {
     if (!newDishName || !newDishPrice) {
       Alert.alert('Error', 'Please fill name and price');
       return;
     }
 
-    addProduct(selectedKitchenId, {
+    await addProduct(selectedKitchenId, {
       name: newDishName,
       price: parseFloat(newDishPrice),
       desc: newDishDesc,
