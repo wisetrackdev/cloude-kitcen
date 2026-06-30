@@ -122,8 +122,28 @@ namespace CloudeKicten
             ALTER TABLE delivery_partners ADD COLUMN IF NOT EXISTS vehicle_type VARCHAR(50) NULL;
             ALTER TABLE delivery_partners ADD COLUMN IF NOT EXISTS documents_url VARCHAR(500) NULL;
             ALTER TABLE delivery_partners ADD COLUMN IF NOT EXISTS is_available BOOLEAN DEFAULT TRUE;
+            ALTER TABLE delivery_partners ADD COLUMN IF NOT EXISTS rejected_at TIMESTAMP NULL;
+            ALTER TABLE delivery_partners ADD COLUMN IF NOT EXISTS license_photo_url VARCHAR(500) NULL;
+            ALTER TABLE delivery_partners ADD COLUMN IF NOT EXISTS vehicle_photo_url VARCHAR(500) NULL;
+            ALTER TABLE delivery_partners ADD COLUMN IF NOT EXISTS id_proof_url VARCHAR(500) NULL;
+
+            ALTER TABLE shops ADD COLUMN IF NOT EXISTS cover_image_url VARCHAR(500) NULL;
+
+            ALTER TABLE orders ADD COLUMN IF NOT EXISTS picked_up_at TIMESTAMP NULL;
+            ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivered_at TIMESTAMP NULL;
+            ALTER TABLE orders ADD COLUMN IF NOT EXISTS accepted_by_rider_at TIMESTAMP NULL;
 
             ALTER TABLE wallet_transactions ADD COLUMN IF NOT EXISTS order_id VARCHAR(50) NULL;
+        ";
+
+        public const string CreateOrderChatsTable = @"
+            CREATE TABLE IF NOT EXISTS order_chats (
+                id VARCHAR(50) PRIMARY KEY,
+                order_id VARCHAR(50) NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+                sender_id VARCHAR(50) NOT NULL REFERENCES user_register(id) ON DELETE CASCADE,
+                message VARCHAR(1000) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
         ";
 
         public const string CreateCategoriesTable = @"

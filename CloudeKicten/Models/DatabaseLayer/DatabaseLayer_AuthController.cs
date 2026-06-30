@@ -121,6 +121,9 @@ namespace CloudeKicten.Models.DatabaseLayer
             cmd.CommandText = Sql.CreateAuditLogsTable;
             await cmd.ExecuteNonQueryAsync();
 
+            cmd.CommandText = Sql.CreateOrderChatsTable;
+            await cmd.ExecuteNonQueryAsync();
+
             try
             {
                 cmd.CommandText = Sql.AlterShopsTable;
