@@ -10,12 +10,13 @@ import {
   ScrollView
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ChefHat, Mail, Key, User, Image as ImageIcon, MapPin, Store, CheckCircle } from 'lucide-react-native';
+import { ChefHat, Mail, Key, User, Image as ImageIcon, MapPin, Store, CheckCircle, Camera } from 'lucide-react-native';
 import { theme } from '../styles/theme';
 import { useAuthStore } from '../store/useAuthStore';
 import { useKitchenStore } from '../store/useKitchenStore';
 import { API_BASE_URL } from '../store/apiConfig';
 import * as Location from 'expo-location';
+import * as ImagePicker from 'expo-image-picker';
 
 type LoginStep = 'email' | 'otp' | 'name' | 'shop_details' | 'pending_approval';
 
@@ -42,8 +43,8 @@ export default function LoginScreen() {
 
   // Shop Details Step Inputs
   const [shopName, setShopName] = useState('');
-  const [shopImage, setShopImage] = useState('https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=600&auto=format&fit=crop&q=80');
-  const [shopLogo, setShopLogo] = useState('https://images.unsplash.com/photo-1595152772835-219674b2a8a6?w=150&auto=format&fit=crop&q=80');
+  const [shopImage, setShopImage] = useState('');
+  const [shopLogo, setShopLogo] = useState('');
   const [shopAddress, setShopAddress] = useState('');
   const [shopFloor, setShopFloor] = useState('');
   const [shopGaliNumber, setShopGaliNumber] = useState('');
@@ -94,6 +95,35 @@ export default function LoginScreen() {
     } catch (err: any) {
       console.warn('Location detection failed:', err.message);
       setLocationAddress('Failed to detect location. Tap to retry.');
+    }
+  };
+
+  // Capture Image/Logo via Camera
+  const captureImage = async (type: 'banner' | 'logo') => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Camera permissions are required to take a picture of your shop.');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: type === 'banner' ? [16, 9] : [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const localUri = result.assets[0].uri;
+        if (type === 'banner') {
+          setShopImage(localUri);
+        } else {
+          setShopLogo(localUri);
+        }
+      }
+    } catch (err) {
+      console.warn('Camera failed:', err);
+      Alert.alert('Camera Error', 'Could not open camera.');
     }
   };
 
@@ -318,8 +348,8 @@ export default function LoginScreen() {
           time: '30 mins',
           distance: '1.0 km',
           offer: 'Freshly Cooked Homestyle Food',
-          image: shopImage,
-          logoUrl: shopLogo,
+          image: shopImage || 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=600&auto=format&fit=crop&q=80',
+          logoUrl: shopLogo || 'https://images.unsplash.com/photo-1595152772835-219674b2a8a6?w=150&auto=format&fit=crop&q=80',
           address: completeAddress,
           floor: shopFloor,
           officeGaliNumber: shopGaliNumber,
@@ -453,26 +483,36 @@ export default function LoginScreen() {
               />
             </View>
 
-            <View style={styles.inputWrapper}>
-              <ImageIcon size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />
-              <TextInput
-                placeholder="Shop Banner Image URL"
-                placeholderTextColor="#888"
-                value={shopImage}
-                onChangeText={setShopImage}
-                style={styles.inputField}
-              />
+            {/* Shop Banner Image capture */}
+            <View style={styles.captureContainer}>
+              <View style={styles.imagePlaceholder}>
+                <Text style={styles.imagePlaceholderText}>Shop Banner Image</Text>
+                {shopImage ? (
+                  <Text style={styles.imagePlaceholderSubText} numberOfLines={1}>✓ Clicked: {shopImage.substring(shopImage.lastIndexOf('/') + 1)}</Text>
+                ) : (
+                  <Text style={styles.imagePlaceholderSubText}>No photo captured</Text>
+                )}
+              </View>
+              <TouchableOpacity style={styles.captureBtn} onPress={() => captureImage('banner')}>
+                <Camera size={14} color={theme.colors.primary} style={{ marginRight: 6 }} />
+                <Text style={styles.captureBtnText}>Open Camera</Text>
+              </TouchableOpacity>
             </View>
 
-            <View style={styles.inputWrapper}>
-              <ImageIcon size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />
-              <TextInput
-                placeholder="Shop Logo URL"
-                placeholderTextColor="#888"
-                value={shopLogo}
-                onChangeText={setShopLogo}
-                style={styles.inputField}
-              />
+            {/* Logo capture */}
+            <View style={styles.captureContainer}>
+              <View style={styles.imagePlaceholder}>
+                <Text style={styles.imagePlaceholderText}>Shop Logo / Avatar</Text>
+                {shopLogo ? (
+                  <Text style={styles.imagePlaceholderSubText} numberOfLines={1}>✓ Clicked: {shopLogo.substring(shopLogo.lastIndexOf('/') + 1)}</Text>
+                ) : (
+                  <Text style={styles.imagePlaceholderSubText}>No photo captured</Text>
+                )}
+              </View>
+              <TouchableOpacity style={styles.captureBtn} onPress={() => captureImage('logo')}>
+                <Camera size={14} color={theme.colors.primary} style={{ marginRight: 6 }} />
+                <Text style={styles.captureBtnText}>Open Camera</Text>
+              </TouchableOpacity>
             </View>
 
             {/* GPS Location (Auto-Detected) */}
@@ -685,5 +725,44 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginBottom: 30,
     paddingHorizontal: 10,
+  },
+  captureContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#1F1F1F',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  imagePlaceholder: {
+    flex: 1,
+  },
+  imagePlaceholderText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#FFF',
+  },
+  imagePlaceholderSubText: {
+    fontSize: 10,
+    color: theme.colors.textSecondary,
+    marginTop: 2,
+  },
+  captureBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,107,0,0.1)',
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  captureBtnText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: theme.colors.primary,
   }
 });
