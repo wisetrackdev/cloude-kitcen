@@ -52,6 +52,7 @@ namespace CloudeKicten.Models
         public string? BankName { get; set; }
         public string? AccountNumber { get; set; }
         public string? IfscCode { get; set; }
+        public string? OwnerPhone { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 

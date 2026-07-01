@@ -9,7 +9,8 @@ import {
   Modal, 
   Alert 
 } from 'react-native';
-import { Plus, Trash2, ChefHat, Tag } from 'lucide-react-native';
+import { Plus, Trash2, ChefHat, Tag, Camera, Image as ImageIcon } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { theme } from '../../styles/theme';
 import { useKitchenStore } from '../../store/useKitchenStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -55,6 +56,46 @@ export default function SellerMenuScreen() {
   const [newDishVeg, setNewDishVeg] = useState(true);
   const [newDishCat, setNewDishCat] = useState('Tiffin Meals');
   const [customCategory, setCustomCategory] = useState('');
+
+  const pickFromCamera = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Camera permission is required');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setNewDishImage(result.assets[0].uri);
+      }
+    } catch (e) {
+      Alert.alert('Camera Error', 'Could not open camera');
+    }
+  };
+
+  const pickFromGallery = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Gallery access is required');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setNewDishImage(result.assets[0].uri);
+      }
+    } catch (e) {
+      Alert.alert('Gallery Error', 'Could not open gallery');
+    }
+  };
 
   const handleAddDish = async () => {
     if (!newDishName || !newDishPrice) {
@@ -181,8 +222,23 @@ export default function SellerMenuScreen() {
                 style={styles.inputField}
               />
 
+              <Text style={styles.sectionLabel}>Dish Photo Image</Text>
+              <View style={styles.imagePickerRow}>
+                {newDishImage ? <Image source={{ uri: newDishImage }} style={styles.pickerThumb} /> : <View style={styles.noThumb}><ImageIcon size={20} color="#666" /></View>}
+                <View style={styles.pickerButtons}>
+                  <TouchableOpacity style={styles.pickerActionBtn} onPress={pickFromCamera}>
+                    <Camera size={12} color="#FFF" style={{ marginRight: 4 }} />
+                    <Text style={styles.pickerActionText}>Camera</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.pickerActionBtn} onPress={pickFromGallery}>
+                    <ImageIcon size={12} color="#FFF" style={{ marginRight: 4 }} />
+                    <Text style={styles.pickerActionText}>Gallery</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
               <TextInput
-                placeholder="Dish Image URL (Optional)"
+                placeholder="Or paste custom Dish Image URL..."
                 placeholderTextColor="#888"
                 value={newDishImage}
                 onChangeText={setNewDishImage}
@@ -448,5 +504,45 @@ const styles = StyleSheet.create({
   cancelBtnText: {
     fontSize: 12,
     color: theme.colors.textSecondary,
+  },
+  imagePickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  pickerThumb: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    backgroundColor: '#222',
+    marginRight: 12,
+  },
+  noThumb: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    backgroundColor: '#222',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  pickerButtons: {
+    flexDirection: 'row',
+  },
+  pickerActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1E1E1E',
+    borderWidth: 1,
+    borderColor: '#333',
+    borderRadius: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    marginRight: 8,
+  },
+  pickerActionText: {
+    fontSize: 10,
+    color: '#FFF',
+    fontWeight: 'bold',
   }
 });

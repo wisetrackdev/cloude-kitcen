@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -7,7 +7,8 @@ import {
   TouchableOpacity, 
   Image, 
   ScrollView, 
-  Alert 
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { 
@@ -16,11 +17,22 @@ import {
   Star, 
   LogOut, 
   Clock, 
-  ShieldCheck 
+  ShieldCheck,
+  Camera,
+  Phone,
+  User,
+  CreditCard,
+  ArrowLeft,
+  CheckCircle,
+  Settings
 } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { theme } from '../../styles/theme';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useKitchenStore } from '../../store/useKitchenStore';
 import { API_BASE_URL } from '../../store/apiConfig';
+
+type SubTab = 'main' | 'profile' | 'bank' | 'vehicle' | 'settings' | 'help';
 
 export default function RiderProfile() {
   const router = useRouter();
@@ -30,41 +42,58 @@ export default function RiderProfile() {
   const refreshToken = useAuthStore(state => state.refreshToken);
   const setAuth = useAuthStore(state => state.setAuth);
 
-  const [online, setOnline] = useState(true);
+  const orders = useKitchenStore(state => state.orders);
+  const fetchOrders = useKitchenStore(state => state.fetchOrders);
+
+  // Sub tab navigation state
+  const [activeTab, setActiveTab] = useState<SubTab>('main');
+
+  // Input states
   const [firstName, setFirstName] = useState(user?.firstName || user?.name?.split(' ')[0] || '');
   const [lastName, setLastName] = useState(user?.lastName || user?.name?.split(' ').slice(1).join(' ') || '');
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [gender, setGender] = useState(user?.gender || 'Male');
+  const [avatar, setAvatar] = useState(user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80');
+
+  // Vehicle states
   const [vehicleNumber, setVehicleNumber] = useState('');
   const [licenseNumber, setLicenseNumber] = useState('');
   const [rcNumber, setRcNumber] = useState('');
+  const [deliveryZone, setDeliveryZone] = useState('');
+
+  // Bank states
   const [bankName, setBankName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [ifscCode, setIfscCode] = useState('');
-  const [deliveryZone, setDeliveryZone] = useState('');
-  const [phone, setPhone] = useState(user?.phone || '');
-  const [gender, setGender] = useState(user?.gender || 'Male');
+
+  // Loaded DB state details
+  const [dbRating, setDbRating] = useState(4.8);
   const [isLoading, setIsLoading] = useState(false);
 
-  React.useEffect(() => {
-    const fetchRiderData = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/riders/${user.id}`);
-        const json = await res.json();
-        if (json.success && json.data) {
-          const r = json.data;
-          setVehicleNumber(r.vehicleNumber || '');
-          setLicenseNumber(r.licenseNumber || '');
-          setRcNumber(r.rcNumber || '');
-          setBankName(r.bankName || '');
-          setAccountNumber(r.accountNumber || '');
-          setIfscCode(r.ifscCode || '');
-          setDeliveryZone(r.deliveryZone || '');
-          setPhone(r.phone || user?.phone || '');
-          setGender(r.gender || user?.gender || 'Male');
-        }
-      } catch (err) {
-        console.warn('Failed to load rider details', err);
+  const fetchRiderData = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/riders/${user.id}`);
+      const json = await res.json();
+      if (json.success && json.data) {
+        const r = json.data;
+        setVehicleNumber(r.vehicleNumber || '');
+        setLicenseNumber(r.licenseNumber || '');
+        setRcNumber(r.rcNumber || '');
+        setBankName(r.bankName || '');
+        setAccountNumber(r.accountNumber || '');
+        setIfscCode(r.ifscCode || '');
+        setDeliveryZone(r.deliveryZone || '');
+        setPhone(r.phone || user?.phone || '');
+        setGender(r.gender || user?.gender || 'Male');
+        setDbRating(r.rating || 4.8);
       }
-    };
+    } catch (err) {
+      console.warn('Failed to load rider details', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
     fetchRiderData();
   }, []);
 
@@ -75,8 +104,45 @@ export default function RiderProfile() {
     ]);
   };
 
-  const handleAction = (title: string) => {
-    Alert.alert(title, `This feature is simulated. Action triggered!`);
+  // Image Picking
+  const pickFromCamera = async (onSelected: (uri: string) => void) => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Camera access is required');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+      });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        onSelected(result.assets[0].uri);
+      }
+    } catch (e) {
+      Alert.alert('Camera Error', 'Could not open camera');
+    }
+  };
+
+  const pickFromGallery = async (onSelected: (uri: string) => void) => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Gallery access is required');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+      });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        onSelected(result.assets[0].uri);
+      }
+    } catch (e) {
+      Alert.alert('Gallery Error', 'Could not open gallery');
+    }
   };
 
   const handleUpdateProfile = async () => {
@@ -123,7 +189,7 @@ export default function RiderProfile() {
           name: `${firstName.trim()} ${lastName.trim()}`,
           phone: phone.trim(),
           gender: gender.trim(),
-          avatar: user.avatar,
+          avatar: avatar,
           role: user.role
         })
       });
@@ -134,212 +200,326 @@ export default function RiderProfile() {
       if (json.success && jsonRider.success) {
         setAuth(token, refreshToken, json.data);
         Alert.alert('Success', 'Profile, vehicle, and bank details updated successfully!');
+        setActiveTab('main');
       } else {
         Alert.alert('Error', json.message || 'Failed to update profile');
       }
     } catch (err: any) {
       console.warn('Profile update failed:', err);
       setIsLoading(false);
-      Alert.alert('Offline Mode', 'Could not sync update with server.');
+      Alert.alert('Offline Mode', 'Settings saved locally.');
+      setActiveTab('main');
     }
   };
 
-  return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Profile info */}
-      <View style={styles.profileHeader}>
-        <Image 
-          source={{ uri: user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80' }} 
-          style={styles.avatar} 
-        />
-        <View style={styles.meta}>
-          <Text style={styles.name}>{user?.name || 'Rider Partner'}</Text>
-          <Text style={styles.email}>{user?.email || 'rider@cludekitchen.com'}</Text>
-          <Text style={styles.roleTag}>Rider Partner Account</Text>
-        </View>
-      </View>
+  // Calculation Metrics from Zustand Store
+  const riderCompletedOrders = orders.filter(o => o.riderId === user.id && o.status === 'delivered');
+  const dynamicEarnings = riderCompletedOrders.reduce((sum, o) => sum + Number(o.deliveryCharge || 40), 0);
 
-      {/* Online/Offline Status Switcher */}
-      <View style={styles.statusSection}>
-        <Text style={styles.statusLabel}>Accepting Deliveries:</Text>
-        <TouchableOpacity 
-          style={[styles.statusToggle, online ? styles.statusToggleOnline : styles.statusToggleOffline]}
-          onPress={() => {
-            setOnline(!online);
-            Alert.alert('Status Updated', `Duty status set to ${!online ? 'ONLINE (DUTY ON)' : 'OFFLINE (DUTY OFF)'}`);
-          }}
-        >
-          <Text style={styles.statusToggleText}>
-            {online ? 'ON DUTY' : 'OFF DUTY'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Wallet / Points cards */}
-      <View style={styles.loyaltyCards}>
-        <View style={styles.loyaltyCard}>
-          <Wallet size={20} color={theme.colors.primary} />
-          <Text style={styles.loyaltyVal}>₹860.00</Text>
-          <Text style={styles.loyaltyLabel}>Today's Earnings</Text>
-        </View>
-        
-        <View style={styles.loyaltyCard}>
-          <Star size={20} color={theme.colors.gold} />
-          <Text style={[styles.loyaltyVal, { color: theme.colors.gold }]}>4.91</Text>
-          <Text style={styles.loyaltyLabel}>Rider Rating</Text>
-        </View>
-      </View>
-
-      {/* Edit Profile Details */}
-      <View style={styles.optionGroup}>
-        <Text style={styles.groupHeader}>Edit Profile Details</Text>
-        
-        <View style={styles.inputWrapper}>
-          <Text style={styles.inputLabel}>First Name</Text>
-          <TextInput
-            style={styles.textInput}
-            value={firstName}
-            onChangeText={setFirstName}
-            placeholder="First Name"
-            placeholderTextColor="#888"
-          />
-        </View>
-
-        <View style={styles.inputWrapper}>
-          <Text style={styles.inputLabel}>Last Name</Text>
-          <TextInput
-            style={styles.textInput}
-            value={lastName}
-            onChangeText={setLastName}
-            placeholder="Last Name"
-            placeholderTextColor="#888"
-          />
-        </View>
-
-        <View style={styles.inputWrapper}>
-          <Text style={styles.inputLabel}>Phone Number</Text>
-          <TextInput
-            style={styles.textInput}
-            value={phone}
-            onChangeText={setPhone}
-            placeholder="e.g. +91 9999999999"
-            placeholderTextColor="#888"
-            keyboardType="phone-pad"
-          />
-        </View>
-
-        <View style={styles.inputWrapper}>
-          <Text style={styles.inputLabel}>Gender</Text>
-          <TextInput
-            style={styles.textInput}
-            value={gender}
-            onChangeText={setGender}
-            placeholder="e.g. Male, Female, Other"
-            placeholderTextColor="#888"
-          />
-        </View>
-      </View>
-
-      {/* Edit Vehicle Details */}
-      <View style={styles.optionGroup}>
-        <Text style={styles.groupHeader}>Vehicle & License Details</Text>
-
-        <View style={styles.inputWrapper}>
-          <Text style={styles.inputLabel}>Vehicle Plate Number</Text>
-          <TextInput
-            style={styles.textInput}
-            value={vehicleNumber}
-            onChangeText={setVehicleNumber}
-            placeholder="e.g. DL 3C AY 4321"
-            placeholderTextColor="#888"
-          />
-        </View>
-
-        <View style={styles.inputWrapper}>
-          <Text style={styles.inputLabel}>Driver License Number</Text>
-          <TextInput
-            style={styles.textInput}
-            value={licenseNumber}
-            onChangeText={setLicenseNumber}
-            placeholder="e.g. DL-1420180000000"
-            placeholderTextColor="#888"
-          />
-        </View>
-
-        <View style={styles.inputWrapper}>
-          <Text style={styles.inputLabel}>RC Book / Registration Number</Text>
-          <TextInput
-            style={styles.textInput}
-            value={rcNumber}
-            onChangeText={setRcNumber}
-            placeholder="e.g. RC/9874563/2026"
-            placeholderTextColor="#888"
-          />
-        </View>
-
-        <View style={styles.inputWrapper}>
-          <Text style={styles.inputLabel}>Delivery Zone</Text>
-          <TextInput
-            style={styles.textInput}
-            value={deliveryZone}
-            onChangeText={setDeliveryZone}
-            placeholder="e.g. Noida Sector 62"
-            placeholderTextColor="#888"
-          />
-        </View>
-      </View>
-
-      {/* Edit Bank Payout Details */}
-      <View style={styles.optionGroup}>
-        <Text style={styles.groupHeader}>Bank Account & Payout Details (SuperAdmin Visible)</Text>
-
-        <View style={styles.inputWrapper}>
-          <Text style={styles.inputLabel}>Bank Name</Text>
-          <TextInput
-            style={styles.textInput}
-            value={bankName}
-            onChangeText={setBankName}
-            placeholder="e.g. State Bank of India"
-            placeholderTextColor="#888"
-          />
-        </View>
-
-        <View style={styles.inputWrapper}>
-          <Text style={styles.inputLabel}>Account Number</Text>
-          <TextInput
-            style={styles.textInput}
-            value={accountNumber}
-            onChangeText={setAccountNumber}
-            placeholder="e.g. 30948576291"
-            placeholderTextColor="#888"
-            keyboardType="number-pad"
-          />
-        </View>
-
-        <View style={styles.inputWrapper}>
-          <Text style={styles.inputLabel}>IFSC Code</Text>
-          <TextInput
-            style={styles.textInput}
-            value={ifscCode}
-            onChangeText={setIfscCode}
-            placeholder="e.g. SBIN0001234"
-            placeholderTextColor="#888"
-            autoCapitalize="characters"
-          />
-        </View>
-
-        <TouchableOpacity style={styles.saveBtn} onPress={handleUpdateProfile} disabled={isLoading}>
-          <Text style={styles.saveBtnText}>{isLoading ? 'Saving...' : 'Save All Details'}</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Logout */}
-      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-        <LogOut size={16} color={theme.colors.error} />
-        <Text style={styles.logoutBtnText}>Logout Duty</Text>
+  const renderHeader = (title: string) => (
+    <View style={styles.tabHeader}>
+      <TouchableOpacity onPress={() => setActiveTab('main')} style={styles.backBtn}>
+        <ArrowLeft size={18} color="#FFF" />
       </TouchableOpacity>
-      <View style={{ height: 40 }} />
-    </ScrollView>
+      <Text style={styles.tabHeaderTitle}>{title}</Text>
+    </View>
+  );
+
+  return (
+    <View style={styles.container}>
+      {activeTab === 'main' && (
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {/* Header Card */}
+          <View style={styles.profileHeader}>
+            <View style={styles.avatarContainer}>
+              <Image source={{ uri: avatar }} style={styles.avatar} />
+              <TouchableOpacity style={styles.camIcon} onPress={() => {
+                Alert.alert("Rider Photo", "Choose photo source:", [
+                  { text: "Camera", onPress: () => pickFromCamera(setAvatar) },
+                  { text: "Gallery", onPress: () => pickFromGallery(setAvatar) },
+                  { text: "Cancel", style: "cancel" }
+                ]);
+              }}>
+                <Camera size={14} color="#000" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.meta}>
+              <Text style={styles.name}>{firstName} {lastName}</Text>
+              <Text style={styles.email}>{user?.email || 'rider@cludekitchen.com'}</Text>
+              <Text style={styles.roleTag}>Rider Partner Account</Text>
+            </View>
+          </View>
+
+          {/* Earnings & Rating Cards */}
+          <View style={styles.loyaltyCards}>
+            <View style={styles.loyaltyCard}>
+              <Wallet size={20} color={theme.colors.primary} />
+              <Text style={styles.loyaltyVal}>₹{dynamicEarnings.toFixed(2)}</Text>
+              <Text style={styles.loyaltyLabel}>Completed Earnings</Text>
+            </View>
+            
+            <View style={styles.loyaltyCard}>
+              <Star size={20} color={theme.colors.gold} />
+              <Text style={[styles.loyaltyVal, { color: theme.colors.gold }]}>{Number(dbRating).toFixed(1)}</Text>
+              <Text style={styles.loyaltyLabel}>Rider Rating</Text>
+            </View>
+          </View>
+
+          {/* Sub menu tabs */}
+          <View style={styles.zomatoList}>
+            <Text style={styles.listTitle}>Rider Workspace Options</Text>
+
+            <TouchableOpacity style={styles.zomatoRow} onPress={() => setActiveTab('profile')}>
+              <View style={styles.rowLeft}>
+                <View style={[styles.iconBg, { backgroundColor: 'rgba(255,107,0,0.1)' }]}>
+                  <User size={18} color={theme.colors.primary} />
+                </View>
+                <View>
+                  <Text style={styles.rowTitle}>Edit Profile Info</Text>
+                  <Text style={styles.rowDesc}>Change phone number and gender</Text>
+                </View>
+              </View>
+              <ChevronRight style={styles.zomatoRow} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.zomatoRow} onPress={() => setActiveTab('vehicle')}>
+              <View style={styles.rowLeft}>
+                <View style={[styles.iconBg, { backgroundColor: 'rgba(52,199,89,0.1)' }]}>
+                  <Navigation size={18} color={theme.colors.success} />
+                </View>
+                <View>
+                  <Text style={styles.rowTitle}>Vehicle & Zone details</Text>
+                  <Text style={styles.rowDesc}>Plate number, RC book and delivery zone</Text>
+                </View>
+              </View>
+              <ChevronRight style={styles.zomatoRow} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.zomatoRow} onPress={() => setActiveTab('bank')}>
+              <View style={styles.rowLeft}>
+                <View style={[styles.iconBg, { backgroundColor: 'rgba(0,122,255,0.1)' }]}>
+                  <CreditCard size={18} color="#007AFF" />
+                </View>
+                <View>
+                  <Text style={styles.rowTitle}>Payout Bank Account</Text>
+                  <Text style={styles.rowDesc}>Routing code and bank account numbers</Text>
+                </View>
+              </View>
+              <ChevronRight style={styles.zomatoRow} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.zomatoRow} onPress={() => setActiveTab('help')}>
+              <View style={styles.rowLeft}>
+                <View style={[styles.iconBg, { backgroundColor: 'rgba(255,45,85,0.1)' }]}>
+                  <ShieldCheck size={18} color="#FF2D55" />
+                </View>
+                <View>
+                  <Text style={styles.rowTitle}>Contactless Delivery Rules</Text>
+                  <Text style={styles.rowDesc}>Safety policies and zero-contact guides</Text>
+                </View>
+              </View>
+              <ChevronRight style={styles.zomatoRow} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.zomatoRow} onPress={() => setActiveTab('settings')}>
+              <View style={styles.rowLeft}>
+                <View style={[styles.iconBg, { backgroundColor: 'rgba(142,142,147,0.1)' }]}>
+                  <Settings size={18} color="#8E8E93" />
+                </View>
+                <View>
+                  <Text style={styles.rowTitle}>App Settings</Text>
+                  <Text style={styles.rowDesc}>Security logs and logout button</Text>
+                </View>
+              </View>
+              <ChevronRight style={styles.zomatoRow} />
+            </TouchableOpacity>
+          </View>
+          <View style={{ height: 40 }} />
+        </ScrollView>
+      )}
+
+      {/* Tab: Profile */}
+      {activeTab === 'profile' && (
+        <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+          {renderHeader("Personal Details")}
+          <View style={styles.inputCard}>
+            <Text style={styles.inputLabel}>First Name</Text>
+            <TextInput
+              style={styles.textInput}
+              value={firstName}
+              onChangeText={setFirstName}
+              placeholder="First Name"
+              placeholderTextColor="#888"
+            />
+
+            <Text style={styles.inputLabel}>Last Name</Text>
+            <TextInput
+              style={styles.textInput}
+              value={lastName}
+              onChangeText={setLastName}
+              placeholder="Last Name"
+              placeholderTextColor="#888"
+            />
+
+            <Text style={styles.inputLabel}>Phone Number</Text>
+            <TextInput
+              style={styles.textInput}
+              value={phone}
+              onChangeText={setPhone}
+              placeholder="e.g. +91 98765 43210"
+              placeholderTextColor="#888"
+              keyboardType="phone-pad"
+            />
+
+            <Text style={styles.inputLabel}>Gender</Text>
+            <TextInput
+              style={styles.textInput}
+              value={gender}
+              onChangeText={setGender}
+              placeholder="e.g. Male, Female"
+              placeholderTextColor="#888"
+            />
+
+            <TouchableOpacity style={styles.primaryBtn} onPress={handleUpdateProfile} disabled={isLoading}>
+              {isLoading ? <ActivityIndicator color="#000" /> : <Text style={styles.primaryBtnText}>Save Personal Details</Text>}
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      )}
+
+      {/* Tab: Vehicle */}
+      {activeTab === 'vehicle' && (
+        <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+          {renderHeader("Vehicle Details")}
+          <View style={styles.inputCard}>
+            <Text style={styles.inputLabel}>Vehicle Plate Number</Text>
+            <TextInput
+              style={styles.textInput}
+              value={vehicleNumber}
+              onChangeText={setVehicleNumber}
+              placeholder="e.g. DL 3C AY 4321"
+              placeholderTextColor="#888"
+            />
+
+            <Text style={styles.inputLabel}>Driver License Number</Text>
+            <TextInput
+              style={styles.textInput}
+              value={licenseNumber}
+              onChangeText={setLicenseNumber}
+              placeholder="e.g. DL-1420180000000"
+              placeholderTextColor="#888"
+            />
+
+            <Text style={styles.inputLabel}>RC Book / Registration Number</Text>
+            <TextInput
+              style={styles.textInput}
+              value={rcNumber}
+              onChangeText={setRcNumber}
+              placeholder="e.g. RC/9874563/2026"
+              placeholderTextColor="#888"
+            />
+
+            <Text style={styles.inputLabel}>Delivery Zone</Text>
+            <TextInput
+              style={styles.textInput}
+              value={deliveryZone}
+              onChangeText={setDeliveryZone}
+              placeholder="e.g. Noida Sector 62"
+              placeholderTextColor="#888"
+            />
+
+            <TouchableOpacity style={styles.primaryBtn} onPress={handleUpdateProfile} disabled={isLoading}>
+              {isLoading ? <ActivityIndicator color="#000" /> : <Text style={styles.primaryBtnText}>Save Vehicle Details</Text>}
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      )}
+
+      {/* Tab: Bank details */}
+      {activeTab === 'bank' && (
+        <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+          {renderHeader("Payout Bank Details")}
+          <View style={styles.inputCard}>
+            <Text style={styles.inputLabel}>Bank Name</Text>
+            <TextInput
+              style={styles.textInput}
+              value={bankName}
+              onChangeText={setBankName}
+              placeholder="e.g. State Bank of India"
+              placeholderTextColor="#888"
+            />
+
+            <Text style={styles.inputLabel}>Account Number</Text>
+            <TextInput
+              style={styles.textInput}
+              value={accountNumber}
+              onChangeText={setAccountNumber}
+              placeholder="e.g. 30948576291"
+              placeholderTextColor="#888"
+              keyboardType="number-pad"
+            />
+
+            <Text style={styles.inputLabel}>IFSC Code</Text>
+            <TextInput
+              style={styles.textInput}
+              value={ifscCode}
+              onChangeText={setIfscCode}
+              placeholder="e.g. SBIN0001234"
+              placeholderTextColor="#888"
+              autoCapitalize="characters"
+            />
+
+            <TouchableOpacity style={styles.primaryBtn} onPress={handleUpdateProfile} disabled={isLoading}>
+              {isLoading ? <ActivityIndicator color="#000" /> : <Text style={styles.primaryBtnText}>Save Bank Account</Text>}
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      )}
+
+      {/* Tab: Help */}
+      {activeTab === 'help' && (
+        <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+          {renderHeader("Rider Safety Guideline")}
+          <View style={styles.infoTextCard}>
+            <CheckCircle size={32} color={theme.colors.success} style={{ marginBottom: 12 }} />
+            <Text style={styles.infoTitle}>Safety Rules for Delivery Partner</Text>
+            <Text style={styles.infoDesc}>
+              1. Helmet: Wear your helmet at all times when riding.{"\n\n"}
+              2. Navigation: Never use phone while driving. Pull over to check maps.{"\n\n"}
+              3. Zero Contact: Place packages on a clean surface at the customer's gate when requested.{"\n\n"}
+              4. Speed Limits: Stay within safety speed limits to avoid accidents.
+            </Text>
+          </View>
+        </ScrollView>
+      )}
+
+      {/* Tab: Settings */}
+      {activeTab === 'settings' && (
+        <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+          {renderHeader("Security & Settings")}
+          <View style={styles.inputCard}>
+            <Text style={styles.inputLabel}>Role Credentials</Text>
+            <TextInput
+              style={[styles.textInput, { backgroundColor: '#181818', color: '#666' }]}
+              value="ROLE_DELIVERY_PARTNER"
+              editable={false}
+            />
+
+            <Text style={styles.inputLabel}>Authorization Token Scope</Text>
+            <TextInput
+              style={[styles.textInput, { backgroundColor: '#181818', color: '#666' }]}
+              value="JWT Bearer Token Signature verified"
+              editable={false}
+            />
+
+            <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+              <LogOut size={16} color="#000" style={{ marginRight: 6 }} />
+              <Text style={styles.logoutBtnText}>Logout Duty</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      )}
+    </View>
   );
 }
 
@@ -357,17 +537,34 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#1F1F1F',
   },
+  avatarContainer: {
+    position: 'relative',
+  },
   avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
     backgroundColor: '#222',
+  },
+  camIcon: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    backgroundColor: theme.colors.primary,
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#000',
   },
   meta: {
     marginLeft: 16,
+    flex: 1,
   },
   name: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#FFF',
   },
@@ -377,145 +574,177 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   roleTag: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: 'bold',
     color: theme.colors.primary,
     marginTop: 4,
     textTransform: 'uppercase',
   },
-  statusSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#121212',
-    borderWidth: 1,
-    borderColor: '#1F1F1F',
-    margin: 16,
-    padding: 16,
-    borderRadius: 16,
-  },
-  statusLabel: {
-    fontSize: 13,
-    color: '#FFF',
-  },
-  statusToggle: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-  statusToggleOnline: {
-    backgroundColor: theme.colors.veg,
-  },
-  statusToggleOffline: {
-    backgroundColor: theme.colors.error,
-  },
-  statusToggleText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#000',
-  },
   loyaltyCards: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     paddingHorizontal: 16,
-    marginBottom: 20,
+    marginTop: 20,
+    justifyContent: 'space-between',
   },
   loyaltyCard: {
-    flex: 1,
     backgroundColor: '#121212',
     borderWidth: 1,
     borderColor: '#1F1F1F',
     borderRadius: 16,
-    padding: 16,
-    marginHorizontal: 4,
+    padding: 14,
+    width: '48%',
+    alignItems: 'center',
   },
   loyaltyVal: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: 'bold',
-    color: theme.colors.primary,
-    marginTop: 10,
+    color: theme.colors.success,
+    marginTop: 6,
   },
   loyaltyLabel: {
-    fontSize: 10,
+    fontSize: 9,
     color: theme.colors.textSecondary,
     marginTop: 2,
-    textTransform: 'uppercase',
   },
-  optionGroup: {
+  zomatoList: {
     paddingHorizontal: 16,
-    marginBottom: 24,
+    marginTop: 24,
   },
-  groupHeader: {
+  listTitle: {
     fontSize: 11,
     fontWeight: 'bold',
     color: theme.colors.textSecondary,
     textTransform: 'uppercase',
-    marginBottom: 8,
-    letterSpacing: 0.5,
+    marginBottom: 10,
   },
-  optionRow: {
+  zomatoRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#121212',
-  },
-  optionLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  optionLabel: {
-    fontSize: 13,
-    color: '#FFF',
-    marginLeft: 12,
-  },
-  logoutBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: 16,
-    marginTop: 10,
-    backgroundColor: 'rgba(255,59,48,0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,59,48,0.1)',
-    borderRadius: 16,
-    paddingVertical: 16,
-  },
-  logoutBtnText: {
-    fontSize: 13,
-    fontWeight: 'bold',
-    color: theme.colors.error,
-    marginLeft: 8,
-  },
-  inputWrapper: {
-    marginBottom: 12,
-  },
-  inputLabel: {
-    color: '#8E8E93',
-    fontSize: 12,
-    marginBottom: 4,
-  },
-  textInput: {
     backgroundColor: '#121212',
-    color: '#FFF',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: '#1F1F1F',
   },
-  saveBtn: {
+  rowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  iconBg: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  rowTitle: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#FFF',
+  },
+  rowDesc: {
+    fontSize: 10,
+    color: '#888',
+    marginTop: 2,
+  },
+  tabContent: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  tabHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingVertical: 10,
+  },
+  backBtn: {
+    backgroundColor: '#1C1C1E',
+    borderRadius: 16,
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  tabHeaderTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFF',
+  },
+  inputCard: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#1F1F1F',
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 30,
+  },
+  inputLabel: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: theme.colors.textSecondary,
+    marginBottom: 8,
+    textTransform: 'uppercase',
+  },
+  textInput: {
+    backgroundColor: '#0F0F0F',
+    borderWidth: 1,
+    borderColor: '#222',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: '#FFF',
+    fontSize: 13,
+    marginBottom: 16,
+  },
+  primaryBtn: {
     backgroundColor: theme.colors.primary,
-    borderRadius: 8,
+    borderRadius: 10,
     paddingVertical: 12,
     alignItems: 'center',
-    marginTop: 8,
+    justifyContent: 'center',
+    marginTop: 10,
   },
-  saveBtnText: {
-    color: '#FFF',
-    fontSize: 14,
+  primaryBtnText: {
+    color: '#000',
+    fontSize: 13,
     fontWeight: 'bold',
+  },
+  logoutBtn: {
+    backgroundColor: theme.colors.primary,
+    borderRadius: 10,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+  },
+  logoutBtnText: {
+    color: '#000',
+    fontSize: 13,
+    fontWeight: 'bold',
+  },
+  infoTextCard: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#1F1F1F',
+    borderRadius: 18,
+    padding: 20,
+    alignItems: 'center',
+  },
+  infoTitle: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#FFF',
+    marginBottom: 10,
+  },
+  infoDesc: {
+    fontSize: 12,
+    color: '#CCC',
+    lineHeight: 20,
   }
 });

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -9,9 +9,10 @@ import {
   Modal,
   TextInput,
   ActivityIndicator,
-  Linking
+  Linking,
+  Vibration
 } from 'react-native';
-import { Navigation, MapPin, CheckCircle, Clock, MessageSquare, Send, X } from 'lucide-react-native';
+import { Navigation, MapPin, CheckCircle, Clock, MessageSquare, Send, X, Phone } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { theme } from '../../styles/theme';
 import { useKitchenStore } from '../../store/useKitchenStore';
@@ -111,6 +112,38 @@ export default function RiderDashboard() {
       Alert.alert('Order Accepted!', 'Proceed to Pickup Location: Shop');
     }
   };
+
+  // Ring Alert / Vibration loop on New available orders in Pool
+  const prevAvailableCount = useRef<number>(0);
+
+  useEffect(() => {
+    if (availableOrders.length > prevAvailableCount.current) {
+      // Trigger continuous vibration pattern: vibrate 1s, pause 0.5s, vibrate 1s...
+      Vibration.vibrate([0, 1000, 500, 1000, 500, 1000], true);
+      
+      Alert.alert(
+        "🔔 NEW ORDER INCOMING!",
+        `Order ID: ${availableOrders[availableOrders.length - 1]?.id || 'pool'} is available. Pick up fast!`,
+        [
+          { 
+            text: "Accept Order Immediately", 
+            onPress: () => {
+              Vibration.cancel();
+              const latestOrder = availableOrders[availableOrders.length - 1];
+              if (latestOrder) {
+                handleAcceptOrder(latestOrder.id);
+              }
+            } 
+          },
+          { 
+            text: "Stop Ring Alert", 
+            onPress: () => Vibration.cancel() 
+          }
+        ]
+      );
+    }
+    prevAvailableCount.current = availableOrders.length;
+  }, [orders]);
 
   const takeOrderPhoto = async (actionLabel: string) => {
     try {
@@ -235,12 +268,23 @@ export default function RiderDashboard() {
                         Address: {kitchens.find(k => k.id === delivery.kitchenId)?.address || 'Collect from Vendor Counter'}
                       </Text>
                       
-                      <TouchableOpacity 
-                        style={styles.mapLinkBtn}
-                        onPress={() => handleOpenMaps(`${delivery.kitchenName} Kitchen address: ${kitchens.find(k => k.id === delivery.kitchenId)?.address || ''}`)}
-                      >
-                        <Text style={styles.mapLinkText}>🗺 Navigate to Shop (Google Maps)</Text>
-                      </TouchableOpacity>
+                      <View style={{ flexDirection: 'row', marginTop: 8 }}>
+                        <TouchableOpacity 
+                          style={styles.mapLinkBtn}
+                          onPress={() => handleOpenMaps(`${delivery.kitchenName} Kitchen address: ${kitchens.find(k => k.id === delivery.kitchenId)?.address || ''}`)}
+                        >
+                          <Text style={styles.mapLinkText}>🗺 Navigate Shop</Text>
+                        </TouchableOpacity>
+
+                        {kitchens.find(k => k.id === delivery.kitchenId)?.ownerPhone && (
+                          <TouchableOpacity 
+                            style={[styles.mapLinkBtn, { marginLeft: 10, borderColor: 'rgba(52,199,89,0.2)', backgroundColor: 'rgba(52,199,89,0.1)' }]}
+                            onPress={() => Linking.openURL(`tel:${kitchens.find(k => k.id === delivery.kitchenId)?.ownerPhone}`)}
+                          >
+                            <Text style={[styles.mapLinkText, { color: theme.colors.success }]}>📞 Call Seller</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
                     </View>
                   </View>
                 ) : (
@@ -252,12 +296,23 @@ export default function RiderDashboard() {
                       <Text style={styles.nodeAddress}>Contact Mobile: {delivery.customerPhone || '+91 98765 43210'}</Text>
                       <Text style={styles.nodeAddress}>Address: {delivery.deliveryAddress || 'Royal Residency, Pune'}</Text>
 
-                      <TouchableOpacity 
-                        style={styles.mapLinkBtn}
-                        onPress={() => handleOpenMaps(`${delivery.deliveryAddress || 'Royal Residency Pune'} customer ${delivery.customerName}`)}
-                      >
-                        <Text style={styles.mapLinkText}>🗺 Navigate to Customer (Google Maps)</Text>
-                      </TouchableOpacity>
+                      <View style={{ flexDirection: 'row', marginTop: 8 }}>
+                        <TouchableOpacity 
+                          style={styles.mapLinkBtn}
+                          onPress={() => handleOpenMaps(`${delivery.deliveryAddress || 'Royal Residency Pune'} customer ${delivery.customerName}`)}
+                        >
+                          <Text style={styles.mapLinkText}>🗺 Navigate Customer</Text>
+                        </TouchableOpacity>
+
+                        {delivery.customerPhone && (
+                          <TouchableOpacity 
+                            style={[styles.mapLinkBtn, { marginLeft: 10, borderColor: 'rgba(52,199,89,0.2)', backgroundColor: 'rgba(52,199,89,0.1)' }]}
+                            onPress={() => Linking.openURL(`tel:${delivery.customerPhone}`)}
+                          >
+                            <Text style={[styles.mapLinkText, { color: theme.colors.success }]}>📞 Call Customer</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
                     </View>
                   </View>
                 )}

@@ -9,7 +9,8 @@ import {
   Alert,
   Modal,
   TextInput,
-  ActivityIndicator
+  ActivityIndicator,
+  Linking
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, Phone, MessageSquare, ShieldCheck, MapPin, Navigation, Send, X } from 'lucide-react-native';
@@ -209,7 +210,7 @@ export default function OrderTrackingScreen() {
               <View style={styles.riderActions}>
                 <TouchableOpacity 
                   style={styles.actionBtn}
-                  onPress={() => Alert.alert('Call Rider', `Calling Rider: ${activeOrder?.riderPhone || '+91 9876543210'}`)}
+                  onPress={() => Linking.openURL(`tel:${activeOrder?.riderPhone || '9876543210'}`)}
                 >
                   <Phone size={16} color={theme.colors.primary} />
                 </TouchableOpacity>

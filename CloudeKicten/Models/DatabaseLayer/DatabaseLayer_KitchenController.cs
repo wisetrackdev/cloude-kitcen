@@ -182,6 +182,7 @@ namespace CloudeKicten.Models.DatabaseLayer
                 BankName = r.IsDBNull(r.GetOrdinal("bank_name")) ? null : r.GetString(r.GetOrdinal("bank_name")),
                 AccountNumber = r.IsDBNull(r.GetOrdinal("account_number")) ? null : r.GetString(r.GetOrdinal("account_number")),
                 IfscCode = r.IsDBNull(r.GetOrdinal("ifsc_code")) ? null : r.GetString(r.GetOrdinal("ifsc_code")),
+                OwnerPhone = r.IsDBNull(r.GetOrdinal("owner_phone")) ? null : r.GetString(r.GetOrdinal("owner_phone")),
                 CreatedAt = r.GetDateTime(r.GetOrdinal("created_at"))
             };
         }

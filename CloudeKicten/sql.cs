@@ -563,7 +563,8 @@ namespace CloudeKicten
 
         public const string GetAllKitchens = @"
             SELECT s.id, s.vendor_id, s.name, s.type, s.cuisines, s.rating, s.rating_count, s.prep_time, s.distance, s.offer, s.image_url, s.is_live, s.revenue, s.orders_count, s.logo_url, s.address, s.floor, s.office_gali_number, s.latitude, s.longitude, s.is_approved, s.bank_account, s.cover_image_url, s.bank_name, s.account_number, s.ifsc_code, s.created_at,
-                   COALESCE(CONCAT(u.first_name, ' ', u.last_name), 'Housewife Partner') AS owner_name
+                   COALESCE(CONCAT(u.first_name, ' ', u.last_name), 'Housewife Partner') AS owner_name,
+                   u.phone_number AS owner_phone
             FROM shops s
             LEFT JOIN user_register u ON s.vendor_id = u.id
             ORDER BY s.name ASC;
@@ -571,7 +572,8 @@ namespace CloudeKicten
 
         public const string GetKitchenById = @"
             SELECT s.id, s.vendor_id, s.name, s.type, s.cuisines, s.rating, s.rating_count, s.prep_time, s.distance, s.offer, s.image_url, s.is_live, s.revenue, s.orders_count, s.logo_url, s.address, s.floor, s.office_gali_number, s.latitude, s.longitude, s.is_approved, s.bank_account, s.cover_image_url, s.bank_name, s.account_number, s.ifsc_code, s.created_at,
-                   COALESCE(CONCAT(u.first_name, ' ', u.last_name), 'Housewife Partner') AS owner_name
+                   COALESCE(CONCAT(u.first_name, ' ', u.last_name), 'Housewife Partner') AS owner_name,
+                   u.phone_number AS owner_phone
             FROM shops s
             LEFT JOIN user_register u ON s.vendor_id = u.id
             WHERE s.id = @Id;
