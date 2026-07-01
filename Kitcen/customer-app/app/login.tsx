@@ -9,7 +9,8 @@ import {
   ActivityIndicator 
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Mail, Lock, Key } from 'lucide-react-native';
+import { ArrowLeft, Mail, Lock, Key, Camera, User } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { theme } from '../styles/theme';
 import { useAuthStore } from '../store/useAuthStore';
 import { API_BASE_URL } from '../store/apiConfig';
@@ -24,6 +25,15 @@ export default function LoginScreen() {
   const [otpCode, setOtpCode] = useState('');
   const [isOtpFlow, setIsOtpFlow] = useState(true); // Default to OTP verification as requested
   const [isLoading, setIsLoading] = useState(false);
+
+  // Profile completion states (Zomato-style onboarding)
+  const [showCompleteProfile, setShowCompleteProfile] = useState(false);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [avatar, setAvatar] = useState('');
+  const [tempToken, setTempToken] = useState('');
+  const [tempRefreshToken, setTempRefreshToken] = useState('');
+  const [tempUser, setTempUser] = useState<any>(null);
 
   // Email OTP - Requesting OTP code
   const handleRequestOtp = async () => {
@@ -59,6 +69,85 @@ export default function LoginScreen() {
     }
   };
 
+  // Capture Profile Image via Camera
+  const captureProfileImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Camera permissions are required to take a profile picture.');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setAvatar(result.assets[0].uri);
+      }
+    } catch (err) {
+      console.warn('Camera failed:', err);
+      Alert.alert('Camera Error', 'Could not open camera.');
+    }
+  };
+
+  // Complete Profile
+  const handleCompleteProfile = async () => {
+    if (!firstName.trim() || !lastName.trim()) {
+      Alert.alert('Error', 'First Name and Last Name are required');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/complete-profile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: tempUser.id,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          avatar: avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'
+        })
+      });
+
+      const json = await res.json();
+      setIsLoading(false);
+
+      if (json.success) {
+        const updatedUser = json.data;
+        setAuth(tempToken, tempRefreshToken, {
+          id: updatedUser.id,
+          name: updatedUser.name,
+          email: updatedUser.email,
+          phone: updatedUser.phone || '',
+          avatar: updatedUser.avatar || '',
+          role: updatedUser.role,
+          rewardPoints: updatedUser.rewardPoints
+        });
+        Alert.alert('Welcome', 'Profile completed successfully!', [{ text: 'OK', onPress: () => router.replace('/') }]);
+      } else {
+        Alert.alert('Error', json.message || 'Failed to complete profile');
+      }
+    } catch (err: any) {
+      console.warn('Profile completion API failed, doing mock fallback:', err.message);
+      setIsLoading(false);
+      
+      // Fallback
+      setAuth(tempToken, tempRefreshToken, {
+        id: tempUser.id,
+        name: `${firstName.trim()} ${lastName.trim()}`,
+        email: email,
+        avatar: avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+        role: tempUser.role,
+        rewardPoints: 10
+      });
+      Alert.alert('Welcome (Offline)', 'Profile Setup Completed offline!', [{ text: 'OK', onPress: () => router.replace('/') }]);
+    }
+  };
+
   // Email OTP - Verifying OTP code
   const handleVerifyOtp = async () => {
     if (!otpCode || otpCode.length < 4) {
@@ -78,17 +167,24 @@ export default function LoginScreen() {
       setIsLoading(false);
 
       if (json.success) {
-        const { token, refreshToken, user } = json.data;
-        setAuth(token, refreshToken, {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone || '',
-          avatar: user.avatar || '',
-          role: user.role,
-          rewardPoints: user.rewardPoints
-        });
-        Alert.alert('Welcome', 'Login successful!', [{ text: 'OK', onPress: () => router.replace('/') }]);
+        const { token, refreshToken, user, isNewUser } = json.data;
+        if (isNewUser) {
+          setTempToken(token);
+          setTempRefreshToken(refreshToken);
+          setTempUser(user);
+          setShowCompleteProfile(true);
+        } else {
+          setAuth(token, refreshToken, {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            phone: user.phone || '',
+            avatar: user.avatar || '',
+            role: user.role,
+            rewardPoints: user.rewardPoints
+          });
+          Alert.alert('Welcome', 'Login successful!', [{ text: 'OK', onPress: () => router.replace('/') }]);
+        }
       } else {
         Alert.alert('Error', json.message || 'Verification failed');
       }
@@ -99,17 +195,33 @@ export default function LoginScreen() {
       // Offline fallback
       if (otpCode === '123456' || otpCode === '782910') {
         const parts = email.split('@')[0].split('.');
-        const firstName = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
-        const lastName = parts.length > 1 ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1) : 'User';
+        const mockFirstName = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+        const mockLastName = parts.length > 1 ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1) : 'User';
+        const isMockNew = email.includes('new') || email.includes('test');
 
-        setAuth('mock_token', 'mock_refresh', {
+        const mockUser = {
           id: 'usr-9281',
-          name: `${firstName} ${lastName}`,
+          name: '',
           email: email,
           role: 'customer',
           rewardPoints: 10
-        });
-        Alert.alert('Welcome (Offline)', 'Offline Login Successful!', [{ text: 'OK', onPress: () => router.replace('/') }]);
+        };
+
+        if (isMockNew) {
+          setTempToken('mock_token');
+          setTempRefreshToken('mock_refresh');
+          setTempUser(mockUser);
+          setShowCompleteProfile(true);
+        } else {
+          setAuth('mock_token', 'mock_refresh', {
+            id: 'usr-9281',
+            name: `${mockFirstName} ${mockLastName}`,
+            email: email,
+            role: 'customer',
+            rewardPoints: 10
+          });
+          Alert.alert('Welcome (Offline)', 'Offline Login Successful!', [{ text: 'OK', onPress: () => router.replace('/') }]);
+        }
       } else {
         Alert.alert('Error', 'Invalid OTP code. Try "123456"');
       }
@@ -183,6 +295,75 @@ export default function LoginScreen() {
                 <TouchableOpacity style={styles.primaryBtn} onPress={handleRequestOtp}>
                   <Text style={styles.primaryBtnText}>Send OTP via Email</Text>
                 </TouchableOpacity>
+              </>
+            ) : showCompleteProfile ? (
+              <>
+                <View style={styles.inputWrapper}>
+                  <Key size={16} color={theme.colors.textSecondary} />
+                  <TextInput
+                    placeholder="Enter 6-digit OTP code"
+                    placeholderTextColor="#888"
+                    keyboardType="numeric"
+                    value={otpCode}
+                    editable={false}
+                    style={[styles.input, { opacity: 0.6 }]}
+                  />
+                </View>
+
+                {/* Profile Completion Form (Expands below OTP input) */}
+                <View style={{ width: '100%', marginTop: 10 }}>
+                  <Text style={{ color: theme.colors.primary, fontWeight: 'bold', fontSize: 16, marginBottom: 12 }}>
+                    Complete Profile
+                  </Text>
+                  
+                  <View style={styles.inputWrapper}>
+                    <User size={16} color={theme.colors.textSecondary} />
+                    <TextInput
+                      placeholder="First Name"
+                      placeholderTextColor="#888"
+                      value={firstName}
+                      onChangeText={setFirstName}
+                      style={styles.input}
+                    />
+                  </View>
+
+                  <View style={styles.inputWrapper}>
+                    <User size={16} color={theme.colors.textSecondary} />
+                    <TextInput
+                      placeholder="Last Name"
+                      placeholderTextColor="#888"
+                      value={lastName}
+                      onChangeText={setLastName}
+                      style={styles.input}
+                    />
+                  </View>
+
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginVertical: 10, paddingHorizontal: 4 }}>
+                    {avatar ? (
+                      <Text style={{ color: '#2ecc71', fontSize: 13, fontWeight: 'bold' }}>✓ Photo Captured</Text>
+                    ) : (
+                      <Text style={{ color: '#888', fontSize: 13 }}>No photo captured</Text>
+                    )}
+                    <TouchableOpacity 
+                      style={{ 
+                        flexDirection: 'row', 
+                        alignItems: 'center', 
+                        backgroundColor: '#2c2c2c', 
+                        paddingHorizontal: 12, 
+                        paddingVertical: 8, 
+                        borderRadius: 6 
+                      }} 
+                      onPress={captureProfileImage}
+                    >
+                      <Camera size={14} color="#FFF" style={{ marginRight: 6 }} />
+                      <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold' }}>Click Photo</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <TouchableOpacity style={[styles.primaryBtn, { marginTop: 10 }]} onPress={handleCompleteProfile}>
+                    <Text style={styles.primaryBtnText}>Complete Profile</Text>
+                  </TouchableOpacity>
+                </View>
               </>
             ) : (
               <>

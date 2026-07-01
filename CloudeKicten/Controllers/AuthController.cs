@@ -59,5 +59,16 @@ namespace CloudeKicten.Controllers
             }
             return Ok(result);
         }
+
+        [HttpPost("complete-profile")]
+        public async Task<IActionResult> CompleteProfile([FromBody] CompleteProfileDto dto)
+        {
+            var result = await _businessLayer.CompleteProfileAsync(dto);
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
+            return Ok(result);
+        }
     }
 }

@@ -45,6 +45,7 @@ namespace CloudeKicten.Models.DatabaseLayer
                     IsActive = reader.GetBoolean(reader.GetOrdinal("is_active")),
                     CurrentLatitude = reader.IsDBNull(reader.GetOrdinal("current_latitude")) ? null : reader.GetDecimal(reader.GetOrdinal("current_latitude")),
                     CurrentLongitude = reader.IsDBNull(reader.GetOrdinal("current_longitude")) ? null : reader.GetDecimal(reader.GetOrdinal("current_longitude")),
+                    DeliveryZone = reader.IsDBNull(reader.GetOrdinal("delivery_zone")) ? null : reader.GetString(reader.GetOrdinal("delivery_zone")),
                     CreatedAt = reader.GetDateTime(reader.GetOrdinal("created_at"))
                 };
             }
@@ -60,6 +61,7 @@ namespace CloudeKicten.Models.DatabaseLayer
             cmd.Parameters.AddWithValue("@VehicleNumber", r.VehicleNumber);
             cmd.Parameters.AddWithValue("@LicenseNumber", r.LicenseNumber);
             cmd.Parameters.AddWithValue("@IsActive", r.IsActive);
+            cmd.Parameters.AddWithValue("@DeliveryZone", (object?)r.DeliveryZone ?? DBNull.Value);
 
             var result = await cmd.ExecuteNonQueryAsync();
             return result > 0;

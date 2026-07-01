@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   StyleSheet, 
   Text, 
   View, 
+  TextInput,
   TouchableOpacity, 
   Image, 
   ScrollView, 
@@ -21,11 +22,60 @@ import {
 } from 'lucide-react-native';
 import { theme } from '../../styles/theme';
 import { useAuthStore } from '../../store/useAuthStore';
+import { API_BASE_URL } from '../../store/apiConfig';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const user = useAuthStore(state => state.user);
   const logout = useAuthStore(state => state.logout);
+  const token = useAuthStore(state => state.token);
+  const refreshToken = useAuthStore(state => state.refreshToken);
+  const setAuth = useAuthStore(state => state.setAuth);
+
+  const [firstName, setFirstName] = useState(user?.firstName || user?.name?.split(' ')[0] || '');
+  const [lastName, setLastName] = useState(user?.lastName || user?.name?.split(' ').slice(1).join(' ') || '');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleUpdateProfile = async () => {
+    if (!firstName.trim() || !lastName.trim()) {
+      Alert.alert('Error', 'First Name and Last Name are required');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/profile/${user.id}`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          id: user.id,
+          email: user.email,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          name: `${firstName.trim()} ${lastName.trim()}`,
+          avatar: user.avatar,
+          role: user.role
+        })
+      });
+
+      const json = await res.json();
+      setIsLoading(false);
+
+      if (json.success) {
+        setAuth(token, refreshToken, json.data);
+        Alert.alert('Success', 'Profile updated successfully!');
+      } else {
+        Alert.alert('Error', json.message || 'Failed to update profile');
+      }
+    } catch (err: any) {
+      console.warn('Profile update failed:', err);
+      setIsLoading(false);
+      Alert.alert('Offline Mode', 'Could not sync update with server.');
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -66,6 +116,37 @@ export default function ProfileScreen() {
           <Text style={[styles.loyaltyVal, { color: theme.colors.gold }]}>{user?.rewardPoints || 120} Pts</Text>
           <Text style={styles.loyaltyLabel}>Clude Rewards</Text>
         </View>
+      </View>
+
+      {/* Edit Profile Details */}
+      <View style={styles.optionGroup}>
+        <Text style={styles.groupHeader}>Edit Profile Details</Text>
+        
+        <View style={styles.inputWrapper}>
+          <Text style={styles.inputLabel}>First Name</Text>
+          <TextInput
+            style={styles.textInput}
+            value={firstName}
+            onChangeText={setFirstName}
+            placeholder="First Name"
+            placeholderTextColor="#888"
+          />
+        </View>
+
+        <View style={styles.inputWrapper}>
+          <Text style={styles.inputLabel}>Last Name</Text>
+          <TextInput
+            style={styles.textInput}
+            value={lastName}
+            onChangeText={setLastName}
+            placeholder="Last Name"
+            placeholderTextColor="#888"
+          />
+        </View>
+
+        <TouchableOpacity style={styles.saveBtn} onPress={handleUpdateProfile} disabled={isLoading}>
+          <Text style={styles.saveBtnText}>{isLoading ? 'Saving...' : 'Save Changes'}</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Options Group 1 */}
@@ -254,5 +335,35 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: theme.colors.error,
     marginLeft: 8,
+  },
+  inputWrapper: {
+    marginBottom: 12,
+  },
+  inputLabel: {
+    color: '#8E8E93',
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  textInput: {
+    backgroundColor: '#121212',
+    color: '#FFF',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    borderWidth: 1,
+    borderColor: '#1F1F1F',
+  },
+  saveBtn: {
+    backgroundColor: theme.colors.primary,
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  saveBtnText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: 'bold',
   }
 });

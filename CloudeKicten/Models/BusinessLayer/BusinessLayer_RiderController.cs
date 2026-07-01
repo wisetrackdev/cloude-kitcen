@@ -47,6 +47,7 @@ namespace CloudeKicten.Models.BusinessLayer
                 Id = dto.UserId,
                 VehicleNumber = dto.VehicleNumber,
                 LicenseNumber = dto.LicenseNumber,
+                DeliveryZone = dto.DeliveryZone,
                 IsActive = true
             };
 

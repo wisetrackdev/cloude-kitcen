@@ -17,6 +17,7 @@ namespace CloudeKicten.Models.BusinessLayer
         Task<ApiResponse<AuthResponseDto>> VerifyOtpAsync(string email, string otp);
         Task<ApiResponse<UserDto>> GetUserProfileAsync(string id);
         Task<ApiResponse<UserDto>> UpdateUserProfileAsync(string id, UserDto dto);
+        Task<ApiResponse<UserDto>> CompleteProfileAsync(CompleteProfileDto dto);
     }
 
     public class BusinessLayer_AuthController : IBusinessLayer_AuthController
@@ -91,6 +92,8 @@ namespace CloudeKicten.Models.BusinessLayer
             if (user.OtpExpiry < DateTime.UtcNow)
                 return ApiResponse<AuthResponseDto>.Fail("OTP has expired.");
 
+            bool isNewUser = !user.IsVerified;
+
             await _databaseLayer.ClearUserOtpAsync(email);
 
             string token = GenerateJwtToken(user);
@@ -100,6 +103,8 @@ namespace CloudeKicten.Models.BusinessLayer
                 Id = user.Id,
                 Email = user.Email,
                 Name = $"{user.FirstName} {user.LastName}".Trim(),
+                FirstName = user.FirstName,
+                LastName = user.LastName,
                 Phone = user.Phone,
                 Avatar = user.Avatar,
                 Gender = user.Gender,
@@ -111,6 +116,7 @@ namespace CloudeKicten.Models.BusinessLayer
             {
                 Token = token,
                 RefreshToken = Guid.NewGuid().ToString("N"),
+                IsNewUser = isNewUser,
                 User = userDto
             };
 
@@ -127,6 +133,8 @@ namespace CloudeKicten.Models.BusinessLayer
                 Id = user.Id,
                 Email = user.Email,
                 Name = $"{user.FirstName} {user.LastName}".Trim(),
+                FirstName = user.FirstName,
+                LastName = user.LastName,
                 Phone = user.Phone,
                 Avatar = user.Avatar,
                 Gender = user.Gender,
@@ -142,20 +150,70 @@ namespace CloudeKicten.Models.BusinessLayer
             var user = await _databaseLayer.GetUserByIdAsync(id);
             if (user == null) return ApiResponse<UserDto>.Fail("User not found.");
 
-            var nameParts = dto.Name.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
-            user.FirstName = nameParts.Length > 0 ? nameParts[0] : user.FirstName;
-            user.LastName = nameParts.Length > 1 ? nameParts[1] : "";
+            if (!string.IsNullOrEmpty(dto.FirstName))
+            {
+                user.FirstName = dto.FirstName.Trim();
+                user.LastName = (dto.LastName ?? "").Trim();
+            }
+            else if (!string.IsNullOrEmpty(dto.Name))
+            {
+                var nameParts = dto.Name.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
+                user.FirstName = nameParts.Length > 0 ? nameParts[0] : user.FirstName;
+                user.LastName = nameParts.Length > 1 ? nameParts[1] : "";
+            }
+
             user.Phone = dto.Phone ?? user.Phone;
             user.Avatar = dto.Avatar ?? user.Avatar;
             user.Gender = dto.Gender ?? user.Gender;
-            user.Role = dto.Role;
+            if (!string.IsNullOrEmpty(dto.Role))
+            {
+                user.Role = dto.Role;
+            }
             user.RewardPoints = dto.RewardPoints;
 
             await _databaseLayer.UpdateUserProfileAsync(user);
 
-            dto.Id = user.Id;
-            dto.Email = user.Email;
+            dto.Name = $"{user.FirstName} {user.LastName}".Trim();
+            dto.FirstName = user.FirstName;
+            dto.LastName = user.LastName;
             return ApiResponse<UserDto>.Ok(dto, "Profile updated successfully.");
+        }
+
+        public async Task<ApiResponse<UserDto>> CompleteProfileAsync(CompleteProfileDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.UserId))
+                return ApiResponse<UserDto>.Fail("User ID is required.");
+
+            var user = await _databaseLayer.GetUserByIdAsync(dto.UserId);
+            if (user == null)
+                return ApiResponse<UserDto>.Fail("User not found.");
+
+            user.FirstName = (dto.FirstName ?? "").Trim();
+            user.LastName = (dto.LastName ?? "").Trim();
+            if (!string.IsNullOrEmpty(dto.Avatar))
+            {
+                user.Avatar = dto.Avatar;
+            }
+
+            // Mark as verified on the database
+            await _databaseLayer.ClearUserOtpAsync(user.Email);
+            await _databaseLayer.UpdateUserProfileAsync(user);
+
+            var userDto = new UserDto
+            {
+                Id = user.Id,
+                Email = user.Email,
+                Name = $"{user.FirstName} {user.LastName}".Trim(),
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Phone = user.Phone,
+                Avatar = user.Avatar,
+                Gender = user.Gender,
+                Role = user.Role,
+                RewardPoints = user.RewardPoints
+            };
+
+            return ApiResponse<UserDto>.Ok(userDto, "Profile completed successfully.");
         }
 
         private (string firstName, string lastName) ExtractNameFromEmail(string email)

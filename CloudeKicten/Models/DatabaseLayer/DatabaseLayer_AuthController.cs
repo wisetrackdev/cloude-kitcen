@@ -243,6 +243,7 @@ namespace CloudeKicten.Models.DatabaseLayer
                 RewardPoints = r.GetInt32(r.GetOrdinal("reward_points")),
                 Otp = r.IsDBNull(r.GetOrdinal("otp")) ? null : r.GetString(r.GetOrdinal("otp")),
                 OtpExpiry = r.IsDBNull(r.GetOrdinal("otp_expires_at")) ? null : r.GetDateTime(r.GetOrdinal("otp_expires_at")),
+                IsVerified = r.IsDBNull(r.GetOrdinal("is_verified")) ? false : r.GetBoolean(r.GetOrdinal("is_verified")),
                 CreatedAt = r.GetDateTime(r.GetOrdinal("created_at"))
             };
         }

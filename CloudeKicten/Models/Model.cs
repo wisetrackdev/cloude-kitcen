@@ -20,6 +20,7 @@ namespace CloudeKicten.Models
         public int RewardPoints { get; set; } = 0;
         public string? Otp { get; set; }
         public DateTime? OtpExpiry { get; set; }
+        public bool IsVerified { get; set; } = false;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 
@@ -121,6 +122,7 @@ namespace CloudeKicten.Models
         public bool IsActive { get; set; } = true;
         public decimal? CurrentLatitude { get; set; }
         public decimal? CurrentLongitude { get; set; }
+        public string? DeliveryZone { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 
@@ -139,11 +141,21 @@ namespace CloudeKicten.Models
         public string Otp { get; set; } = string.Empty;
     }
 
+    public class CompleteProfileDto
+    {
+        public string UserId { get; set; } = string.Empty;
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string? Avatar { get; set; }
+    }
+
     public class UserDto
     {
         public string Id { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
         public string? Phone { get; set; }
         public string? Avatar { get; set; }
         public string? Gender { get; set; }
@@ -155,6 +167,7 @@ namespace CloudeKicten.Models
     {
         public string Token { get; set; } = string.Empty;
         public string RefreshToken { get; set; } = string.Empty;
+        public bool IsNewUser { get; set; } = false;
         public UserDto User { get; set; } = new();
     }
 
@@ -163,6 +176,7 @@ namespace CloudeKicten.Models
         public string UserId { get; set; } = string.Empty;
         public string VehicleNumber { get; set; } = string.Empty;
         public string LicenseNumber { get; set; } = string.Empty;
+        public string? DeliveryZone { get; set; }
     }
 
     public class VendorRegisterDto

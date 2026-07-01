@@ -34,6 +34,7 @@ export default function AdminLoginScreen() {
   const [tempToken, setTempToken] = useState('');
   const [tempRefreshToken, setTempRefreshToken] = useState('');
   const [tempUser, setTempUser] = useState<any>(null);
+  const [showCompleteProfile, setShowCompleteProfile] = useState(false);
 
   // Capture Profile Image via Camera
   const captureProfileImage = async () => {
@@ -102,17 +103,33 @@ export default function AdminLoginScreen() {
     // Simulated OTP bypass for development
     if (otpCode === '123456') {
       setIsLoading(false);
+      const isMockNew = email.includes('new') || email.includes('test');
       const mockUser = {
         id: 'usr-admin-7711',
-        name: 'Super Admin',
+        name: '',
         email: email,
         role: 'superadmin',
         rewardPoints: 100
       };
-      setAuth('mock_token', 'mock_refresh', mockUser);
-      Alert.alert('Authentication Successful', 'Welcome SuperAdmin!', [
-        { text: 'OK', onPress: () => router.replace('/') }
-      ]);
+
+      setTempToken('mock_token');
+      setTempRefreshToken('mock_refresh');
+      setTempUser(mockUser);
+
+      if (isMockNew) {
+        setShowCompleteProfile(true);
+      } else {
+        setAuth('mock_token', 'mock_refresh', {
+          id: 'usr-admin-7711',
+          name: 'Super Admin',
+          email: email,
+          role: 'superadmin',
+          rewardPoints: 100
+        });
+        Alert.alert('Authentication Successful', 'Welcome SuperAdmin!', [
+          { text: 'OK', onPress: () => router.replace('/') }
+        ]);
+      }
       return;
     }
 
@@ -126,15 +143,14 @@ export default function AdminLoginScreen() {
       const json = await res.json();
 
       if (json.success) {
-        const { token, refreshToken, user } = json.data;
+        const { token, refreshToken, user, isNewUser } = json.data;
         setTempToken(token);
         setTempRefreshToken(refreshToken);
         setTempUser(user);
 
-        // Check if user is missing basic name details
-        if (!user.name || user.name.trim() === '' || user.name === 'Cloud KitchenUser') {
+        if (isNewUser) {
           setIsLoading(false);
-          setStep('name');
+          setShowCompleteProfile(true);
         } else {
           // Complete login and store session
           setAuth(token, refreshToken, {
@@ -162,7 +178,7 @@ export default function AdminLoginScreen() {
     }
   };
 
-  // Step 3: Register Basic Details (First & Last Name)
+  // Step 3: Register Basic Details (First & Last Name) - POST complete-profile
   const handleRegisterAdminDetails = async () => {
     if (!firstName.trim() || !lastName.trim()) {
       Alert.alert('Error', 'Please enter your first and last name');
@@ -170,57 +186,53 @@ export default function AdminLoginScreen() {
     }
 
     setIsLoading(true);
-    const updatedName = `${firstName.trim()} ${lastName.trim()}`;
-
     try {
-      const res = await fetch(`${API_BASE_URL}/api/auth/profile/${tempUser.id}`, {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${tempToken}`
-        },
+      const res = await fetch(`${API_BASE_URL}/api/auth/complete-profile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: tempUser.id,
-          email: tempUser.email,
-          name: updatedName,
-          role: 'superadmin',
-          avatar: profileImage || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
-          rewardPoints: tempUser.rewardPoints
+          userId: tempUser.id,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          avatar: profileImage || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'
         })
       });
       const json = await res.json();
       setIsLoading(false);
 
       if (json.success) {
+        const updatedUser = json.data;
         setAuth(tempToken, tempRefreshToken, {
-          id: tempUser.id,
-          name: updatedName,
-          email: tempUser.email,
-          phone: tempUser.phone || '',
-          avatar: profileImage || tempUser.avatar || '',
+          id: updatedUser.id,
+          name: updatedUser.name,
+          email: updatedUser.email,
+          phone: updatedUser.phone || '',
+          avatar: updatedUser.avatar || '',
           role: 'superadmin',
-          rewardPoints: tempUser.rewardPoints
+          rewardPoints: updatedUser.rewardPoints
         });
-        Alert.alert('Details Saved', 'Welcome SuperAdmin!', [
+        Alert.alert('Authentication Successful', 'Welcome SuperAdmin!', [
           { text: 'OK', onPress: () => router.replace('/') }
         ]);
       } else {
         Alert.alert('Error', json.message || 'Failed to update details');
       }
     } catch (err) {
-      console.error('Admin details update failed:', err);
-      // Fallback
+      console.error('Failed to save details:', err);
+      setIsLoading(false);
+      const updatedName = `${firstName.trim()} ${lastName.trim()}`;
       setAuth(tempToken, tempRefreshToken, {
         id: tempUser.id,
         name: updatedName,
         email: tempUser.email,
-        phone: '',
-        avatar: profileImage,
+        phone: tempUser.phone || '',
+        avatar: profileImage || tempUser.avatar || '',
         role: 'superadmin',
-        rewardPoints: 0
+        rewardPoints: tempUser.rewardPoints
       });
-      router.replace('/');
-      setIsLoading(false);
+      Alert.alert('Authentication Successful (Offline Mode)', 'Welcome SuperAdmin!', [
+        { text: 'OK', onPress: () => router.replace('/') }
+      ]);
     }
   };
 
@@ -269,66 +281,68 @@ export default function AdminLoginScreen() {
               keyboardType="numeric"
               value={otpCode}
               onChangeText={setOtpCode}
-              style={styles.inputField}
+              editable={!showCompleteProfile}
+              style={[styles.inputField, showCompleteProfile && { opacity: 0.6 }]}
             />
           </View>
 
-          <TouchableOpacity style={styles.loginBtn} onPress={handleVerifyOtp}>
-            <Text style={styles.loginBtnText}>Verify OTP</Text>
-          </TouchableOpacity>
+          {showCompleteProfile ? (
+            <View style={{ width: '100%', marginTop: 15 }}>
+              <Text style={styles.stepTitle}>Enter Basic Details</Text>
+              
+              <View style={styles.inputWrapper}>
+                <User size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />
+                <TextInput
+                  placeholder="First Name"
+                  placeholderTextColor="#888"
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  style={styles.inputField}
+                />
+              </View>
 
-          <TouchableOpacity onPress={() => { setStep('email'); setOtpCode(''); }}>
-            <Text style={styles.toggleText}>Change Email</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+              <View style={styles.inputWrapper}>
+                <User size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />
+                <TextInput
+                  placeholder="Last Name"
+                  placeholderTextColor="#888"
+                  value={lastName}
+                  onChangeText={setLastName}
+                  style={styles.inputField}
+                />
+              </View>
 
-      {/* STEP 3: Register Basic Details */}
-      {step === 'name' && (
-        <View style={styles.form}>
-          <Text style={styles.stepTitle}>Enter Basic Details</Text>
-          
-          <View style={styles.inputWrapper}>
-            <User size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />
-            <TextInput
-              placeholder="First Name"
-              placeholderTextColor="#888"
-              value={firstName}
-              onChangeText={setFirstName}
-              style={styles.inputField}
-            />
-          </View>
+              {/* Profile Photo Capture */}
+              <View style={styles.captureContainer}>
+                <View style={styles.imagePlaceholder}>
+                  <Text style={styles.imagePlaceholderText}>Profile Photo</Text>
+                  {profileImage ? (
+                    <Text style={styles.imagePlaceholderSubText} numberOfLines={1}>✓ Clicked: {profileImage.substring(profileImage.lastIndexOf('/') + 1)}</Text>
+                  ) : (
+                    <Text style={styles.imagePlaceholderSubText}>No photo captured</Text>
+                  )}
+                </View>
+                <TouchableOpacity style={styles.captureBtn} onPress={captureProfileImage}>
+                  <Camera size={14} color={theme.colors.primary} style={{ marginRight: 6 }} />
+                  <Text style={styles.captureBtnText}>Open Camera</Text>
+                </TouchableOpacity>
+              </View>
 
-          <View style={styles.inputWrapper}>
-            <User size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />
-            <TextInput
-              placeholder="Last Name"
-              placeholderTextColor="#888"
-              value={lastName}
-              onChangeText={setLastName}
-              style={styles.inputField}
-            />
-          </View>
-
-          {/* Profile Photo Capture */}
-          <View style={styles.captureContainer}>
-            <View style={styles.imagePlaceholder}>
-              <Text style={styles.imagePlaceholderText}>Profile Photo</Text>
-              {profileImage ? (
-                <Text style={styles.imagePlaceholderSubText} numberOfLines={1}>✓ Clicked: {profileImage.substring(profileImage.lastIndexOf('/') + 1)}</Text>
-              ) : (
-                <Text style={styles.imagePlaceholderSubText}>No photo captured</Text>
-              )}
+              <TouchableOpacity style={[styles.loginBtn, { marginTop: 15 }]} onPress={handleRegisterAdminDetails}>
+                <Text style={styles.loginBtnText}>Submit & Access Panel</Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.captureBtn} onPress={captureProfileImage}>
-              <Camera size={14} color={theme.colors.primary} style={{ marginRight: 6 }} />
-              <Text style={styles.captureBtnText}>Open Camera</Text>
-            </TouchableOpacity>
-          </View>
+          ) : (
+            <>
+              <TouchableOpacity style={styles.loginBtn} onPress={handleVerifyOtp}>
+                <Text style={styles.loginBtnText}>Verify OTP</Text>
+              </TouchableOpacity>
 
-          <TouchableOpacity style={styles.loginBtn} onPress={handleRegisterAdminDetails}>
-            <Text style={styles.loginBtnText}>Submit & Access Panel</Text>
-          </TouchableOpacity>
+              <TouchableOpacity onPress={() => { setStep('email'); setOtpCode(''); }}>
+                <Text style={styles.toggleText}>Change Email</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       )}
     </ScrollView>

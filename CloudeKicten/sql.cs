@@ -126,6 +126,7 @@ namespace CloudeKicten
             ALTER TABLE delivery_partners ADD COLUMN IF NOT EXISTS license_photo_url VARCHAR(500) NULL;
             ALTER TABLE delivery_partners ADD COLUMN IF NOT EXISTS vehicle_photo_url VARCHAR(500) NULL;
             ALTER TABLE delivery_partners ADD COLUMN IF NOT EXISTS id_proof_url VARCHAR(500) NULL;
+            ALTER TABLE delivery_partners ADD COLUMN IF NOT EXISTS delivery_zone VARCHAR(100) NULL;
 
             ALTER TABLE shops ADD COLUMN IF NOT EXISTS cover_image_url VARCHAR(500) NULL;
 
@@ -746,14 +747,14 @@ namespace CloudeKicten
         // ==========================================
 
         public const string InsertRider = @"
-            INSERT INTO delivery_partners (id, vehicle_number, license_number, is_approved, is_active, current_latitude, current_longitude, created_at)
-            VALUES (@Id, @VehicleNumber, @LicenseNumber, @IsApproved, @IsActive, NULL, NULL, CURRENT_TIMESTAMP)
+            INSERT INTO delivery_partners (id, vehicle_number, license_number, is_approved, is_active, current_latitude, current_longitude, delivery_zone, created_at)
+            VALUES (@Id, @VehicleNumber, @LicenseNumber, FALSE, @IsActive, NULL, NULL, @DeliveryZone, CURRENT_TIMESTAMP)
             ON CONFLICT (id) DO UPDATE 
-            SET vehicle_number = EXCLUDED.vehicle_number, license_number = EXCLUDED.license_number, is_active = EXCLUDED.is_active, is_approved = EXCLUDED.is_approved;
+            SET vehicle_number = EXCLUDED.vehicle_number, license_number = EXCLUDED.license_number, is_active = EXCLUDED.is_active, delivery_zone = EXCLUDED.delivery_zone;
         ";
 
         public const string GetRiderById = @"
-            SELECT id, vehicle_number, license_number, is_approved, is_active, current_latitude, current_longitude, created_at
+            SELECT id, vehicle_number, license_number, is_approved, is_active, current_latitude, current_longitude, delivery_zone, created_at
             FROM delivery_partners
             WHERE id = @Id;
         ";
