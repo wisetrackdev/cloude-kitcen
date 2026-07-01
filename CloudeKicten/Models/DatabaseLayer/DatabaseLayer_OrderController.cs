@@ -15,6 +15,11 @@ namespace CloudeKicten.Models.DatabaseLayer
         Task<bool> InsertOrderAsync(OrderDb order);
         Task<bool> UpdateOrderStatusAsync(string id, string status);
         Task<bool> DeleteOrderAsync(string id);
+        Task<List<ChatDto>> GetChatsByOrderIdAsync(string orderId);
+        Task<bool> InsertChatAsync(ChatDb chat);
+        Task<bool> AssignRiderToOrderAsync(string id, string riderId);
+        Task<List<string>> GetRiderIdsAsync();
+        Task<bool> InsertNotificationAsync(string userId, string title, string body);
     }
 
     public class DatabaseLayer_OrderController : IDatabaseLayer_OrderController
@@ -110,6 +115,7 @@ namespace CloudeKicten.Models.DatabaseLayer
             cmd.Parameters.AddWithValue("@Status", order.Status);
             cmd.Parameters.AddWithValue("@PaymentMethod", order.PaymentMethod);
             cmd.Parameters.AddWithValue("@OrderDate", order.OrderDate);
+            cmd.Parameters.AddWithValue("@RiderId", (object?)order.RiderId ?? DBNull.Value);
 
             var result = await cmd.ExecuteNonQueryAsync();
             return result > 0;
@@ -133,6 +139,98 @@ namespace CloudeKicten.Models.DatabaseLayer
             await conn.OpenAsync();
             using var cmd = new NpgsqlCommand(Sql.DeleteOrder, conn);
             cmd.Parameters.AddWithValue("@Id", id);
+
+            var result = await cmd.ExecuteNonQueryAsync();
+            return result > 0;
+        }
+
+        public async Task<bool> AssignRiderToOrderAsync(string id, string riderId)
+        {
+            using var conn = GetConnection();
+            await conn.OpenAsync();
+            using var cmd = new NpgsqlCommand(Sql.AssignRiderToOrder, conn);
+            cmd.Parameters.AddWithValue("@Id", id);
+            cmd.Parameters.AddWithValue("@RiderId", riderId);
+
+            var result = await cmd.ExecuteNonQueryAsync();
+            return result > 0;
+        }
+
+        public async Task<List<string>> GetRiderIdsAsync()
+        {
+            var list = new List<string>();
+            try
+            {
+                using var conn = GetConnection();
+                await conn.OpenAsync();
+                using var cmd = new NpgsqlCommand("SELECT id FROM user_register WHERE role = 'delivery_boy' OR role = 'rider';", conn);
+                using var reader = await cmd.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    list.Add(reader.GetString(0));
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error retrieving rider IDs: {ex.Message}");
+            }
+            return list;
+        }
+
+        public async Task<bool> InsertNotificationAsync(string userId, string title, string body)
+        {
+            try
+            {
+                using var conn = GetConnection();
+                await conn.OpenAsync();
+                using var cmd = new NpgsqlCommand("INSERT INTO notifications (id, user_id, title, body, is_read, created_at) VALUES (@Id, @UserId, @Title, @Body, FALSE, CURRENT_TIMESTAMP);", conn);
+                cmd.Parameters.AddWithValue("@Id", "NT-" + new Random().Next(1000, 9999));
+                cmd.Parameters.AddWithValue("@UserId", userId);
+                cmd.Parameters.AddWithValue("@Title", title);
+                cmd.Parameters.AddWithValue("@Body", body);
+                var result = await cmd.ExecuteNonQueryAsync();
+                return result > 0;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error inserting notification: {ex.Message}");
+                return false;
+            }
+        }
+
+        public async Task<List<ChatDto>> GetChatsByOrderIdAsync(string orderId)
+        {
+            var list = new List<ChatDto>();
+            using var conn = GetConnection();
+            await conn.OpenAsync();
+            using var cmd = new NpgsqlCommand(Sql.GetChatsByOrderId, conn);
+            cmd.Parameters.AddWithValue("@OrderId", orderId);
+
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                list.Add(new ChatDto
+                {
+                    Id = reader.GetString(reader.GetOrdinal("id")),
+                    OrderId = reader.GetString(reader.GetOrdinal("order_id")),
+                    SenderId = reader.GetString(reader.GetOrdinal("sender_id")),
+                    SenderName = reader.IsDBNull(reader.GetOrdinal("sender_name")) ? "Unknown" : reader.GetString(reader.GetOrdinal("sender_name")),
+                    Message = reader.GetString(reader.GetOrdinal("message")),
+                    CreatedAt = reader.GetDateTime(reader.GetOrdinal("created_at")).ToString("yyyy-MM-dd HH:mm:ss")
+                });
+            }
+            return list;
+        }
+
+        public async Task<bool> InsertChatAsync(ChatDb chat)
+        {
+            using var conn = GetConnection();
+            await conn.OpenAsync();
+            using var cmd = new NpgsqlCommand(Sql.InsertChat, conn);
+            cmd.Parameters.AddWithValue("@Id", chat.Id);
+            cmd.Parameters.AddWithValue("@OrderId", chat.OrderId);
+            cmd.Parameters.AddWithValue("@SenderId", chat.SenderId);
+            cmd.Parameters.AddWithValue("@Message", chat.Message);
 
             var result = await cmd.ExecuteNonQueryAsync();
             return result > 0;

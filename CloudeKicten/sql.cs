@@ -826,5 +826,19 @@ namespace CloudeKicten
             SET status = @Status
             WHERE id = @Id;
         ";
+
+        public const string InsertChat = @"
+            INSERT INTO order_chats (id, order_id, sender_id, message, created_at)
+            VALUES (@Id, @OrderId, @SenderId, @Message, CURRENT_TIMESTAMP);
+        ";
+
+        public const string GetChatsByOrderId = @"
+            SELECT c.id, c.order_id, c.sender_id, c.message, c.created_at,
+                   CONCAT(u.first_name, ' ', u.last_name) AS sender_name
+            FROM order_chats c
+            LEFT JOIN user_register u ON c.sender_id = u.id
+            WHERE c.order_id = @OrderId
+            ORDER BY c.created_at ASC;
+        ";
     }
 }

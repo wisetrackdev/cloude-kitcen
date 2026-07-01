@@ -54,6 +54,7 @@ export interface OrderRecord {
   status: 'placed' | 'preparing' | 'ready' | 'on_the_way' | 'delivered' | 'cancelled';
   date: string;
   paymentMethod: string;
+  riderId?: string;
 }
 
 interface KitchenState {
@@ -82,6 +83,7 @@ interface KitchenState {
   // Order actions
   placeOrder: (order: Omit<OrderRecord, 'id' | 'status' | 'date'>) => Promise<string>;
   updateOrderStatus: (orderId: string, status: OrderRecord['status']) => Promise<void>;
+  acceptOrder: (orderId: string, riderId: string) => Promise<boolean>;
 }
 
 // Offline fallback mock data
@@ -245,7 +247,8 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
           total: Number(o.total),
           status: o.status,
           date: o.date,
-          paymentMethod: o.paymentMethod
+          paymentMethod: o.paymentMethod,
+          riderId: o.riderId || null
         }));
         set({ orders: mappedOrders, isLoading: false });
       } else {
@@ -451,5 +454,29 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
     set((state) => ({
       orders: state.orders.map(o => o.id === orderId ? { ...o, status } : o)
     }));
+  },
+
+  acceptOrder: async (orderId, riderId) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/orders/${orderId}/accept?riderId=${riderId}`, {
+        method: 'PUT'
+      });
+      const json = await res.json();
+      if (json.success) {
+        set((state) => ({
+          orders: state.orders.map(o => o.id === orderId ? { ...o, riderId, status: 'preparing' } : o)
+        }));
+        return true;
+      } else {
+        Alert.alert('Error', json.message || 'Failed to accept order.');
+        return false;
+      }
+    } catch (err: any) {
+      console.warn('API Error accepting order, doing local fallback:', err.message);
+      set((state) => ({
+        orders: state.orders.map(o => o.id === orderId ? { ...o, riderId, status: 'preparing' } : o)
+      }));
+      return true;
+    }
   }
 }));

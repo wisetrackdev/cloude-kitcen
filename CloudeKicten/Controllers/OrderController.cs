@@ -78,5 +78,34 @@ namespace CloudeKicten.Controllers
             }
             return Ok(result);
         }
+
+        [HttpGet("{id}/chats")]
+        public async Task<IActionResult> GetChats(string id)
+        {
+            var result = await _businessLayer.GetChatsByOrderIdAsync(id);
+            return Ok(result);
+        }
+
+        [HttpPost("{id}/chats")]
+        public async Task<IActionResult> SendChat(string id, [FromBody] ChatCreateDto dto)
+        {
+            var result = await _businessLayer.SendChatMessageAsync(id, dto);
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
+            return Ok(result);
+        }
+
+        [HttpPut("{id}/accept")]
+        public async Task<IActionResult> AcceptOrder(string id, [FromQuery] string riderId)
+        {
+            var result = await _businessLayer.AcceptOrderAsync(id, riderId);
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
+            return Ok(result);
+        }
     }
 }

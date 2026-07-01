@@ -399,4 +399,29 @@ namespace CloudeKicten.Models
         public static ApiResponse<T> Fail(string message) => 
             new() { Success = false, Message = message };
     }
+
+    public class ChatDb
+    {
+        public string Id { get; set; } = string.Empty;
+        public string OrderId { get; set; } = string.Empty;
+        public string SenderId { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    }
+
+    public class ChatDto
+    {
+        public string Id { get; set; } = string.Empty;
+        public string OrderId { get; set; } = string.Empty;
+        public string SenderId { get; set; } = string.Empty;
+        public string SenderName { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        public string CreatedAt { get; set; } = string.Empty;
+    }
+
+    public class ChatCreateDto
+    {
+        public string SenderId { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+    }
 }

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -6,19 +6,98 @@ import {
   TouchableOpacity, 
   Image, 
   ScrollView, 
-  Alert 
+  Alert,
+  Modal,
+  TextInput,
+  ActivityIndicator
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Phone, MessageSquare, ShieldCheck, MapPin, Navigation } from 'lucide-react-native';
+import { ArrowLeft, Phone, MessageSquare, ShieldCheck, MapPin, Navigation, Send, X } from 'lucide-react-native';
 import { theme } from '../../styles/theme';
 import { useKitchenStore } from '../../store/useKitchenStore';
+import { useAuthStore } from '../../store/useAuthStore';
+import { API_BASE_URL } from '../../store/apiConfig';
 
 export default function OrderTrackingScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
 
+  const user = useAuthStore(state => state.user);
+  const customerId = user?.id || 'usr-customer-simulated';
+
   const orders = useKitchenStore(state => state.orders);
+  const fetchOrders = useKitchenStore(state => state.fetchOrders);
   const activeOrder = orders.find(o => o.id === id);
+
+  // Chat states
+  const [chatActive, setChatActive] = useState(false);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [newMessageText, setNewMessageText] = useState('');
+  const [chatInterval, setChatInterval] = useState<any>(null);
+
+  // Poll order status every 5 seconds
+  useEffect(() => {
+    fetchOrders();
+    const interval = setInterval(() => {
+      fetchOrders();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Poll chat when active
+  useEffect(() => {
+    if (chatActive && activeOrder) {
+      fetchChats();
+      const interval = setInterval(fetchChats, 2000);
+      setChatInterval(interval);
+      return () => clearInterval(interval);
+    } else {
+      if (chatInterval) clearInterval(chatInterval);
+    }
+  }, [chatActive]);
+
+  const fetchChats = async () => {
+    if (!activeOrder) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/orders/${activeOrder.id}/chats`);
+      const json = await res.json();
+      if (json.success) {
+        setMessages(json.data);
+      }
+    } catch (err) {
+      console.warn('Failed to fetch chats offline');
+    }
+  };
+
+  const sendChatMessage = async () => {
+    if (!newMessageText.trim() || !activeOrder) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/orders/${activeOrder.id}/chats`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          senderId: customerId,
+          message: newMessageText.trim()
+        })
+      });
+      const json = await res.json();
+      if (json.success) {
+        setNewMessageText('');
+        fetchChats();
+      }
+    } catch (err) {
+      const simulated = {
+        id: 'msg-' + Math.random(),
+        orderId: activeOrder.id,
+        senderId: customerId,
+        senderName: user?.name || 'Customer',
+        message: newMessageText.trim(),
+        createdAt: new Date().toLocaleTimeString()
+      };
+      setMessages(prev => [...prev, simulated]);
+      setNewMessageText('');
+    }
+  };
 
   const getStatusNumber = (status: string) => {
     switch (status) {
@@ -74,32 +153,39 @@ export default function OrderTrackingScreen() {
 
       <ScrollView style={styles.statusSection} showsVerticalScrollIndicator={false}>
         {/* Rider profile card */}
-        <View style={styles.riderCard}>
-          <View style={styles.riderMeta}>
-            <Image 
-              source={{ uri: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80' }} 
-              style={styles.riderAvatar} 
-            />
-            <View>
-              <Text style={styles.riderName}>Vikram Singh</Text>
-              <Text style={styles.riderVehicle}>Hero Splendor (MH-02-AB-9831)</Text>
+        {activeOrder?.riderId ? (
+          <View style={styles.riderCard}>
+            <View style={styles.riderMeta}>
+              <Image 
+                source={{ uri: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80' }} 
+                style={styles.riderAvatar} 
+              />
+              <View>
+                <Text style={styles.riderName}>Vikram Singh (Rider Assigned)</Text>
+                <Text style={styles.riderVehicle}>Hero Splendor (MH-02-AB-9831)</Text>
+              </View>
+            </View>
+            <View style={styles.riderActions}>
+              <TouchableOpacity 
+                style={styles.actionBtn}
+                onPress={() => Alert.alert('Call Rider', 'Calling Rider: +91 9876543210')}
+              >
+                <Phone size={16} color={theme.colors.primary} />
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.actionBtn}
+                onPress={() => setChatActive(true)}
+              >
+                <MessageSquare size={16} color={theme.colors.primary} />
+              </TouchableOpacity>
             </View>
           </View>
-          <View style={styles.riderActions}>
-            <TouchableOpacity 
-              style={styles.actionBtn}
-              onPress={() => Alert.alert('Call Rider', 'Simulating call to +91 9876543210')}
-            >
-              <Phone size={16} color={theme.colors.primary} />
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.actionBtn}
-              onPress={() => Alert.alert('Chat Rider', 'Rider is driving and will respond once stopped.')}
-            >
-              <MessageSquare size={16} color={theme.colors.primary} />
-            </TouchableOpacity>
+        ) : (
+          <View style={[styles.riderCard, { justifyContent: 'center', paddingVertical: 20 }]}>
+            <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginRight: 10 }} />
+            <Text style={{ color: '#FFF', fontSize: 13, fontWeight: 'bold' }}>Finding nearest delivery partner...</Text>
           </View>
-        </View>
+        )}
 
         {/* Vertical status tracker */}
         <View style={styles.trackerWrapper}>
@@ -142,6 +228,61 @@ export default function OrderTrackingScreen() {
         </View>
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* Customer Chat with Rider Modal */}
+      {chatActive && activeOrder && (
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={chatActive}
+          onRequestClose={() => setChatActive(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Chat with Delivery Partner</Text>
+                <TouchableOpacity onPress={() => setChatActive(false)} style={styles.closeBtn}>
+                  <X size={18} color="#FFF" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView style={styles.chatScroller} contentContainerStyle={{ padding: 15 }}>
+                {messages.map((msg: any) => {
+                  const isMe = msg.senderId === customerId;
+                  return (
+                    <View 
+                      key={msg.id} 
+                      style={[
+                        styles.msgBubble, 
+                        isMe ? styles.msgBubbleMe : styles.msgBubbleOther
+                      ]}
+                    >
+                      <Text style={styles.msgSender}>{isMe ? 'You' : msg.senderName}</Text>
+                      <Text style={styles.msgText}>{msg.message}</Text>
+                    </View>
+                  );
+                })}
+                {messages.length === 0 && (
+                  <Text style={{ color: '#555', textAlign: 'center', marginVertical: 30 }}>Send a message to start chatting...</Text>
+                )}
+              </ScrollView>
+
+              <View style={styles.chatInputRow}>
+                <TextInput
+                  placeholder="Type a message..."
+                  placeholderTextColor="#888"
+                  value={newMessageText}
+                  onChangeText={setNewMessageText}
+                  style={styles.chatInput}
+                />
+                <TouchableOpacity style={styles.sendBtn} onPress={sendChatMessage}>
+                  <Send size={16} color="#000" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
     </View>
   );
 }
@@ -340,5 +481,92 @@ const styles = StyleSheet.create({
     color: theme.colors.veg,
     lineHeight: 14,
     marginLeft: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#0F0F0F',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    borderColor: '#222',
+    height: '75%',
+    paddingBottom: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#222',
+  },
+  modalTitle: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: theme.colors.primary,
+  },
+  closeBtn: {
+    backgroundColor: '#1E1E1E',
+    borderRadius: 16,
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chatScroller: {
+    flex: 1,
+  },
+  msgBubble: {
+    maxWidth: '80%',
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 10,
+  },
+  msgBubbleMe: {
+    backgroundColor: theme.colors.primary,
+    alignSelf: 'flex-end',
+  },
+  msgBubbleOther: {
+    backgroundColor: '#222',
+    alignSelf: 'flex-start',
+  },
+  msgSender: {
+    fontSize: 9,
+    fontWeight: 'bold',
+    color: '#888',
+    marginBottom: 4,
+  },
+  msgText: {
+    fontSize: 13,
+    color: '#FFF',
+  },
+  chatInputRow: {
+    flexDirection: 'row',
+    padding: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#222',
+    alignItems: 'center',
+  },
+  chatInput: {
+    flex: 1,
+    backgroundColor: '#1E1E1E',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    color: '#FFF',
+    fontSize: 13,
+    marginRight: 10,
+  },
+  sendBtn: {
+    backgroundColor: theme.colors.primary,
+    borderRadius: 20,
+    width: 38,
+    height: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
   }
 });

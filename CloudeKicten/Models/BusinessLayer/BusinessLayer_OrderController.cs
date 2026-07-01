@@ -15,6 +15,9 @@ namespace CloudeKicten.Models.BusinessLayer
         Task<ApiResponse<OrderResponseDto>> CreateOrderAsync(OrderCreateDto dto);
         Task<ApiResponse<OrderResponseDto>> UpdateOrderStatusAsync(string id, string status);
         Task<ApiResponse<bool>> DeleteOrderAsync(string id);
+        Task<ApiResponse<List<ChatDto>>> GetChatsByOrderIdAsync(string orderId);
+        Task<ApiResponse<ChatDto>> SendChatMessageAsync(string orderId, ChatCreateDto dto);
+        Task<ApiResponse<OrderResponseDto>> AcceptOrderAsync(string id, string riderId);
     }
 
     public class BusinessLayer_OrderController : IBusinessLayer_OrderController
@@ -112,6 +115,20 @@ namespace CloudeKicten.Models.BusinessLayer
             customer.RewardPoints += 10;
             await _authDatabaseLayer.UpdateUserProfileAsync(customer);
 
+            // Create Rider notifications dynamically in DB
+            try
+            {
+                var riders = await _databaseLayer.GetRiderIdsAsync();
+                foreach (var rider in riders)
+                {
+                    await _databaseLayer.InsertNotificationAsync(rider, "New Order Available 🔔", $"A new order is available from {kitchen.Name}. Accept now to pick it up!");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Notification dispatch warning: {ex.Message}");
+            }
+
             var res = await MapToOrderResponseDtoAsync(order);
             return ApiResponse<OrderResponseDto>.Ok(res, "Order placed successfully.");
         }
@@ -135,6 +152,69 @@ namespace CloudeKicten.Models.BusinessLayer
 
             var result = await _databaseLayer.DeleteOrderAsync(id);
             return ApiResponse<bool>.Ok(result, "Order deleted successfully.");
+        }
+
+        public async Task<ApiResponse<List<ChatDto>>> GetChatsByOrderIdAsync(string orderId)
+        {
+            var chats = await _databaseLayer.GetChatsByOrderIdAsync(orderId);
+            return ApiResponse<List<ChatDto>>.Ok(chats);
+        }
+
+        public async Task<ApiResponse<ChatDto>> SendChatMessageAsync(string orderId, ChatCreateDto dto)
+        {
+            var sender = await _authDatabaseLayer.GetUserByIdAsync(dto.SenderId);
+            string senderName = sender != null ? $"{sender.FirstName} {sender.LastName}".Trim() : "Unknown";
+
+            var chat = new ChatDb
+            {
+                Id = "CH-" + new Random().Next(1000, 9999),
+                OrderId = orderId,
+                SenderId = dto.SenderId,
+                Message = dto.Message,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var success = await _databaseLayer.InsertChatAsync(chat);
+            if (!success)
+            {
+                return ApiResponse<ChatDto>.Fail("Failed to send chat message.");
+            }
+
+            var res = new ChatDto
+            {
+                Id = chat.Id,
+                OrderId = chat.OrderId,
+                SenderId = chat.SenderId,
+                SenderName = senderName,
+                Message = chat.Message,
+                CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+            };
+
+            return ApiResponse<ChatDto>.Ok(res, "Message sent.");
+        }
+
+        public async Task<ApiResponse<OrderResponseDto>> AcceptOrderAsync(string id, string riderId)
+        {
+            var o = await _databaseLayer.GetOrderByIdAsync(id);
+            if (o == null) return ApiResponse<OrderResponseDto>.Fail("Order not found.");
+
+            if (!string.IsNullOrEmpty(o.RiderId))
+            {
+                return ApiResponse<OrderResponseDto>.Fail("Order has already been accepted by another rider.");
+            }
+
+            var successRider = await _databaseLayer.AssignRiderToOrderAsync(id, riderId);
+            if (!successRider)
+            {
+                return ApiResponse<OrderResponseDto>.Fail("Failed to assign rider to the order.");
+            }
+
+            await _databaseLayer.UpdateOrderStatusAsync(id, "preparing");
+            o.RiderId = riderId;
+            o.Status = "preparing";
+
+            var res = await MapToOrderResponseDtoAsync(o);
+            return ApiResponse<OrderResponseDto>.Ok(res, "Order accepted successfully.");
         }
 
         private async Task<OrderResponseDto> MapToOrderResponseDtoAsync(OrderDb dbOrder)

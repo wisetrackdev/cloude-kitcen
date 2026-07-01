@@ -30,7 +30,11 @@ export default function SellerDashboard() {
   // Fetch kitchens and orders on mount
   useEffect(() => {
     fetchKitchens();
-    fetchOrders(); // Fetches all orders so we can filter by kitchenId
+    fetchOrders(); 
+    const interval = setInterval(() => {
+      fetchOrders();
+    }, 5000); // Poll every 5s for live order updates
+    return () => clearInterval(interval);
   }, []);
 
   // Find user's kitchen by matching ownerId
