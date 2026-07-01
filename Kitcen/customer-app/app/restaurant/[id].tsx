@@ -106,7 +106,7 @@ export default function RestaurantDetailScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.coverWrapper}>
           <Image 
-            source={{ uri: kitchenInfo.image }} 
+            source={{ uri: kitchenInfo.coverImageUrl && kitchenInfo.coverImageUrl.trim() !== '' ? kitchenInfo.coverImageUrl : kitchenInfo.image }} 
             style={styles.coverImage} 
           />
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
@@ -116,8 +116,15 @@ export default function RestaurantDetailScreen() {
 
         {/* Info panel */}
         <View style={styles.infoCard}>
-          <Text style={styles.restaurantName}>{kitchenInfo.name}</Text>
-          <Text style={styles.ownerText}>By {kitchenInfo.owner}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.restaurantName}>{kitchenInfo.name}</Text>
+              <Text style={styles.ownerText}>By {kitchenInfo.owner}</Text>
+            </View>
+            {kitchenInfo.logoUrl && kitchenInfo.logoUrl.trim() !== '' && (
+              <Image source={{ uri: kitchenInfo.logoUrl }} style={styles.shopLogoImage} />
+            )}
+          </View>
           <Text style={styles.cuisines}>{kitchenInfo.cuisines}</Text>
           
           <View style={styles.metricsRow}>
@@ -311,6 +318,14 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#FFF',
+  },
+  shopLogoImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 1.5,
+    borderColor: '#1F1F1F',
+    backgroundColor: '#1E1E1E',
   },
   ownerText: {
     fontSize: 11,

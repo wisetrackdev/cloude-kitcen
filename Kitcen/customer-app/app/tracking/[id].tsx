@@ -26,14 +26,39 @@ export default function OrderTrackingScreen() {
   const customerId = user?.id || 'usr-customer-simulated';
 
   const orders = useKitchenStore(state => state.orders);
+  const kitchens = useKitchenStore(state => state.kitchens);
   const fetchOrders = useKitchenStore(state => state.fetchOrders);
   const activeOrder = orders.find(o => o.id === id);
+  const activeKitchen = kitchens.find(k => k.id === activeOrder?.kitchenId);
 
-  // Chat states
+  // Chat and Rating states
   const [chatActive, setChatActive] = useState(false);
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessageText, setNewMessageText] = useState('');
   const [chatInterval, setChatInterval] = useState<any>(null);
+  const [riderRating, setRiderRating] = useState(0);
+  const [isRiderRated, setIsRiderRated] = useState(false);
+
+  const handleRateRider = async (stars: number) => {
+    if (!activeOrder?.riderId) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/riders/${activeOrder.riderId}/rate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rating: stars })
+      });
+      const json = await res.json();
+      if (json.success) {
+        setRiderRating(stars);
+        setIsRiderRated(true);
+        Alert.alert('Thank You', 'Rider rated successfully!');
+      }
+    } catch (err) {
+      console.warn('Rating submission failed');
+      setRiderRating(stars);
+      setIsRiderRated(true);
+    }
+  };
 
   // Poll order status every 5 seconds
   useEffect(() => {
@@ -143,8 +168,23 @@ export default function OrderTrackingScreen() {
           </Text>
         </View>
 
-        {/* Dummy Map Route */}
+        {/* Dummy Map Route with dynamic address overlay */}
         <View style={styles.mapGraphicWrapper}>
+          <View style={styles.addressLineCard}>
+            <View style={styles.addressLineRow}>
+              <MapPin size={12} color={theme.colors.success} style={{ marginRight: 6 }} />
+              <Text numberOfLines={1} style={styles.addressLineText}>
+                Kitchen: {activeKitchen?.address || 'Noida Sector 62, UP'}
+              </Text>
+            </View>
+            <View style={styles.addressLineRow}>
+              <MapPin size={12} color={theme.colors.primary} style={{ marginRight: 6 }} />
+              <Text numberOfLines={1} style={styles.addressLineText}>
+                Delivery: {activeOrder?.deliveryAddress || 'Your Address'}
+              </Text>
+            </View>
+          </View>
+
           <MapPin size={24} color={theme.colors.veg} style={styles.restaurantPin} />
           <View style={styles.mapDottedPath} />
           <MapPin size={24} color={theme.colors.primary} style={styles.homePin} />
@@ -154,31 +194,58 @@ export default function OrderTrackingScreen() {
       <ScrollView style={styles.statusSection} showsVerticalScrollIndicator={false}>
         {/* Rider profile card */}
         {activeOrder?.riderId ? (
-          <View style={styles.riderCard}>
-            <View style={styles.riderMeta}>
-              <Image 
-                source={{ uri: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80' }} 
-                style={styles.riderAvatar} 
-              />
-              <View>
-                <Text style={styles.riderName}>{activeOrder?.riderName || 'Vikram Singh'} (Rider Assigned)</Text>
-                <Text style={styles.riderVehicle}>Hero Splendor (MH-02-AB-9831)</Text>
+          <View>
+            <View style={styles.riderCard}>
+              <View style={styles.riderMeta}>
+                <Image 
+                  source={{ uri: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80' }} 
+                  style={styles.riderAvatar} 
+                />
+                <View>
+                  <Text style={styles.riderName}>{activeOrder?.riderName || 'Vikram Singh'} (Rider Assigned)</Text>
+                  <Text style={styles.riderVehicle}>Hero Splendor (MH-02-AB-9831)</Text>
+                </View>
+              </View>
+              <View style={styles.riderActions}>
+                <TouchableOpacity 
+                  style={styles.actionBtn}
+                  onPress={() => Alert.alert('Call Rider', `Calling Rider: ${activeOrder?.riderPhone || '+91 9876543210'}`)}
+                >
+                  <Phone size={16} color={theme.colors.primary} />
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.actionBtn}
+                  onPress={() => setChatActive(true)}
+                >
+                  <MessageSquare size={16} color={theme.colors.primary} />
+                </TouchableOpacity>
               </View>
             </View>
-            <View style={styles.riderActions}>
-              <TouchableOpacity 
-                style={styles.actionBtn}
-                onPress={() => Alert.alert('Call Rider', `Calling Rider: ${activeOrder?.riderPhone || '+91 9876543210'}`)}
-              >
-                <Phone size={16} color={theme.colors.primary} />
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.actionBtn}
-                onPress={() => setChatActive(true)}
-              >
-                <MessageSquare size={16} color={theme.colors.primary} />
-              </TouchableOpacity>
-            </View>
+
+            {/* Rider Rating Card when order is delivered */}
+            {currentStatus === 'delivered' && (
+              <View style={styles.ratingCard}>
+                <Text style={styles.ratingTitle}>Rate Delivery Partner</Text>
+                <Text style={styles.ratingSubtitle}>How was your delivery experience with {activeOrder?.riderName || 'the rider'}?</Text>
+                {isRiderRated ? (
+                  <View style={styles.ratingSuccess}>
+                    <Text style={styles.ratingSuccessText}>You rated: {riderRating} ⭐</Text>
+                  </View>
+                ) : (
+                  <View style={styles.starsRow}>
+                    {[1, 2, 3, 4, 5].map((stars) => (
+                      <TouchableOpacity 
+                        key={stars} 
+                        style={styles.starBtn} 
+                        onPress={() => handleRateRider(stars)}
+                      >
+                        <Text style={styles.starText}>⭐</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
+            )}
           </View>
         ) : (
           <View style={[styles.riderCard, { justifyContent: 'center', paddingVertical: 20 }]}>
@@ -346,6 +413,71 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     width: '60%',
+    marginTop: 40,
+  },
+  addressLineCard: {
+    position: 'absolute',
+    bottom: -55,
+    left: '-30%',
+    right: '-30%',
+    backgroundColor: '#1E1E1E',
+    borderWidth: 1,
+    borderColor: '#333',
+    borderRadius: 8,
+    padding: 8,
+    zIndex: 100,
+  },
+  addressLineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 2,
+  },
+  addressLineText: {
+    fontSize: 10,
+    color: '#CCC',
+    flex: 1,
+  },
+  ratingCard: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#1F1F1F',
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 12,
+    alignItems: 'center',
+  },
+  ratingTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#FFF',
+    marginBottom: 4,
+  },
+  ratingSubtitle: {
+    fontSize: 11,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  ratingSuccess: {
+    backgroundColor: 'rgba(52,199,89,0.1)',
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+  },
+  ratingSuccessText: {
+    color: theme.colors.success,
+    fontWeight: 'bold',
+    fontSize: 12,
+  },
+  starsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  starBtn: {
+    paddingHorizontal: 8,
+  },
+  starText: {
+    fontSize: 24,
   },
   restaurantPin: {
     transform: [{ scale: 1.2 }],

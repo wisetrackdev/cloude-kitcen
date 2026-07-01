@@ -11,6 +11,7 @@ namespace CloudeKicten.Models.BusinessLayer
         Task<ApiResponse<List<OrderResponseDto>>> GetAllOrdersAsync();
         Task<ApiResponse<List<OrderResponseDto>>> GetOrdersByCustomerIdAsync(string customerId);
         Task<ApiResponse<List<OrderResponseDto>>> GetOrdersByKitchenIdAsync(string kitchenId);
+        Task<ApiResponse<List<OrderResponseDto>>> GetOrdersByRiderIdAsync(string riderId);
         Task<ApiResponse<OrderResponseDto>> GetOrderByIdAsync(string id);
         Task<ApiResponse<OrderResponseDto>> CreateOrderAsync(OrderCreateDto dto);
         Task<ApiResponse<OrderResponseDto>> UpdateOrderStatusAsync(string id, string status);
@@ -69,6 +70,17 @@ namespace CloudeKicten.Models.BusinessLayer
             return ApiResponse<List<OrderResponseDto>>.Ok(list);
         }
 
+        public async Task<ApiResponse<List<OrderResponseDto>>> GetOrdersByRiderIdAsync(string riderId)
+        {
+            var dbOrders = await _databaseLayer.GetOrdersByRiderIdAsync(riderId);
+            var list = new List<OrderResponseDto>();
+            foreach (var o in dbOrders)
+            {
+                list.Add(await MapToOrderResponseDtoAsync(o));
+            }
+            return ApiResponse<List<OrderResponseDto>>.Ok(list);
+        }
+
         public async Task<ApiResponse<OrderResponseDto>> GetOrderByIdAsync(string id)
         {
             var o = await _databaseLayer.GetOrderByIdAsync(id);
@@ -103,7 +115,8 @@ namespace CloudeKicten.Models.BusinessLayer
                 Total = dto.Total,
                 Status = "placed",
                 PaymentMethod = dto.PaymentMethod,
-                OrderDate = orderDate
+                OrderDate = orderDate,
+                DeliveryAddress = dto.DeliveryAddress
             };
 
             await _databaseLayer.InsertOrderAsync(order);
@@ -248,7 +261,9 @@ namespace CloudeKicten.Models.BusinessLayer
                 Date = dbOrder.OrderDate,
                 RiderId = dbOrder.RiderId,
                 RiderName = rider != null ? $"{rider.FirstName} {rider.LastName}".Trim() : "Vikram Singh",
-                RiderPhone = rider != null && !string.IsNullOrEmpty(rider.Phone) ? rider.Phone : "+91 9876543210"
+                RiderPhone = rider != null && !string.IsNullOrEmpty(rider.Phone) ? rider.Phone : "+91 9876543210",
+                CustomerPhone = customer != null && !string.IsNullOrEmpty(customer.Phone) ? customer.Phone : "+91 9876543210",
+                DeliveryAddress = dbOrder.DeliveryAddress
             };
         }
     }

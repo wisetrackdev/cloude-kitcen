@@ -6,13 +6,15 @@ import {
   ScrollView, 
   TouchableOpacity, 
   TextInput, 
-  Alert 
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Trash2, Tag, ChevronRight, Plus, Minus, CreditCard } from 'lucide-react-native';
+import { ArrowLeft, Trash2, Tag, ChevronRight, Plus, Minus, CreditCard, MapPin, Navigation } from 'lucide-react-native';
 import { theme } from '../styles/theme';
 import { useCartStore } from '../store/useCartStore';
 import { useKitchenStore } from '../store/useKitchenStore';
+import * as Location from 'expo-location';
 
 export default function CartScreen() {
   const router = useRouter();
@@ -36,6 +38,47 @@ export default function CartScreen() {
 
   const [promoCodeInput, setPromoCodeInput] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'wallet' | 'card'>('cod');
+  const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [loadingLocation, setLoadingLocation] = useState(false);
+
+  const detectLocation = async () => {
+    setLoadingLocation(true);
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Permission to access location was denied. Please type your address manually.');
+        setLoadingLocation(false);
+        return;
+      }
+
+      let location = await Location.getCurrentPositionAsync({});
+      let geocode = await Location.reverseGeocodeAsync({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude
+      });
+      
+      if (geocode.length > 0) {
+        const addressObj = geocode[0];
+        const formattedAddress = [
+          addressObj.name,
+          addressObj.street,
+          addressObj.district,
+          addressObj.city,
+          addressObj.region,
+          addressObj.postalCode,
+          addressObj.country
+        ].filter(Boolean).join(', ');
+        setDeliveryAddress(formattedAddress || `${location.coords.latitude.toFixed(6)}, ${location.coords.longitude.toFixed(6)}`);
+      } else {
+        setDeliveryAddress(`${location.coords.latitude.toFixed(6)}, ${location.coords.longitude.toFixed(6)}`);
+      }
+    } catch (e) {
+      console.warn(e);
+      setDeliveryAddress('H.No. 402, Block C, Noida Sector 62, Landmark: Near Metro Station, UP');
+    } finally {
+      setLoadingLocation(false);
+    }
+  };
 
   const handleApplyCoupon = () => {
     if (promoCodeInput.toUpperCase() === 'ITALY50') {
@@ -54,6 +97,10 @@ export default function CartScreen() {
 
   const handleCheckout = async () => {
     if (cartItems.length === 0) return;
+    if (!deliveryAddress.trim()) {
+      Alert.alert('Address Required', 'Please enter or detect your delivery address.');
+      return;
+    }
     
     try {
       const orderId = await placeOrder({
@@ -72,7 +119,8 @@ export default function CartScreen() {
         tax: totals.tax,
         discount: totals.discount,
         total: totals.total,
-        paymentMethod: paymentMethod
+        paymentMethod: paymentMethod,
+        deliveryAddress: deliveryAddress
       });
 
       // Simulate order placement
@@ -159,6 +207,35 @@ export default function CartScreen() {
             onChangeText={setCookingInstruction}
             style={styles.textInput}
           />
+        </View>
+
+        {/* Delivery Address selection */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Delivery Address</Text>
+          <View style={styles.addressContainer}>
+            <TextInput
+              placeholder="H.No. / Flat, Building, Street, Area, City"
+              placeholderTextColor="#888"
+              value={deliveryAddress}
+              onChangeText={setDeliveryAddress}
+              multiline
+              style={[styles.textInput, { height: 60, textAlignVertical: 'top', paddingVertical: 8, marginBottom: 8 }]}
+            />
+            <TouchableOpacity 
+              style={styles.gpsButton} 
+              onPress={detectLocation}
+              disabled={loadingLocation}
+            >
+              {loadingLocation ? (
+                <ActivityIndicator size="small" color={theme.colors.primary} />
+              ) : (
+                <>
+                  <Navigation size={14} color={theme.colors.primary} style={{ marginRight: 6 }} />
+                  <Text style={styles.gpsButtonText}>Detect via GPS</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Coupons section */}
@@ -499,5 +576,27 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#000',
     marginRight: 4,
+  },
+  addressContainer: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#1F1F1F',
+    borderRadius: 12,
+    padding: 10,
+  },
+  gpsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,107,0,0.1)',
+    borderRadius: 8,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,107,0,0.2)',
+  },
+  gpsButtonText: {
+    fontSize: 12,
+    color: theme.colors.primary,
+    fontWeight: 'bold',
   }
 });

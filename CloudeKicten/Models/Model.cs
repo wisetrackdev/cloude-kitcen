@@ -48,6 +48,10 @@ namespace CloudeKicten.Models
         public string IsApproved { get; set; } = "pending"; // pending, approved, rejected
         public string OwnerName { get; set; } = string.Empty;
         public string BankAccount { get; set; } = string.Empty;
+        public string? CoverImageUrl { get; set; }
+        public string? BankName { get; set; }
+        public string? AccountNumber { get; set; }
+        public string? IfscCode { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 
@@ -80,6 +84,7 @@ namespace CloudeKicten.Models
         public string PaymentMethod { get; set; } = "cod"; // cod, card, wallet
         public string OrderDate { get; set; } = string.Empty;
         public string? RiderId { get; set; }
+        public string? DeliveryAddress { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 
@@ -125,7 +130,21 @@ namespace CloudeKicten.Models
         public decimal? CurrentLatitude { get; set; }
         public decimal? CurrentLongitude { get; set; }
         public string? DeliveryZone { get; set; }
+        public string? RcNumber { get; set; }
+        public string? BankName { get; set; }
+        public string? AccountNumber { get; set; }
+        public string? IfscCode { get; set; }
+        public decimal Rating { get; set; } = 5.0m;
+        public int RatingCount { get; set; } = 0;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        // User Profile extensions
+        public string? Phone { get; set; }
+        public string? Gender { get; set; }
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
+        public string? Email { get; set; }
+        public string? Avatar { get; set; }
     }
 
     // ==========================================
@@ -206,6 +225,11 @@ namespace CloudeKicten.Models
         public decimal? Latitude { get; set; }
         public decimal? Longitude { get; set; }
         public string IsApproved { get; set; } = "pending";
+        public string? BankAccount { get; set; }
+        public string? CoverImageUrl { get; set; }
+        public string? BankName { get; set; }
+        public string? AccountNumber { get; set; }
+        public string? IfscCode { get; set; }
     }
 
     public class KitchenUpdateDto
@@ -224,6 +248,11 @@ namespace CloudeKicten.Models
         public decimal? Latitude { get; set; }
         public decimal? Longitude { get; set; }
         public string IsApproved { get; set; } = "pending";
+        public string? BankAccount { get; set; }
+        public string? CoverImageUrl { get; set; }
+        public string? BankName { get; set; }
+        public string? AccountNumber { get; set; }
+        public string? IfscCode { get; set; }
     }
 
     public class ProductCreateDto
@@ -270,6 +299,7 @@ namespace CloudeKicten.Models
         public decimal Discount { get; set; }
         public decimal Total { get; set; }
         public string PaymentMethod { get; set; } = "cod";
+        public string? DeliveryAddress { get; set; }
     }
 
     public class OrderResponseDto
@@ -291,6 +321,26 @@ namespace CloudeKicten.Models
         public string? RiderId { get; set; }
         public string? RiderName { get; set; }
         public string? RiderPhone { get; set; }
+        public string? CustomerPhone { get; set; }
+        public string? DeliveryAddress { get; set; }
+    }
+
+    public class RateRiderDto
+    {
+        public int Rating { get; set; }
+    }
+
+    public class RiderProfileUpdateDto
+    {
+        public string VehicleNumber { get; set; } = string.Empty;
+        public string LicenseNumber { get; set; } = string.Empty;
+        public string? RcNumber { get; set; }
+        public string? BankName { get; set; }
+        public string? AccountNumber { get; set; }
+        public string? IfscCode { get; set; }
+        public string? DeliveryZone { get; set; }
+        public string? Phone { get; set; }
+        public string? Gender { get; set; }
     }
 
     public class OrderStatusUpdateDto

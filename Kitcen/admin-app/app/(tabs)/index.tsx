@@ -44,6 +44,11 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchKitchens();
     fetchOrders();
+    const interval = setInterval(() => {
+      fetchKitchens();
+      fetchOrders();
+    }, 5000); // Poll every 5s for live updates
+    return () => clearInterval(interval);
   }, []);
 
   const totalSales = kitchens.reduce((sum, k) => sum + k.revenue, 0);

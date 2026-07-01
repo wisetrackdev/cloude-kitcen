@@ -33,7 +33,40 @@ export default function RiderProfile() {
   const [online, setOnline] = useState(true);
   const [firstName, setFirstName] = useState(user?.firstName || user?.name?.split(' ')[0] || '');
   const [lastName, setLastName] = useState(user?.lastName || user?.name?.split(' ').slice(1).join(' ') || '');
+  const [vehicleNumber, setVehicleNumber] = useState('');
+  const [licenseNumber, setLicenseNumber] = useState('');
+  const [rcNumber, setRcNumber] = useState('');
+  const [bankName, setBankName] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
+  const [ifscCode, setIfscCode] = useState('');
+  const [deliveryZone, setDeliveryZone] = useState('');
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [gender, setGender] = useState(user?.gender || 'Male');
   const [isLoading, setIsLoading] = useState(false);
+
+  React.useEffect(() => {
+    const fetchRiderData = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/riders/${user.id}`);
+        const json = await res.json();
+        if (json.success && json.data) {
+          const r = json.data;
+          setVehicleNumber(r.vehicleNumber || '');
+          setLicenseNumber(r.licenseNumber || '');
+          setRcNumber(r.rcNumber || '');
+          setBankName(r.bankName || '');
+          setAccountNumber(r.accountNumber || '');
+          setIfscCode(r.ifscCode || '');
+          setDeliveryZone(r.deliveryZone || '');
+          setPhone(r.phone || user?.phone || '');
+          setGender(r.gender || user?.gender || 'Male');
+        }
+      } catch (err) {
+        console.warn('Failed to load rider details', err);
+      }
+    };
+    fetchRiderData();
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -47,13 +80,35 @@ export default function RiderProfile() {
   };
 
   const handleUpdateProfile = async () => {
-    if (!firstName.trim() || !lastName.trim()) {
-      Alert.alert('Error', 'First Name and Last Name are required');
+    if (!firstName.trim() || !lastName.trim() || !vehicleNumber.trim()) {
+      Alert.alert('Error', 'First Name, Last Name and Vehicle Number are required');
       return;
     }
 
     setIsLoading(true);
     try {
+      // 1. Update rider profile details
+      const resRider = await fetch(`${API_BASE_URL}/api/riders/${user.id}/profile`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          vehicleNumber: vehicleNumber.trim(),
+          licenseNumber: licenseNumber.trim(),
+          rcNumber: rcNumber.trim(),
+          bankName: bankName.trim(),
+          accountNumber: accountNumber.trim(),
+          ifscCode: ifscCode.trim(),
+          deliveryZone: deliveryZone.trim(),
+          phone: phone.trim(),
+          gender: gender.trim()
+        })
+      });
+      const jsonRider = await resRider.json();
+
+      // 2. Update user name/details
       const res = await fetch(`${API_BASE_URL}/api/auth/profile/${user.id}`, {
         method: 'PUT',
         headers: { 
@@ -66,6 +121,8 @@ export default function RiderProfile() {
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           name: `${firstName.trim()} ${lastName.trim()}`,
+          phone: phone.trim(),
+          gender: gender.trim(),
           avatar: user.avatar,
           role: user.role
         })
@@ -74,9 +131,9 @@ export default function RiderProfile() {
       const json = await res.json();
       setIsLoading(false);
 
-      if (json.success) {
+      if (json.success && jsonRider.success) {
         setAuth(token, refreshToken, json.data);
-        Alert.alert('Success', 'Profile updated successfully!');
+        Alert.alert('Success', 'Profile, vehicle, and bank details updated successfully!');
       } else {
         Alert.alert('Error', json.message || 'Failed to update profile');
       }
@@ -159,34 +216,120 @@ export default function RiderProfile() {
           />
         </View>
 
-        <TouchableOpacity style={styles.saveBtn} onPress={handleUpdateProfile} disabled={isLoading}>
-          <Text style={styles.saveBtnText}>{isLoading ? 'Saving...' : 'Save Changes'}</Text>
-        </TouchableOpacity>
+        <View style={styles.inputWrapper}>
+          <Text style={styles.inputLabel}>Phone Number</Text>
+          <TextInput
+            style={styles.textInput}
+            value={phone}
+            onChangeText={setPhone}
+            placeholder="e.g. +91 9999999999"
+            placeholderTextColor="#888"
+            keyboardType="phone-pad"
+          />
+        </View>
+
+        <View style={styles.inputWrapper}>
+          <Text style={styles.inputLabel}>Gender</Text>
+          <TextInput
+            style={styles.textInput}
+            value={gender}
+            onChangeText={setGender}
+            placeholder="e.g. Male, Female, Other"
+            placeholderTextColor="#888"
+          />
+        </View>
       </View>
 
-      {/* Options */}
+      {/* Edit Vehicle Details */}
       <View style={styles.optionGroup}>
-        <Text style={styles.groupHeader}>Duty settings</Text>
+        <Text style={styles.groupHeader}>Vehicle & License Details</Text>
 
-        <TouchableOpacity style={styles.optionRow} onPress={() => handleAction('Vehicle Details')}>
-          <View style={styles.optionLeft}>
-            <Navigation size={16} color="#8E8E93" />
-            <Text style={styles.optionLabel}>Edit Vehicle Information</Text>
-          </View>
-        </TouchableOpacity>
+        <View style={styles.inputWrapper}>
+          <Text style={styles.inputLabel}>Vehicle Plate Number</Text>
+          <TextInput
+            style={styles.textInput}
+            value={vehicleNumber}
+            onChangeText={setVehicleNumber}
+            placeholder="e.g. DL 3C AY 4321"
+            placeholderTextColor="#888"
+          />
+        </View>
 
-        <TouchableOpacity style={styles.optionRow} onPress={() => handleAction('Weekly History')}>
-          <View style={styles.optionLeft}>
-            <Clock size={16} color="#8E8E93" />
-            <Text style={styles.optionLabel}>Weekly Payout Logs</Text>
-          </View>
-        </TouchableOpacity>
+        <View style={styles.inputWrapper}>
+          <Text style={styles.inputLabel}>Driver License Number</Text>
+          <TextInput
+            style={styles.textInput}
+            value={licenseNumber}
+            onChangeText={setLicenseNumber}
+            placeholder="e.g. DL-1420180000000"
+            placeholderTextColor="#888"
+          />
+        </View>
 
-        <TouchableOpacity style={styles.optionRow} onPress={() => handleAction('Rider Safety')}>
-          <View style={styles.optionLeft}>
-            <ShieldCheck size={16} color="#8E8E93" />
-            <Text style={styles.optionLabel}>Contactless Delivery Guide</Text>
-          </View>
+        <View style={styles.inputWrapper}>
+          <Text style={styles.inputLabel}>RC Book / Registration Number</Text>
+          <TextInput
+            style={styles.textInput}
+            value={rcNumber}
+            onChangeText={setRcNumber}
+            placeholder="e.g. RC/9874563/2026"
+            placeholderTextColor="#888"
+          />
+        </View>
+
+        <View style={styles.inputWrapper}>
+          <Text style={styles.inputLabel}>Delivery Zone</Text>
+          <TextInput
+            style={styles.textInput}
+            value={deliveryZone}
+            onChangeText={setDeliveryZone}
+            placeholder="e.g. Noida Sector 62"
+            placeholderTextColor="#888"
+          />
+        </View>
+      </View>
+
+      {/* Edit Bank Payout Details */}
+      <View style={styles.optionGroup}>
+        <Text style={styles.groupHeader}>Bank Account & Payout Details (SuperAdmin Visible)</Text>
+
+        <View style={styles.inputWrapper}>
+          <Text style={styles.inputLabel}>Bank Name</Text>
+          <TextInput
+            style={styles.textInput}
+            value={bankName}
+            onChangeText={setBankName}
+            placeholder="e.g. State Bank of India"
+            placeholderTextColor="#888"
+          />
+        </View>
+
+        <View style={styles.inputWrapper}>
+          <Text style={styles.inputLabel}>Account Number</Text>
+          <TextInput
+            style={styles.textInput}
+            value={accountNumber}
+            onChangeText={setAccountNumber}
+            placeholder="e.g. 30948576291"
+            placeholderTextColor="#888"
+            keyboardType="number-pad"
+          />
+        </View>
+
+        <View style={styles.inputWrapper}>
+          <Text style={styles.inputLabel}>IFSC Code</Text>
+          <TextInput
+            style={styles.textInput}
+            value={ifscCode}
+            onChangeText={setIfscCode}
+            placeholder="e.g. SBIN0001234"
+            placeholderTextColor="#888"
+            autoCapitalize="characters"
+          />
+        </View>
+
+        <TouchableOpacity style={styles.saveBtn} onPress={handleUpdateProfile} disabled={isLoading}>
+          <Text style={styles.saveBtnText}>{isLoading ? 'Saving...' : 'Save All Details'}</Text>
         </TouchableOpacity>
       </View>
 

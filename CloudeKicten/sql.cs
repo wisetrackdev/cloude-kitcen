@@ -137,6 +137,20 @@ namespace CloudeKicten
             ALTER TABLE orders ADD COLUMN IF NOT EXISTS accepted_by_rider_at TIMESTAMP NULL;
 
             ALTER TABLE wallet_transactions ADD COLUMN IF NOT EXISTS order_id VARCHAR(50) NULL;
+
+            -- New app fields
+            ALTER TABLE delivery_partners ADD COLUMN IF NOT EXISTS rc_number VARCHAR(50) NULL;
+            ALTER TABLE delivery_partners ADD COLUMN IF NOT EXISTS bank_name VARCHAR(100) NULL;
+            ALTER TABLE delivery_partners ADD COLUMN IF NOT EXISTS account_number VARCHAR(50) NULL;
+            ALTER TABLE delivery_partners ADD COLUMN IF NOT EXISTS ifsc_code VARCHAR(50) NULL;
+            ALTER TABLE delivery_partners ADD COLUMN IF NOT EXISTS rating NUMERIC(3,2) DEFAULT 5.0;
+            ALTER TABLE delivery_partners ADD COLUMN IF NOT EXISTS rating_count INT DEFAULT 0;
+
+            ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_address VARCHAR(500) NULL;
+
+            ALTER TABLE shops ADD COLUMN IF NOT EXISTS bank_name VARCHAR(100) NULL;
+            ALTER TABLE shops ADD COLUMN IF NOT EXISTS account_number VARCHAR(50) NULL;
+            ALTER TABLE shops ADD COLUMN IF NOT EXISTS ifsc_code VARCHAR(50) NULL;
         ";
 
         public const string CreateOrderChatsTable = @"
@@ -543,12 +557,12 @@ namespace CloudeKicten
         // ==========================================
 
         public const string InsertKitchen = @"
-            INSERT INTO shops (id, vendor_id, name, type, cuisines, rating, rating_count, prep_time, distance, offer, image_url, is_live, revenue, orders_count, logo_url, address, floor, office_gali_number, latitude, longitude, is_approved, bank_account, created_at)
-            VALUES (@Id, @VendorId, @Name, @Type, @Cuisines, @Rating, @RatingCount, @Time, @Distance, @Offer, @Image, @IsLive, @Revenue, @OrdersCount, @LogoUrl, @Address, @Floor, @OfficeGaliNumber, @Latitude, @Longitude, @IsApproved, @BankAccount, CURRENT_TIMESTAMP);
+            INSERT INTO shops (id, vendor_id, name, type, cuisines, rating, rating_count, prep_time, distance, offer, image_url, is_live, revenue, orders_count, logo_url, address, floor, office_gali_number, latitude, longitude, is_approved, bank_account, cover_image_url, bank_name, account_number, ifsc_code, created_at)
+            VALUES (@Id, @VendorId, @Name, @Type, @Cuisines, @Rating, @RatingCount, @Time, @Distance, @Offer, @Image, @IsLive, @Revenue, @OrdersCount, @LogoUrl, @Address, @Floor, @OfficeGaliNumber, @Latitude, @Longitude, @IsApproved, @BankAccount, @CoverImageUrl, @BankName, @AccountNumber, @IfscCode, CURRENT_TIMESTAMP);
         ";
 
         public const string GetAllKitchens = @"
-            SELECT s.id, s.vendor_id, s.name, s.type, s.cuisines, s.rating, s.rating_count, s.prep_time, s.distance, s.offer, s.image_url, s.is_live, s.revenue, s.orders_count, s.logo_url, s.address, s.floor, s.office_gali_number, s.latitude, s.longitude, s.is_approved, s.bank_account, s.created_at,
+            SELECT s.id, s.vendor_id, s.name, s.type, s.cuisines, s.rating, s.rating_count, s.prep_time, s.distance, s.offer, s.image_url, s.is_live, s.revenue, s.orders_count, s.logo_url, s.address, s.floor, s.office_gali_number, s.latitude, s.longitude, s.is_approved, s.bank_account, s.cover_image_url, s.bank_name, s.account_number, s.ifsc_code, s.created_at,
                    COALESCE(CONCAT(u.first_name, ' ', u.last_name), 'Housewife Partner') AS owner_name
             FROM shops s
             LEFT JOIN user_register u ON s.vendor_id = u.id
@@ -556,7 +570,7 @@ namespace CloudeKicten
         ";
 
         public const string GetKitchenById = @"
-            SELECT s.id, s.vendor_id, s.name, s.type, s.cuisines, s.rating, s.rating_count, s.prep_time, s.distance, s.offer, s.image_url, s.is_live, s.revenue, s.orders_count, s.logo_url, s.address, s.floor, s.office_gali_number, s.latitude, s.longitude, s.is_approved, s.bank_account, s.created_at,
+            SELECT s.id, s.vendor_id, s.name, s.type, s.cuisines, s.rating, s.rating_count, s.prep_time, s.distance, s.offer, s.image_url, s.is_live, s.revenue, s.orders_count, s.logo_url, s.address, s.floor, s.office_gali_number, s.latitude, s.longitude, s.is_approved, s.bank_account, s.cover_image_url, s.bank_name, s.account_number, s.ifsc_code, s.created_at,
                    COALESCE(CONCAT(u.first_name, ' ', u.last_name), 'Housewife Partner') AS owner_name
             FROM shops s
             LEFT JOIN user_register u ON s.vendor_id = u.id
@@ -565,7 +579,7 @@ namespace CloudeKicten
 
         public const string UpdateKitchen = @"
             UPDATE shops
-            SET name = @Name, type = @Type, cuisines = @Cuisines, prep_time = @Time, distance = @Distance, offer = @Offer, image_url = @Image, is_live = @IsLive, logo_url = @LogoUrl, address = @Address, floor = @Floor, office_gali_number = @OfficeGaliNumber, latitude = @Latitude, longitude = @Longitude, is_approved = @IsApproved
+            SET name = @Name, type = @Type, cuisines = @Cuisines, prep_time = @Time, distance = @Distance, offer = @Offer, image_url = @Image, is_live = @IsLive, logo_url = @LogoUrl, address = @Address, floor = @Floor, office_gali_number = @OfficeGaliNumber, latitude = @Latitude, longitude = @Longitude, is_approved = @IsApproved, bank_account = @BankAccount, cover_image_url = @CoverImageUrl, bank_name = @BankName, account_number = @AccountNumber, ifsc_code = @IfscCode
             WHERE id = @Id;
         ";
 
@@ -620,33 +634,40 @@ namespace CloudeKicten
         // ==========================================
 
         public const string InsertOrder = @"
-            INSERT INTO orders (id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, created_at)
-            VALUES (@Id, @KitchenId, @CustomerId, @ItemsJson, @Subtotal, @DeliveryCharge, @Tax, @Discount, @Total, @Status, @PaymentMethod, @OrderDate, @RiderId, CURRENT_TIMESTAMP);
+            INSERT INTO orders (id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at)
+            VALUES (@Id, @KitchenId, @CustomerId, @ItemsJson, @Subtotal, @DeliveryCharge, @Tax, @Discount, @Total, @Status, @PaymentMethod, @OrderDate, @RiderId, @DeliveryAddress, CURRENT_TIMESTAMP);
         ";
 
         public const string GetAllOrders = @"
-            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, created_at
+            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at
             FROM orders
             ORDER BY created_at DESC;
         ";
 
         public const string GetOrderById = @"
-            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, created_at
+            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at
             FROM orders
             WHERE id = @Id;
         ";
 
         public const string GetOrdersByCustomerId = @"
-            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, created_at
+            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at
             FROM orders
             WHERE customer_id = @CustomerId
             ORDER BY created_at DESC;
         ";
 
         public const string GetOrdersByKitchenId = @"
-            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, created_at
+            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at
             FROM orders
             WHERE kitchen_id = @KitchenId
+            ORDER BY created_at DESC;
+        ";
+
+        public const string GetOrdersByRiderId = @"
+            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at
+            FROM orders
+            WHERE rider_id = @RiderId
             ORDER BY created_at DESC;
         ";
 
@@ -753,16 +774,29 @@ namespace CloudeKicten
         // ==========================================
 
         public const string InsertRider = @"
-            INSERT INTO delivery_partners (id, vehicle_number, license_number, is_approved, is_active, current_latitude, current_longitude, delivery_zone, created_at)
-            VALUES (@Id, @VehicleNumber, @LicenseNumber, FALSE, @IsActive, NULL, NULL, @DeliveryZone, CURRENT_TIMESTAMP)
+            INSERT INTO delivery_partners (id, vehicle_number, license_number, is_approved, is_active, current_latitude, current_longitude, delivery_zone, rc_number, bank_name, account_number, ifsc_code, rating, rating_count, created_at)
+            VALUES (@Id, @VehicleNumber, @LicenseNumber, FALSE, @IsActive, NULL, NULL, @DeliveryZone, @RcNumber, @BankName, @AccountNumber, @IfscCode, 5.0, 0, CURRENT_TIMESTAMP)
             ON CONFLICT (id) DO UPDATE 
-            SET vehicle_number = EXCLUDED.vehicle_number, license_number = EXCLUDED.license_number, is_active = EXCLUDED.is_active, delivery_zone = EXCLUDED.delivery_zone;
+            SET vehicle_number = EXCLUDED.vehicle_number, license_number = EXCLUDED.license_number, is_active = EXCLUDED.is_active, delivery_zone = EXCLUDED.delivery_zone,
+                rc_number = EXCLUDED.rc_number, bank_name = EXCLUDED.bank_name, account_number = EXCLUDED.account_number, ifsc_code = EXCLUDED.ifsc_code;
         ";
 
         public const string GetRiderById = @"
-            SELECT id, vehicle_number, license_number, is_approved, is_active, current_latitude, current_longitude, delivery_zone, created_at
-            FROM delivery_partners
-            WHERE id = @Id;
+            SELECT r.id, r.vehicle_number, r.license_number, r.is_approved, r.is_active, r.current_latitude, r.current_longitude, r.delivery_zone, r.created_at,
+                   r.rc_number, r.bank_name, r.account_number, r.ifsc_code, r.rating, r.rating_count,
+                   u.phone_number, u.gender, u.first_name, u.last_name, u.email
+            FROM delivery_partners r
+            LEFT JOIN user_register u ON r.id = u.id
+            WHERE r.id = @Id;
+        ";
+
+        public const string GetAllRiders = @"
+            SELECT r.id, r.vehicle_number, r.license_number, r.is_approved, r.is_active, r.current_latitude, r.current_longitude, r.delivery_zone, r.created_at,
+                   r.rc_number, r.bank_name, r.account_number, r.ifsc_code, r.rating, r.rating_count,
+                   u.phone_number, u.gender, u.first_name, u.last_name, u.email
+            FROM delivery_partners r
+            LEFT JOIN user_register u ON r.id = u.id
+            ORDER BY r.created_at DESC;
         ";
 
         public const string UpdateRiderLocation = @"

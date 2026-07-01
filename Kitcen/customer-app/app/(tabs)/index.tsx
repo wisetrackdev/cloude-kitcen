@@ -41,6 +41,10 @@ export default function HomeScreen() {
   React.useEffect(() => {
     fetchKitchens();
     detectLocation();
+    const interval = setInterval(() => {
+      fetchKitchens();
+    }, 10000); // Poll kitchens every 10s
+    return () => clearInterval(interval);
   }, []);
 
   return (

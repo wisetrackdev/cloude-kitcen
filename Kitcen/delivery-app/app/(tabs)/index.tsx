@@ -23,7 +23,9 @@ export default function RiderDashboard() {
   const riderId = user?.id || 'usr-rider-simulated';
 
   const orders = useKitchenStore(state => state.orders);
+  const kitchens = useKitchenStore(state => state.kitchens);
   const fetchOrders = useKitchenStore(state => state.fetchOrders);
+  const fetchKitchens = useKitchenStore(state => state.fetchKitchens);
   const updateOrderStatus = useKitchenStore(state => state.updateOrderStatus);
   const acceptOrder = useKitchenStore(state => state.acceptOrder);
 
@@ -35,8 +37,10 @@ export default function RiderDashboard() {
 
   useEffect(() => {
     fetchOrders();
+    fetchKitchens();
     const interval = setInterval(() => {
       fetchOrders();
+      fetchKitchens();
     }, 5000); // Poll every 5s for live updates
     return () => clearInterval(interval);
   }, []);
@@ -227,11 +231,13 @@ export default function RiderDashboard() {
                     <View style={styles.nodeDetails}>
                       <Text style={styles.nodeTitle}>Step 1: Go to Pickup Shop</Text>
                       <Text style={styles.nodeName}>{delivery.kitchenName}</Text>
-                      <Text style={styles.nodeAddress}>Collect from Vendor Counter</Text>
+                      <Text style={styles.nodeAddress}>
+                        Address: {kitchens.find(k => k.id === delivery.kitchenId)?.address || 'Collect from Vendor Counter'}
+                      </Text>
                       
                       <TouchableOpacity 
                         style={styles.mapLinkBtn}
-                        onPress={() => handleOpenMaps(`${delivery.kitchenName} Kitchen Pune`)}
+                        onPress={() => handleOpenMaps(`${delivery.kitchenName} Kitchen address: ${kitchens.find(k => k.id === delivery.kitchenId)?.address || ''}`)}
                       >
                         <Text style={styles.mapLinkText}>🗺 Navigate to Shop (Google Maps)</Text>
                       </TouchableOpacity>
@@ -243,12 +249,12 @@ export default function RiderDashboard() {
                     <View style={styles.nodeDetails}>
                       <Text style={styles.nodeTitle}>Step 2: Deliver to Customer</Text>
                       <Text style={styles.nodeName}>{delivery.customerName}</Text>
-                      <Text style={styles.nodeAddress}>Contact Mobile: +91 98765 43210</Text>
-                      <Text style={styles.nodeAddress}>Address: Royal Residency, Pune</Text>
+                      <Text style={styles.nodeAddress}>Contact Mobile: {delivery.customerPhone || '+91 98765 43210'}</Text>
+                      <Text style={styles.nodeAddress}>Address: {delivery.deliveryAddress || 'Royal Residency, Pune'}</Text>
 
                       <TouchableOpacity 
                         style={styles.mapLinkBtn}
-                        onPress={() => handleOpenMaps(`Royal Residency Pune customer ${delivery.customerName}`)}
+                        onPress={() => handleOpenMaps(`${delivery.deliveryAddress || 'Royal Residency Pune'} customer ${delivery.customerName}`)}
                       >
                         <Text style={styles.mapLinkText}>🗺 Navigate to Customer (Google Maps)</Text>
                       </TouchableOpacity>
@@ -350,6 +356,45 @@ export default function RiderDashboard() {
           </View>
         </Modal>
       )}
+      {/* Earnings & Stats Card */}
+      <View style={styles.statsCard}>
+        <Text style={styles.statsHeader}>Rider Delivery Metrics</Text>
+        <View style={styles.statsRow}>
+          <View style={styles.statsItem}>
+            <Text style={styles.statsVal}>{orders.filter(o => o.riderId === riderId && o.status === 'delivered').length}</Text>
+            <Text style={styles.statsLabel}>Completed Jobs</Text>
+          </View>
+          <View style={styles.statsItem}>
+            <Text style={styles.statsVal}>
+              ₹{orders.filter(o => o.riderId === riderId && o.status === 'delivered').reduce((sum, o) => sum + Number(o.deliveryCharge || 40), 0)}
+            </Text>
+            <Text style={styles.statsLabel}>Delivery Earnings</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Completed Orders Logs */}
+      <Text style={styles.sectionTitle}>Completed Orders Logs ({orders.filter(o => o.riderId === riderId && o.status === 'delivered').length})</Text>
+      <View style={styles.deliveriesList}>
+        {orders.filter(o => o.riderId === riderId && o.status === 'delivered').map((order) => (
+          <View key={order.id} style={styles.completedCard}>
+            <View style={styles.completedHeader}>
+              <Text style={styles.completedId}>{order.id}</Text>
+              <Text style={styles.completedDate}>{order.date}</Text>
+            </View>
+            <Text style={styles.completedDetails}>From: {order.kitchenName}</Text>
+            <Text style={styles.completedDetails}>To: {order.customerName}</Text>
+            <Text style={styles.completedAddress}>Address: {order.deliveryAddress || 'Customer Location'}</Text>
+            <View style={styles.completedFooter}>
+              <Text style={styles.earningAmt}>Earnings: ₹{order.deliveryCharge || 40}</Text>
+              <Text style={styles.deliveredLabel}>✓ DELIVERED</Text>
+            </View>
+          </View>
+        ))}
+        {orders.filter(o => o.riderId === riderId && o.status === 'delivered').length === 0 && (
+          <Text style={{ color: '#666', fontSize: 13, textAlign: 'center', marginVertical: 10, marginBottom: 30 }}>No completed orders history found.</Text>
+        )}
+      </View>
     </ScrollView>
   );
 }
@@ -604,5 +649,97 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: 'bold',
     color: theme.colors.primary,
+  },
+  statsCard: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#1F1F1F',
+    borderRadius: 20,
+    padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 20,
+  },
+  statsHeader: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#FFF',
+    textTransform: 'uppercase',
+    marginBottom: 12,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  statsItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statsVal: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: theme.colors.primary,
+  },
+  statsLabel: {
+    fontSize: 10,
+    color: theme.colors.textSecondary,
+    marginTop: 4,
+  },
+  completedCard: {
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#1F1F1F',
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 12,
+  },
+  completedHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: '#222',
+    paddingBottom: 6,
+    marginBottom: 8,
+  },
+  completedId: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#FFF',
+  },
+  completedDate: {
+    fontSize: 10,
+    color: theme.colors.textSecondary,
+  },
+  completedDetails: {
+    fontSize: 11,
+    color: '#CCC',
+    marginVertical: 1,
+  },
+  completedAddress: {
+    fontSize: 10,
+    color: '#888',
+    marginTop: 2,
+    marginBottom: 8,
+  },
+  completedFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#222',
+    paddingTop: 8,
+  },
+  earningAmt: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: theme.colors.success,
+  },
+  deliveredLabel: {
+    fontSize: 9,
+    fontWeight: 'bold',
+    color: theme.colors.success,
+    backgroundColor: 'rgba(46,204,113,0.1)',
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 4,
   }
 });

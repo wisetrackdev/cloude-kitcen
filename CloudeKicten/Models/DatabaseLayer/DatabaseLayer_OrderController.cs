@@ -11,6 +11,7 @@ namespace CloudeKicten.Models.DatabaseLayer
         Task<List<OrderDb>> GetAllOrdersAsync();
         Task<List<OrderDb>> GetOrdersByCustomerIdAsync(string customerId);
         Task<List<OrderDb>> GetOrdersByKitchenIdAsync(string kitchenId);
+        Task<List<OrderDb>> GetOrdersByRiderIdAsync(string riderId);
         Task<OrderDb?> GetOrderByIdAsync(string id);
         Task<bool> InsertOrderAsync(OrderDb order);
         Task<bool> UpdateOrderStatusAsync(string id, string status);
@@ -83,6 +84,22 @@ namespace CloudeKicten.Models.DatabaseLayer
             return list;
         }
 
+        public async Task<List<OrderDb>> GetOrdersByRiderIdAsync(string riderId)
+        {
+            var list = new List<OrderDb>();
+            using var conn = GetConnection();
+            await conn.OpenAsync();
+            using var cmd = new NpgsqlCommand(Sql.GetOrdersByRiderId, conn);
+            cmd.Parameters.AddWithValue("@RiderId", riderId);
+
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                list.Add(MapOrder(reader));
+            }
+            return list;
+        }
+
         public async Task<OrderDb?> GetOrderByIdAsync(string id)
         {
             using var conn = GetConnection();
@@ -116,6 +133,7 @@ namespace CloudeKicten.Models.DatabaseLayer
             cmd.Parameters.AddWithValue("@PaymentMethod", order.PaymentMethod);
             cmd.Parameters.AddWithValue("@OrderDate", order.OrderDate);
             cmd.Parameters.AddWithValue("@RiderId", (object?)order.RiderId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@DeliveryAddress", (object?)order.DeliveryAddress ?? DBNull.Value);
 
             var result = await cmd.ExecuteNonQueryAsync();
             return result > 0;
@@ -253,6 +271,7 @@ namespace CloudeKicten.Models.DatabaseLayer
                 PaymentMethod = r.GetString(r.GetOrdinal("payment_method")),
                 OrderDate = r.GetString(r.GetOrdinal("order_date")),
                 RiderId = r.IsDBNull(r.GetOrdinal("rider_id")) ? null : r.GetString(r.GetOrdinal("rider_id")),
+                DeliveryAddress = r.IsDBNull(r.GetOrdinal("delivery_address")) ? null : r.GetString(r.GetOrdinal("delivery_address")),
                 CreatedAt = r.GetDateTime(r.GetOrdinal("created_at"))
             };
         }

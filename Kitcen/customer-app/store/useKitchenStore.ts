@@ -27,6 +27,12 @@ export interface Kitchen {
   offer: string;
   revenue: number;
   ordersCount: number;
+  isApproved?: string;
+  logoUrl?: string | null;
+  coverImageUrl?: string | null;
+  bankName?: string | null;
+  accountNumber?: string | null;
+  ifscCode?: string | null;
 }
 
 export interface OrderItem {
@@ -58,6 +64,8 @@ export interface OrderRecord {
   riderId?: string | null;
   riderName?: string | null;
   riderPhone?: string | null;
+  customerPhone?: string | null;
+  deliveryAddress?: string | null;
 }
 
 interface KitchenState {
@@ -175,7 +183,13 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
           offer: k.offer,
           image: k.image,
           revenue: Number(k.revenue),
-          ordersCount: k.ordersCount
+          ordersCount: k.ordersCount,
+          isApproved: k.isApproved,
+          logoUrl: k.logoUrl,
+          coverImageUrl: k.coverImageUrl,
+          bankName: k.bankName,
+          accountNumber: k.accountNumber,
+          ifscCode: k.ifscCode
         }));
         set({ kitchens: mappedKitchens, isLoading: false });
       } else {
@@ -253,7 +267,9 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
           paymentMethod: o.paymentMethod,
           riderId: o.riderId || null,
           riderName: o.riderName || null,
-          riderPhone: o.riderPhone || null
+          riderPhone: o.riderPhone || null,
+          customerPhone: o.customerPhone || null,
+          deliveryAddress: o.deliveryAddress || null
         }));
         set({ orders: mappedOrders, isLoading: false });
       } else {
@@ -395,7 +411,8 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
           tax: newOrder.tax,
           discount: newOrder.discount,
           total: newOrder.total,
-          paymentMethod: newOrder.paymentMethod
+          paymentMethod: newOrder.paymentMethod,
+          deliveryAddress: newOrder.deliveryAddress
         })
       });
       const json = await res.json();

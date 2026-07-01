@@ -18,7 +18,7 @@ namespace CloudeKicten.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] string? customerId, [FromQuery] string? kitchenId)
+        public async Task<IActionResult> GetAll([FromQuery] string? customerId, [FromQuery] string? kitchenId, [FromQuery] string? riderId)
         {
             if (!string.IsNullOrEmpty(customerId))
             {
@@ -29,6 +29,11 @@ namespace CloudeKicten.Controllers
             {
                 var kitchenOrders = await _businessLayer.GetOrdersByKitchenIdAsync(kitchenId);
                 return Ok(kitchenOrders);
+            }
+            if (!string.IsNullOrEmpty(riderId))
+            {
+                var riderOrders = await _businessLayer.GetOrdersByRiderIdAsync(riderId);
+                return Ok(riderOrders);
             }
 
             var allOrders = await _businessLayer.GetAllOrdersAsync();

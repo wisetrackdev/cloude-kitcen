@@ -88,6 +88,10 @@ namespace CloudeKicten.Models.DatabaseLayer
             cmd.Parameters.AddWithValue("@Longitude", (object?)kitchen.Longitude ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@IsApproved", kitchen.IsApproved ?? "pending");
             cmd.Parameters.AddWithValue("@BankAccount", (object?)kitchen.BankAccount ?? "SBI A/C 30948576291");
+            cmd.Parameters.AddWithValue("@CoverImageUrl", (object?)kitchen.CoverImageUrl ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@BankName", (object?)kitchen.BankName ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@AccountNumber", (object?)kitchen.AccountNumber ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@IfscCode", (object?)kitchen.IfscCode ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@IsLive", true);
 
             var result = await cmd.ExecuteNonQueryAsync();
@@ -114,6 +118,11 @@ namespace CloudeKicten.Models.DatabaseLayer
             cmd.Parameters.AddWithValue("@Latitude", (object?)kitchen.Latitude ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@Longitude", (object?)kitchen.Longitude ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@IsApproved", kitchen.IsApproved ?? "pending");
+            cmd.Parameters.AddWithValue("@BankAccount", (object?)kitchen.BankAccount ?? "SBI A/C 30948576291");
+            cmd.Parameters.AddWithValue("@CoverImageUrl", (object?)kitchen.CoverImageUrl ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@BankName", (object?)kitchen.BankName ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@AccountNumber", (object?)kitchen.AccountNumber ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@IfscCode", (object?)kitchen.IfscCode ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@IsLive", true);
 
             var result = await cmd.ExecuteNonQueryAsync();
@@ -169,6 +178,10 @@ namespace CloudeKicten.Models.DatabaseLayer
                 IsApproved = r.IsDBNull(r.GetOrdinal("is_approved")) ? "pending" : r.GetString(r.GetOrdinal("is_approved")),
                 OwnerName = r.IsDBNull(r.GetOrdinal("owner_name")) ? "Housewife Partner" : r.GetString(r.GetOrdinal("owner_name")),
                 BankAccount = r.IsDBNull(r.GetOrdinal("bank_account")) ? "SBI A/C 30948576291" : r.GetString(r.GetOrdinal("bank_account")),
+                CoverImageUrl = r.IsDBNull(r.GetOrdinal("cover_image_url")) ? null : r.GetString(r.GetOrdinal("cover_image_url")),
+                BankName = r.IsDBNull(r.GetOrdinal("bank_name")) ? null : r.GetString(r.GetOrdinal("bank_name")),
+                AccountNumber = r.IsDBNull(r.GetOrdinal("account_number")) ? null : r.GetString(r.GetOrdinal("account_number")),
+                IfscCode = r.IsDBNull(r.GetOrdinal("ifsc_code")) ? null : r.GetString(r.GetOrdinal("ifsc_code")),
                 CreatedAt = r.GetDateTime(r.GetOrdinal("created_at"))
             };
         }

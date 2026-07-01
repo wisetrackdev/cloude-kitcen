@@ -7,7 +7,10 @@ namespace CloudeKicten.Models.BusinessLayer
     public interface IBusinessLayer_RiderController
     {
         Task<ApiResponse<RiderDb>> GetRiderProfileAsync(string id);
+        Task<ApiResponse<List<RiderDb>>> GetAllRidersAsync();
         Task<ApiResponse<RiderDb>> RegisterRiderAsync(RiderRegisterDto dto);
+        Task<ApiResponse<RiderDb>> UpdateRiderProfileAsync(string id, RiderProfileUpdateDto dto);
+        Task<ApiResponse<bool>> RateRiderAsync(string id, int rating);
         Task<ApiResponse<bool>> UpdateLocationAsync(string id, decimal latitude, decimal longitude);
         Task<ApiResponse<bool>> UpdateStatusAsync(string id, bool isActive);
     }
@@ -32,6 +35,12 @@ namespace CloudeKicten.Models.BusinessLayer
             return ApiResponse<RiderDb>.Ok(r);
         }
 
+        public async Task<ApiResponse<List<RiderDb>>> GetAllRidersAsync()
+        {
+            var list = await _databaseLayer.GetAllRidersAsync();
+            return ApiResponse<List<RiderDb>>.Ok(list);
+        }
+
         public async Task<ApiResponse<RiderDb>> RegisterRiderAsync(RiderRegisterDto dto)
         {
             var user = await _authDatabaseLayer.GetUserByIdAsync(dto.UserId);
@@ -53,6 +62,34 @@ namespace CloudeKicten.Models.BusinessLayer
 
             await _databaseLayer.InsertRiderAsync(rider);
             return ApiResponse<RiderDb>.Ok(rider, "Rider registered successfully.");
+        }
+
+        public async Task<ApiResponse<RiderDb>> UpdateRiderProfileAsync(string id, RiderProfileUpdateDto dto)
+        {
+            var rider = await _databaseLayer.GetRiderByIdAsync(id);
+            if (rider == null) return ApiResponse<RiderDb>.Fail("Rider not found.");
+
+            rider.VehicleNumber = dto.VehicleNumber;
+            rider.LicenseNumber = dto.LicenseNumber;
+            rider.RcNumber = dto.RcNumber ?? rider.RcNumber;
+            rider.BankName = dto.BankName ?? rider.BankName;
+            rider.AccountNumber = dto.AccountNumber ?? rider.AccountNumber;
+            rider.IfscCode = dto.IfscCode ?? rider.IfscCode;
+            rider.DeliveryZone = dto.DeliveryZone ?? rider.DeliveryZone;
+            rider.Phone = dto.Phone ?? rider.Phone;
+            rider.Gender = dto.Gender ?? rider.Gender;
+
+            var success = await _databaseLayer.UpdateRiderProfileAsync(rider);
+            if (!success) return ApiResponse<RiderDb>.Fail("Failed to update rider profile.");
+
+            return ApiResponse<RiderDb>.Ok(rider, "Rider profile updated successfully.");
+        }
+
+        public async Task<ApiResponse<bool>> RateRiderAsync(string id, int rating)
+        {
+            var success = await _databaseLayer.UpdateRiderRatingAsync(id, rating);
+            if (!success) return ApiResponse<bool>.Fail("Rider profile not found or rating update failed.");
+            return ApiResponse<bool>.Ok(true, "Rider rated successfully.");
         }
 
         public async Task<ApiResponse<bool>> UpdateLocationAsync(string id, decimal latitude, decimal longitude)

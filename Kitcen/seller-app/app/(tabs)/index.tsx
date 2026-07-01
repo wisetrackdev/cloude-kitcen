@@ -32,8 +32,9 @@ export default function SellerDashboard() {
     fetchKitchens();
     fetchOrders(); 
     const interval = setInterval(() => {
+      fetchKitchens();
       fetchOrders();
-    }, 5000); // Poll every 5s for live order updates
+    }, 5000); // Poll every 5s for live updates
     return () => clearInterval(interval);
   }, []);
 

@@ -51,6 +51,7 @@ export default function SellerMenuScreen() {
   const [newDishName, setNewDishName] = useState('');
   const [newDishPrice, setNewDishPrice] = useState('');
   const [newDishDesc, setNewDishDesc] = useState('');
+  const [newDishImage, setNewDishImage] = useState('');
   const [newDishVeg, setNewDishVeg] = useState(true);
   const [newDishCat, setNewDishCat] = useState('Tiffin Meals');
   const [customCategory, setCustomCategory] = useState('');
@@ -74,14 +75,17 @@ export default function SellerMenuScreen() {
       desc: newDishDesc,
       category: finalCategory,
       isVeg: newDishVeg,
-      image: newDishVeg 
-        ? 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&auto=format&fit=crop&q=80'
-        : 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=300&auto=format&fit=crop&q=80'
+      image: newDishImage.trim() !== '' 
+        ? newDishImage.trim() 
+        : (newDishVeg 
+          ? 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&auto=format&fit=crop&q=80'
+          : 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=300&auto=format&fit=crop&q=80')
     });
 
     setNewDishName('');
     setNewDishPrice('');
     setNewDishDesc('');
+    setNewDishImage('');
     setCustomCategory('');
     setShowAddDishModal(false);
     Alert.alert('Success', 'Dish added successfully to your kitchen!');
@@ -174,6 +178,14 @@ export default function SellerMenuScreen() {
                 placeholderTextColor="#888"
                 value={newDishDesc}
                 onChangeText={setNewDishDesc}
+                style={styles.inputField}
+              />
+
+              <TextInput
+                placeholder="Dish Image URL (Optional)"
+                placeholderTextColor="#888"
+                value={newDishImage}
+                onChangeText={setNewDishImage}
                 style={styles.inputField}
               />
 

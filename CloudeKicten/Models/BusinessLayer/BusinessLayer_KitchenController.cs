@@ -69,6 +69,11 @@ namespace CloudeKicten.Models.BusinessLayer
                 Latitude = dto.Latitude,
                 Longitude = dto.Longitude,
                 IsApproved = dto.IsApproved ?? "pending",
+                BankAccount = dto.BankAccount ?? "SBI A/C 30948576291",
+                CoverImageUrl = dto.CoverImageUrl,
+                BankName = dto.BankName,
+                AccountNumber = dto.AccountNumber,
+                IfscCode = dto.IfscCode,
                 Revenue = 0.0m,
                 OrdersCount = 0
             };
@@ -115,6 +120,11 @@ namespace CloudeKicten.Models.BusinessLayer
             kitchen.Latitude = dto.Latitude ?? kitchen.Latitude;
             kitchen.Longitude = dto.Longitude ?? kitchen.Longitude;
             kitchen.IsApproved = dto.IsApproved ?? kitchen.IsApproved;
+            kitchen.BankAccount = dto.BankAccount ?? kitchen.BankAccount;
+            kitchen.CoverImageUrl = dto.CoverImageUrl ?? kitchen.CoverImageUrl;
+            kitchen.BankName = dto.BankName ?? kitchen.BankName;
+            kitchen.AccountNumber = dto.AccountNumber ?? kitchen.AccountNumber;
+            kitchen.IfscCode = dto.IfscCode ?? kitchen.IfscCode;
 
             await _databaseLayer.UpdateKitchenAsync(id, kitchen);
             return ApiResponse<KitchenDb>.Ok(kitchen, "Kitchen updated successfully.");

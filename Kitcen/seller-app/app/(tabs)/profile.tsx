@@ -16,10 +16,18 @@ import {
   Settings, 
   LogOut, 
   ShieldCheck, 
-  Clock 
+  Clock,
+  MapPin,
+  Gift,
+  Tag,
+  Edit,
+  Camera,
+  Phone,
+  User
 } from 'lucide-react-native';
 import { theme } from '../../styles/theme';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useKitchenStore } from '../../store/useKitchenStore';
 import { API_BASE_URL } from '../../store/apiConfig';
 
 export default function SellerProfile() {
@@ -30,9 +38,22 @@ export default function SellerProfile() {
   const refreshToken = useAuthStore(state => state.refreshToken);
   const setAuth = useAuthStore(state => state.setAuth);
 
+  const kitchens = useKitchenStore(state => state.kitchens);
+  const fetchKitchens = useKitchenStore(state => state.fetchKitchens);
+  const myKitchen = kitchens.find(k => k.owner === user?.id) || kitchens[0];
+
   const [kitchenOnline, setKitchenOnline] = useState(true);
   const [firstName, setFirstName] = useState(user?.firstName || user?.name?.split(' ')[0] || '');
   const [lastName, setLastName] = useState(user?.lastName || user?.name?.split(' ').slice(1).join(' ') || '');
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [gender, setGender] = useState(user?.gender || 'Female');
+  const [shopName, setShopName] = useState(myKitchen?.name || '');
+  const [logoUrl, setLogoUrl] = useState(myKitchen?.logoUrl || '');
+  const [coverImageUrl, setCoverImageUrl] = useState(myKitchen?.coverImageUrl || '');
+  const [bankName, setBankName] = useState(myKitchen?.bankName || '');
+  const [accountNumber, setAccountNumber] = useState(myKitchen?.accountNumber || '');
+  const [ifscCode, setIfscCode] = useState(myKitchen?.ifscCode || '');
+
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogout = () => {
@@ -54,6 +75,7 @@ export default function SellerProfile() {
 
     setIsLoading(true);
     try {
+      // 1. Update user profile
       const res = await fetch(`${API_BASE_URL}/api/auth/profile/${user.id}`, {
         method: 'PUT',
         headers: { 
@@ -66,17 +88,47 @@ export default function SellerProfile() {
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           name: `${firstName.trim()} ${lastName.trim()}`,
+          phone: phone.trim(),
+          gender: gender.trim(),
           avatar: user.avatar,
           role: user.role
         })
       });
 
       const json = await res.json();
+
+      // 2. Update kitchen details if kitchen exists
+      if (myKitchen?.id) {
+        await fetch(`${API_BASE_URL}/api/kitchens/${myKitchen.id}`, {
+          method: 'PUT',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            name: shopName.trim(),
+            type: myKitchen.type,
+            cuisines: myKitchen.cuisines,
+            time: myKitchen.time,
+            distance: myKitchen.distance,
+            offer: myKitchen.offer,
+            image: myKitchen.image,
+            logoUrl: logoUrl.trim(),
+            coverImageUrl: coverImageUrl.trim(),
+            bankName: bankName.trim(),
+            accountNumber: accountNumber.trim(),
+            ifscCode: ifscCode.trim(),
+            isApproved: myKitchen.isApproved
+          })
+        });
+        await fetchKitchens();
+      }
+
       setIsLoading(false);
 
       if (json.success) {
         setAuth(token, refreshToken, json.data);
-        Alert.alert('Success', 'Profile updated successfully!');
+        Alert.alert('Success', 'Profile and Kitchen details updated successfully!');
       } else {
         Alert.alert('Error', json.message || 'Failed to update profile');
       }
@@ -144,41 +196,109 @@ export default function SellerProfile() {
           />
         </View>
 
-        <TouchableOpacity style={styles.saveBtn} onPress={handleUpdateProfile} disabled={isLoading}>
-          <Text style={styles.saveBtnText}>{isLoading ? 'Saving...' : 'Save Changes'}</Text>
-        </TouchableOpacity>
+        <View style={styles.inputWrapper}>
+          <Text style={styles.inputLabel}>Phone Number</Text>
+          <TextInput
+            style={styles.textInput}
+            value={phone}
+            onChangeText={setPhone}
+            placeholder="e.g. +91 9999999999"
+            placeholderTextColor="#888"
+            keyboardType="phone-pad"
+          />
+        </View>
+
+        <View style={styles.inputWrapper}>
+          <Text style={styles.inputLabel}>Gender</Text>
+          <TextInput
+            style={styles.textInput}
+            value={gender}
+            onChangeText={setGender}
+            placeholder="e.g. Female, Male, Other"
+            placeholderTextColor="#888"
+          />
+        </View>
       </View>
 
-      {/* Options */}
+      {/* Edit Kitchen Info */}
       <View style={styles.optionGroup}>
-        <Text style={styles.groupHeader}>Operational Settings</Text>
+        <Text style={styles.groupHeader}>Kitchen Profile Settings</Text>
 
-        <TouchableOpacity style={styles.optionRow} onPress={() => handleAction('Kitchen Profile')}>
-          <View style={styles.optionLeft}>
-            <ChefHat size={16} color="#8E8E93" />
-            <Text style={styles.optionLabel}>Edit Kitchen Information</Text>
-          </View>
-        </TouchableOpacity>
+        <View style={styles.inputWrapper}>
+          <Text style={styles.inputLabel}>Kitchen Shop Name</Text>
+          <TextInput
+            style={styles.textInput}
+            value={shopName}
+            onChangeText={setShopName}
+            placeholder="e.g. Grandma's Spices"
+            placeholderTextColor="#888"
+          />
+        </View>
 
-        <TouchableOpacity style={styles.optionRow} onPress={() => handleAction('Payout Details')}>
-          <View style={styles.optionLeft}>
-            <Store size={16} color="#8E8E93" />
-            <Text style={styles.optionLabel}>Bank Account & Payouts</Text>
-          </View>
-        </TouchableOpacity>
+        <View style={styles.inputWrapper}>
+          <Text style={styles.inputLabel}>Shop Logo Image URL</Text>
+          <TextInput
+            style={styles.textInput}
+            value={logoUrl}
+            onChangeText={setLogoUrl}
+            placeholder="https://example.com/logo.png"
+            placeholderTextColor="#888"
+          />
+        </View>
 
-        <TouchableOpacity style={styles.optionRow} onPress={() => handleAction('Timings')}>
-          <View style={styles.optionLeft}>
-            <Clock size={16} color="#8E8E93" />
-            <Text style={styles.optionLabel}>Set Kitchen Hours</Text>
-          </View>
-        </TouchableOpacity>
+        <View style={styles.inputWrapper}>
+          <Text style={styles.inputLabel}>Cover Banner Image URL</Text>
+          <TextInput
+            style={styles.textInput}
+            value={coverImageUrl}
+            onChangeText={setCoverImageUrl}
+            placeholder="https://example.com/cover.png"
+            placeholderTextColor="#888"
+          />
+        </View>
+      </View>
 
-        <TouchableOpacity style={styles.optionRow} onPress={() => handleAction('Safety Guidelines')}>
-          <View style={styles.optionLeft}>
-            <ShieldCheck size={16} color="#8E8E93" />
-            <Text style={styles.optionLabel}>Safety & Hygiene Certification</Text>
-          </View>
+      {/* Edit Bank Payout Details */}
+      <View style={styles.optionGroup}>
+        <Text style={styles.groupHeader}>Bank Account & Payout Details (SuperAdmin Visible)</Text>
+
+        <View style={styles.inputWrapper}>
+          <Text style={styles.inputLabel}>Bank Name</Text>
+          <TextInput
+            style={styles.textInput}
+            value={bankName}
+            onChangeText={setBankName}
+            placeholder="e.g. State Bank of India"
+            placeholderTextColor="#888"
+          />
+        </View>
+
+        <View style={styles.inputWrapper}>
+          <Text style={styles.inputLabel}>Account Number</Text>
+          <TextInput
+            style={styles.textInput}
+            value={accountNumber}
+            onChangeText={setAccountNumber}
+            placeholder="e.g. 30948576291"
+            placeholderTextColor="#888"
+            keyboardType="number-pad"
+          />
+        </View>
+
+        <View style={styles.inputWrapper}>
+          <Text style={styles.inputLabel}>IFSC Code</Text>
+          <TextInput
+            style={styles.textInput}
+            value={ifscCode}
+            onChangeText={setIfscCode}
+            placeholder="e.g. SBIN0001234"
+            placeholderTextColor="#888"
+            autoCapitalize="characters"
+          />
+        </View>
+
+        <TouchableOpacity style={styles.saveBtn} onPress={handleUpdateProfile} disabled={isLoading}>
+          <Text style={styles.saveBtnText}>{isLoading ? 'Saving...' : 'Save All Details'}</Text>
         </TouchableOpacity>
       </View>
 
