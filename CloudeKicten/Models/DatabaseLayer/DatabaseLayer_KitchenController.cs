@@ -87,6 +87,7 @@ namespace CloudeKicten.Models.DatabaseLayer
             cmd.Parameters.AddWithValue("@Latitude", (object?)kitchen.Latitude ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@Longitude", (object?)kitchen.Longitude ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@IsApproved", kitchen.IsApproved ?? "pending");
+            cmd.Parameters.AddWithValue("@BankAccount", (object?)kitchen.BankAccount ?? "SBI A/C 30948576291");
             cmd.Parameters.AddWithValue("@IsLive", true);
 
             var result = await cmd.ExecuteNonQueryAsync();
@@ -166,6 +167,8 @@ namespace CloudeKicten.Models.DatabaseLayer
                 Latitude = r.IsDBNull(r.GetOrdinal("latitude")) ? null : r.GetDecimal(r.GetOrdinal("latitude")),
                 Longitude = r.IsDBNull(r.GetOrdinal("longitude")) ? null : r.GetDecimal(r.GetOrdinal("longitude")),
                 IsApproved = r.IsDBNull(r.GetOrdinal("is_approved")) ? "pending" : r.GetString(r.GetOrdinal("is_approved")),
+                OwnerName = r.IsDBNull(r.GetOrdinal("owner_name")) ? "Housewife Partner" : r.GetString(r.GetOrdinal("owner_name")),
+                BankAccount = r.IsDBNull(r.GetOrdinal("bank_account")) ? "SBI A/C 30948576291" : r.GetString(r.GetOrdinal("bank_account")),
                 CreatedAt = r.GetDateTime(r.GetOrdinal("created_at"))
             };
         }

@@ -82,6 +82,7 @@ namespace CloudeKicten
                 latitude NUMERIC(10,8) NULL,
                 longitude NUMERIC(11,8) NULL,
                 is_approved VARCHAR(50) DEFAULT 'pending',
+                bank_account VARCHAR(150) NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );";
 
@@ -93,6 +94,7 @@ namespace CloudeKicten
             ALTER TABLE shops ADD COLUMN IF NOT EXISTS latitude NUMERIC(10,8) NULL;
             ALTER TABLE shops ADD COLUMN IF NOT EXISTS longitude NUMERIC(11,8) NULL;
             ALTER TABLE shops ADD COLUMN IF NOT EXISTS is_approved VARCHAR(50) DEFAULT 'pending';
+            ALTER TABLE shops ADD COLUMN IF NOT EXISTS bank_account VARCHAR(150) NULL;
 
             -- Re-bind vendor_id reference to user_register(id) instead of vendors(id)
             DO $$
@@ -541,20 +543,24 @@ namespace CloudeKicten
         // ==========================================
 
         public const string InsertKitchen = @"
-            INSERT INTO shops (id, vendor_id, name, type, cuisines, rating, rating_count, prep_time, distance, offer, image_url, is_live, revenue, orders_count, logo_url, address, floor, office_gali_number, latitude, longitude, is_approved, created_at)
-            VALUES (@Id, @VendorId, @Name, @Type, @Cuisines, @Rating, @RatingCount, @Time, @Distance, @Offer, @Image, @IsLive, @Revenue, @OrdersCount, @LogoUrl, @Address, @Floor, @OfficeGaliNumber, @Latitude, @Longitude, @IsApproved, CURRENT_TIMESTAMP);
+            INSERT INTO shops (id, vendor_id, name, type, cuisines, rating, rating_count, prep_time, distance, offer, image_url, is_live, revenue, orders_count, logo_url, address, floor, office_gali_number, latitude, longitude, is_approved, bank_account, created_at)
+            VALUES (@Id, @VendorId, @Name, @Type, @Cuisines, @Rating, @RatingCount, @Time, @Distance, @Offer, @Image, @IsLive, @Revenue, @OrdersCount, @LogoUrl, @Address, @Floor, @OfficeGaliNumber, @Latitude, @Longitude, @IsApproved, @BankAccount, CURRENT_TIMESTAMP);
         ";
 
         public const string GetAllKitchens = @"
-            SELECT id, vendor_id, name, type, cuisines, rating, rating_count, prep_time, distance, offer, image_url, is_live, revenue, orders_count, logo_url, address, floor, office_gali_number, latitude, longitude, is_approved, created_at
-            FROM shops
-            ORDER BY name ASC;
+            SELECT s.id, s.vendor_id, s.name, s.type, s.cuisines, s.rating, s.rating_count, s.prep_time, s.distance, s.offer, s.image_url, s.is_live, s.revenue, s.orders_count, s.logo_url, s.address, s.floor, s.office_gali_number, s.latitude, s.longitude, s.is_approved, s.bank_account, s.created_at,
+                   COALESCE(CONCAT(u.first_name, ' ', u.last_name), 'Housewife Partner') AS owner_name
+            FROM shops s
+            LEFT JOIN user_register u ON s.vendor_id = u.id
+            ORDER BY s.name ASC;
         ";
 
         public const string GetKitchenById = @"
-            SELECT id, vendor_id, name, type, cuisines, rating, rating_count, prep_time, distance, offer, image_url, is_live, revenue, orders_count, logo_url, address, floor, office_gali_number, latitude, longitude, is_approved, created_at
-            FROM shops
-            WHERE id = @Id;
+            SELECT s.id, s.vendor_id, s.name, s.type, s.cuisines, s.rating, s.rating_count, s.prep_time, s.distance, s.offer, s.image_url, s.is_live, s.revenue, s.orders_count, s.logo_url, s.address, s.floor, s.office_gali_number, s.latitude, s.longitude, s.is_approved, s.bank_account, s.created_at,
+                   COALESCE(CONCAT(u.first_name, ' ', u.last_name), 'Housewife Partner') AS owner_name
+            FROM shops s
+            LEFT JOIN user_register u ON s.vendor_id = u.id
+            WHERE s.id = @Id;
         ";
 
         public const string UpdateKitchen = @"

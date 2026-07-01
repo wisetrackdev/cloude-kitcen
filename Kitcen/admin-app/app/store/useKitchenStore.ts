@@ -15,6 +15,8 @@ export interface Kitchen {
   id: string;
   name: string;
   owner: string;
+  ownerName?: string;
+  bankAccount?: string;
   type: 'restaurant' | 'home_tiffin';
   cuisines: string;
   rating: number;

@@ -16,6 +16,8 @@ export interface Kitchen {
   id: string;
   name: string;
   owner: string;
+  ownerName?: string;
+  bankAccount?: string;
   type: 'restaurant' | 'home_tiffin';
   cuisines: string;
   rating: number;
@@ -169,7 +171,9 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
         const mappedKitchens = json.data.map((k: any) => ({
           id: k.id,
           name: k.name,
-          owner: k.ownerId, // Map OwnerId to Owner representation
+          owner: k.ownerId,
+          ownerName: k.ownerName || 'Housewife Partner',
+          bankAccount: k.bankAccount || 'SBI A/C 30948576291',
           type: k.type,
           cuisines: k.cuisines,
           rating: Number(k.rating),

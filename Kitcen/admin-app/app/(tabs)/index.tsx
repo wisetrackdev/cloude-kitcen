@@ -1,11 +1,12 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   StyleSheet, 
   Text, 
   View, 
   ScrollView,
   TouchableOpacity,
-  Alert
+  Alert,
+  Modal
 } from 'react-native';
 import { 
   Users, 
@@ -13,7 +14,8 @@ import {
   ShoppingBag, 
   Store,
   CheckCircle,
-  Clock
+  Clock,
+  X
 } from 'lucide-react-native';
 import { theme } from '../../styles/theme';
 import { useKitchenStore } from '../../store/useKitchenStore';
@@ -24,6 +26,20 @@ export default function AdminDashboard() {
   const fetchKitchens = useKitchenStore(state => state.fetchKitchens);
   const fetchOrders = useKitchenStore(state => state.fetchOrders);
   const approveKitchen = useKitchenStore(state => state.approveKitchen);
+
+  const [selectedKitchen, setSelectedKitchen] = useState<any>(null);
+
+  const selectedKitchenOrders = selectedKitchen 
+    ? orders.filter(o => o.kitchenId === selectedKitchen.id) 
+    : [];
+
+  const selectedKitchenStats = {
+    total: selectedKitchenOrders.length,
+    pending: selectedKitchenOrders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled').length,
+    returned: selectedKitchenOrders.filter(o => o.status === 'cancelled').length,
+    earnings: selectedKitchenOrders.filter(o => o.status === 'delivered').reduce((sum, o) => sum + o.total, 0),
+    lastUpdated: selectedKitchenOrders.length > 0 ? selectedKitchenOrders[0].date : 'No orders yet'
+  };
 
   useEffect(() => {
     fetchKitchens();
@@ -65,9 +81,13 @@ export default function AdminDashboard() {
 
       {/* Kitchen Sales breakdowns */}
       <View style={styles.sellerSection}>
-        <Text style={styles.sellerSectionTitle}>Listed Kitchens & Performance</Text>
+        <Text style={styles.sellerSectionTitle}>Listed Kitchens & Performance (Tap to view details)</Text>
         {kitchens.map((kitchen) => (
-          <View key={kitchen.id} style={styles.kitchenAdminCard}>
+          <TouchableOpacity 
+            key={kitchen.id} 
+            style={styles.kitchenAdminCard}
+            onPress={() => setSelectedKitchen(kitchen)}
+          >
             <View style={[styles.kitchenAdminMeta, { flex: 1, marginRight: 12 }]}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.kitchenAdminName}>{kitchen.name}</Text>
@@ -127,7 +147,7 @@ export default function AdminDashboard() {
                 </View>
               )}
             </View>
-          </View>
+          </TouchableOpacity>
         ))}
       </View>
 
@@ -158,6 +178,85 @@ export default function AdminDashboard() {
         ))}
       </View>
       <View style={{ height: 40 }} />
+
+      {selectedKitchen && (
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={selectedKitchen !== null}
+          onRequestClose={() => setSelectedKitchen(null)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Shop Administration Details</Text>
+                <TouchableOpacity onPress={() => setSelectedKitchen(null)} style={styles.closeBtn}>
+                  <X size={18} color="#FFF" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView contentContainerStyle={styles.modalScrollBody} showsVerticalScrollIndicator={false}>
+                {/* Shop Basic Details */}
+                <View style={styles.detailSection}>
+                  <Text style={styles.sectionHeader}>Basic Information</Text>
+                  
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Shop Name:</Text>
+                    <Text style={styles.detailValue}>{selectedKitchen.name}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Owner Name:</Text>
+                    <Text style={styles.detailValue}>{selectedKitchen.ownerName || 'Housewife Partner'}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Bank Account:</Text>
+                    <Text style={styles.detailValue}>{selectedKitchen.bankAccount || 'SBI A/C 30948576291'}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Cuisines:</Text>
+                    <Text style={styles.detailValue}>{selectedKitchen.cuisines}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Address:</Text>
+                    <Text style={styles.detailValue}>{selectedKitchen.address || 'Not Specified'}</Text>
+                  </View>
+                </View>
+
+                {/* Dynamic Orders Stats */}
+                <View style={styles.detailSection}>
+                  <Text style={styles.sectionHeader}>Operational Metrics</Text>
+                  
+                  <View style={styles.metricsGrid}>
+                    <View style={styles.metricItem}>
+                      <Text style={styles.metricLabel}>Total Orders</Text>
+                      <Text style={styles.metricVal}>{selectedKitchenStats.total}</Text>
+                    </View>
+                    <View style={styles.metricItem}>
+                      <Text style={styles.metricLabel}>Pending</Text>
+                      <Text style={[styles.metricVal, { color: theme.colors.warning }]}>{selectedKitchenStats.pending}</Text>
+                    </View>
+                    <View style={styles.metricItem}>
+                      <Text style={styles.metricLabel}>Returned</Text>
+                      <Text style={[styles.metricVal, { color: theme.colors.error }]}>{selectedKitchenStats.returned}</Text>
+                    </View>
+                  </View>
+
+                  <View style={[styles.detailRow, { marginTop: 15, borderTopWidth: 1, borderTopColor: '#222', paddingTop: 10 }]}>
+                    <Text style={[styles.detailLabel, { fontWeight: 'bold', color: '#FFF' }]}>Total Earnings:</Text>
+                    <Text style={[styles.detailValue, { fontWeight: 'bold', color: theme.colors.success, fontSize: 16 }]}>
+                      ₹{selectedKitchenStats.earnings}
+                    </Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Last Transaction:</Text>
+                    <Text style={[styles.detailValue, { fontSize: 11, color: '#888' }]}>{selectedKitchenStats.lastUpdated}</Text>
+                  </View>
+                </View>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+      )}
     </ScrollView>
   );
 }
@@ -357,5 +456,98 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: 'bold',
     color: '#000',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#0F0F0F',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    borderColor: '#222',
+    maxHeight: '80%',
+    paddingBottom: 30,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#222',
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: theme.colors.primary,
+  },
+  closeBtn: {
+    backgroundColor: '#1E1E1E',
+    borderRadius: 16,
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalScrollBody: {
+    padding: 20,
+  },
+  detailSection: {
+    marginBottom: 24,
+  },
+  sectionHeader: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#888',
+    textTransform: 'uppercase',
+    marginBottom: 12,
+    letterSpacing: 0.5,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1A1A1A',
+  },
+  detailLabel: {
+    fontSize: 13,
+    color: '#AAA',
+  },
+  detailValue: {
+    fontSize: 13,
+    color: '#FFF',
+    fontWeight: '500',
+  },
+  metricsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  metricItem: {
+    flex: 1,
+    backgroundColor: '#181818',
+    borderWidth: 1,
+    borderColor: '#222',
+    borderRadius: 12,
+    padding: 12,
+    marginHorizontal: 4,
+    alignItems: 'center',
+  },
+  metricLabel: {
+    fontSize: 9,
+    color: '#888',
+    textTransform: 'uppercase',
+    textAlign: 'center',
+  },
+  metricVal: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#FFF',
+    marginTop: 6,
   }
 });

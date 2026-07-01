@@ -46,6 +46,8 @@ namespace CloudeKicten.Models
         public decimal? Latitude { get; set; }
         public decimal? Longitude { get; set; }
         public string IsApproved { get; set; } = "pending"; // pending, approved, rejected
+        public string OwnerName { get; set; } = string.Empty;
+        public string BankAccount { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 
