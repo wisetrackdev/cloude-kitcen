@@ -26,7 +26,8 @@ import {
   CreditCard,
   ArrowLeft,
   Image as ImageIcon,
-  CheckCircle
+  CheckCircle,
+  ChevronRight
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { theme } from '../../styles/theme';

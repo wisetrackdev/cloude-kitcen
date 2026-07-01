@@ -24,7 +24,8 @@ import {
   CreditCard,
   ArrowLeft,
   CheckCircle,
-  Settings
+  Settings,
+  ChevronRight
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { theme } from '../../styles/theme';
@@ -279,7 +280,7 @@ export default function RiderProfile() {
                   <Text style={styles.rowDesc}>Change phone number and gender</Text>
                 </View>
               </View>
-              <ChevronRight style={styles.zomatoRow} />
+              <ChevronRight size={16} color="#555" />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.zomatoRow} onPress={() => setActiveTab('vehicle')}>
@@ -292,7 +293,7 @@ export default function RiderProfile() {
                   <Text style={styles.rowDesc}>Plate number, RC book and delivery zone</Text>
                 </View>
               </View>
-              <ChevronRight style={styles.zomatoRow} />
+              <ChevronRight size={16} color="#555" />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.zomatoRow} onPress={() => setActiveTab('bank')}>
@@ -305,7 +306,7 @@ export default function RiderProfile() {
                   <Text style={styles.rowDesc}>Routing code and bank account numbers</Text>
                 </View>
               </View>
-              <ChevronRight style={styles.zomatoRow} />
+              <ChevronRight size={16} color="#555" />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.zomatoRow} onPress={() => setActiveTab('help')}>
@@ -318,7 +319,7 @@ export default function RiderProfile() {
                   <Text style={styles.rowDesc}>Safety policies and zero-contact guides</Text>
                 </View>
               </View>
-              <ChevronRight style={styles.zomatoRow} />
+              <ChevronRight size={16} color="#555" />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.zomatoRow} onPress={() => setActiveTab('settings')}>
@@ -331,7 +332,7 @@ export default function RiderProfile() {
                   <Text style={styles.rowDesc}>Security logs and logout button</Text>
                 </View>
               </View>
-              <ChevronRight style={styles.zomatoRow} />
+              <ChevronRight size={16} color="#555" />
             </TouchableOpacity>
           </View>
           <View style={{ height: 40 }} />
