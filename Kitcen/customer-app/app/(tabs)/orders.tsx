@@ -10,15 +10,21 @@ import { useRouter } from 'expo-router';
 import { ChevronRight } from 'lucide-react-native';
 import { theme } from '../../styles/theme';
 import { useKitchenStore } from '../../store/useKitchenStore';
+import { useAuthStore } from '../../store/useAuthStore';
 
 export default function OrdersScreen() {
   const router = useRouter();
+  const user = useAuthStore(state => state.user);
   const orders = useKitchenStore(state => state.orders);
   const fetchOrders = useKitchenStore(state => state.fetchOrders);
 
   React.useEffect(() => {
-    fetchOrders('usr-9281'); // Fetch orders for logged-in user
-  }, []);
+    if (user?.id) {
+      fetchOrders(user.id);
+    } else {
+      fetchOrders();
+    }
+  }, [user]);
 
   const getStatusStyle = (status: string) => {
     if (status === 'delivered') return styles.statusDelivered;

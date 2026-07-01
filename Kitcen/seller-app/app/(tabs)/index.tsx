@@ -47,10 +47,13 @@ export default function SellerDashboard() {
 
   const handleOrderStatusToggle = async (orderId: string, currentStatus: string) => {
     let nextStatus: typeof orders[0]['status'] = 'placed';
-    if (currentStatus === 'placed') nextStatus = 'preparing';
-    else if (currentStatus === 'preparing') nextStatus = 'ready';
-    else if (currentStatus === 'ready') nextStatus = 'on_the_way';
-    else if (currentStatus === 'on_the_way') nextStatus = 'delivered';
+    if (currentStatus === 'placed') {
+      nextStatus = 'preparing';
+    } else if (currentStatus === 'preparing') {
+      nextStatus = 'ready';
+    } else {
+      return; // Seller cannot progress past ready. Rider picks up and completes delivery.
+    }
     
     await updateOrderStatus(orderId, nextStatus);
   };
@@ -139,17 +142,19 @@ export default function SellerDashboard() {
 
             <View style={styles.orderCardFooter}>
               <Text style={styles.orderCardTotal}>Total Bill: ₹{order.total}</Text>
-              {order.status !== 'delivered' && (
+              {order.status === 'placed' || order.status === 'preparing' ? (
                 <TouchableOpacity 
                   style={styles.actionStatusBtn}
                   onPress={() => handleOrderStatusToggle(order.id, order.status)}
                 >
                   <Text style={styles.actionStatusText}>
-                    {order.status === 'placed' ? 'Accept / Start Preparing' : 
-                     order.status === 'preparing' ? 'Mark Food Ready' : 
-                     order.status === 'ready' ? 'Dispatch Rider' : 'Complete Delivery'}
+                    {order.status === 'placed' ? 'Accept / Start Preparing' : 'Mark Food Ready'}
                   </Text>
                 </TouchableOpacity>
+              ) : (
+                <Text style={{ color: '#aaa', fontSize: 11, fontStyle: 'italic', fontWeight: 'bold' }}>
+                  {order.status === 'ready' ? 'Waiting for Rider Pickup...' : 'Rider Dispatched'}
+                </Text>
               )}
             </View>
           </View>

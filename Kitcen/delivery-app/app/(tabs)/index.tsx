@@ -8,9 +8,11 @@ import {
   Alert,
   Modal,
   TextInput,
-  ActivityIndicator
+  ActivityIndicator,
+  Linking
 } from 'react-native';
 import { Navigation, MapPin, CheckCircle, Clock, MessageSquare, Send, X } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { theme } from '../../styles/theme';
 import { useKitchenStore } from '../../store/useKitchenStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -106,16 +108,52 @@ export default function RiderDashboard() {
     }
   };
 
+  const takeOrderPhoto = async (actionLabel: string) => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Camera permissions are required to snap a picture of the order.');
+        return false;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.7,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        Alert.alert('Photo Captured', `Successfully captured order photo for ${actionLabel}!`);
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.warn('Camera capture failed:', err);
+      Alert.alert('Simulation Mode', 'Photo captured (simulated).');
+      return true;
+    }
+  };
+
   const handleUpdateStatus = async (orderId: string, currentStatus: string) => {
     let nextStatus: typeof orders[0]['status'] = 'on_the_way';
     if (currentStatus === 'preparing' || currentStatus === 'ready') {
       nextStatus = 'on_the_way';
+      const photoOk = await takeOrderPhoto('Pickup Confirmation');
+      if (!photoOk) return;
+
       Alert.alert('Status Updated', 'Order picked up! Navigate to Customer Location.');
     } else if (currentStatus === 'on_the_way') {
       nextStatus = 'delivered';
+      const photoOk = await takeOrderPhoto('Delivery Confirmation');
+      if (!photoOk) return;
+
       Alert.alert('Status Updated', 'Order delivered successfully!');
     }
     await updateOrderStatus(orderId, nextStatus);
+  };
+
+  const handleOpenMaps = (query: string) => {
+    Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`);
   };
 
   return (
@@ -190,6 +228,13 @@ export default function RiderDashboard() {
                       <Text style={styles.nodeTitle}>Step 1: Go to Pickup Shop</Text>
                       <Text style={styles.nodeName}>{delivery.kitchenName}</Text>
                       <Text style={styles.nodeAddress}>Collect from Vendor Counter</Text>
+                      
+                      <TouchableOpacity 
+                        style={styles.mapLinkBtn}
+                        onPress={() => handleOpenMaps(`${delivery.kitchenName} Kitchen Pune`)}
+                      >
+                        <Text style={styles.mapLinkText}>🗺 Navigate to Shop (Google Maps)</Text>
+                      </TouchableOpacity>
                     </View>
                   </View>
                 ) : (
@@ -198,7 +243,15 @@ export default function RiderDashboard() {
                     <View style={styles.nodeDetails}>
                       <Text style={styles.nodeTitle}>Step 2: Deliver to Customer</Text>
                       <Text style={styles.nodeName}>{delivery.customerName}</Text>
-                      <Text style={styles.nodeAddress}>Delivery Address: Pune Area</Text>
+                      <Text style={styles.nodeAddress}>Contact Mobile: +91 98765 43210</Text>
+                      <Text style={styles.nodeAddress}>Address: Royal Residency, Pune</Text>
+
+                      <TouchableOpacity 
+                        style={styles.mapLinkBtn}
+                        onPress={() => handleOpenMaps(`Royal Residency Pune customer ${delivery.customerName}`)}
+                      >
+                        <Text style={styles.mapLinkText}>🗺 Navigate to Customer (Google Maps)</Text>
+                      </TouchableOpacity>
                     </View>
                   </View>
                 )}
@@ -225,8 +278,8 @@ export default function RiderDashboard() {
                     {delivery.status === 'preparing' 
                       ? 'Waiting for Vendor...' 
                       : delivery.status === 'ready' 
-                        ? 'Pick Up Order' 
-                        : 'Mark Delivered'}
+                        ? '📸 Pick Up Order' 
+                        : '📸 Mark Delivered'}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -536,5 +589,20 @@ const styles = StyleSheet.create({
     height: 38,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  mapLinkBtn: {
+    marginTop: 8,
+    backgroundColor: 'rgba(255,107,0,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,107,0,0.2)',
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    alignSelf: 'flex-start',
+  },
+  mapLinkText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: theme.colors.primary,
   }
 });

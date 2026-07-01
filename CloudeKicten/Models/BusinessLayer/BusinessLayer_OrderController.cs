@@ -222,6 +222,12 @@ namespace CloudeKicten.Models.BusinessLayer
             var kitchen = await _kitchenDatabaseLayer.GetKitchenByIdAsync(dbOrder.KitchenId);
             var customer = await _authDatabaseLayer.GetUserByIdAsync(dbOrder.CustomerId);
 
+            UserDb? rider = null;
+            if (!string.IsNullOrEmpty(dbOrder.RiderId))
+            {
+                rider = await _authDatabaseLayer.GetUserByIdAsync(dbOrder.RiderId);
+            }
+
             var items = JsonSerializer.Deserialize<List<OrderItemDto>>(dbOrder.ItemsJson) ?? new();
 
             return new OrderResponseDto
@@ -239,7 +245,10 @@ namespace CloudeKicten.Models.BusinessLayer
                 Total = dbOrder.Total,
                 Status = dbOrder.Status,
                 PaymentMethod = dbOrder.PaymentMethod,
-                Date = dbOrder.OrderDate
+                Date = dbOrder.OrderDate,
+                RiderId = dbOrder.RiderId,
+                RiderName = rider != null ? $"{rider.FirstName} {rider.LastName}".Trim() : "Vikram Singh",
+                RiderPhone = rider != null && !string.IsNullOrEmpty(rider.Phone) ? rider.Phone : "+91 9876543210"
             };
         }
     }

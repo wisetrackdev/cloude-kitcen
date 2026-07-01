@@ -161,14 +161,14 @@ export default function OrderTrackingScreen() {
                 style={styles.riderAvatar} 
               />
               <View>
-                <Text style={styles.riderName}>Vikram Singh (Rider Assigned)</Text>
+                <Text style={styles.riderName}>{activeOrder?.riderName || 'Vikram Singh'} (Rider Assigned)</Text>
                 <Text style={styles.riderVehicle}>Hero Splendor (MH-02-AB-9831)</Text>
               </View>
             </View>
             <View style={styles.riderActions}>
               <TouchableOpacity 
                 style={styles.actionBtn}
-                onPress={() => Alert.alert('Call Rider', 'Calling Rider: +91 9876543210')}
+                onPress={() => Alert.alert('Call Rider', `Calling Rider: ${activeOrder?.riderPhone || '+91 9876543210'}`)}
               >
                 <Phone size={16} color={theme.colors.primary} />
               </TouchableOpacity>
