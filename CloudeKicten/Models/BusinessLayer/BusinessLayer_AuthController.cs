@@ -71,7 +71,8 @@ namespace CloudeKicten.Models.BusinessLayer
             }
             else
             {
-                return ApiResponse<string>.Ok(email, $"OTP generated successfully (Fallback print: {otp}). Please check server logs.");
+                Console.WriteLine($"[SMTP Fail Fallback] Generated OTP for {email} is {otp}");
+                return ApiResponse<string>.Fail("Failed to send OTP email. Please check server logs or SMTP settings.");
             }
         }
 

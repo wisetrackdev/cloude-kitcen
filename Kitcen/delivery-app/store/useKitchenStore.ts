@@ -33,6 +33,7 @@ export interface Kitchen {
   longitude?: number;
   logoUrl?: string;
   coverImageUrl?: string;
+  ownerPhone?: string;
 }
 
 export interface OrderItem {
@@ -193,7 +194,8 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
           latitude: k.latitude ? Number(k.latitude) : undefined,
           longitude: k.longitude ? Number(k.longitude) : undefined,
           logoUrl: k.logoUrl,
-          coverImageUrl: k.coverImageUrl
+          coverImageUrl: k.coverImageUrl,
+          ownerPhone: k.ownerPhone
         }));
         set({ kitchens: mappedKitchens, isLoading: false });
       } else {

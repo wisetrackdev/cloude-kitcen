@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tabs, Redirect } from 'expo-router';
-import { Users, User, Bike } from 'lucide-react-native';
+import { Users, User, Bike, History } from 'lucide-react-native';
 import { theme } from '../../styles/theme';
 import { useAuthStore } from '../../store/useAuthStore';
 
@@ -36,6 +36,13 @@ export default function TabLayout() {
         options={{
           title: 'Analytics',
           tabBarIcon: ({ color }) => <Users size={20} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="orders"
+        options={{
+          title: 'Orders Logs',
+          tabBarIcon: ({ color }) => <History size={20} color={color} />,
         }}
       />
       <Tabs.Screen

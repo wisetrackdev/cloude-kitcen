@@ -1,21 +1,32 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   StyleSheet, 
   Text, 
   View, 
   ScrollView, 
   TouchableOpacity, 
-  Dimensions 
+  ActivityIndicator,
+  Linking
 } from 'react-native';
 import { 
   ChefHat,
   TrendingUp,
   ShoppingBag,
-  Store
+  Clock,
+  CheckCircle,
+  XCircle,
+  UtensilsCrossed,
+  MapPin,
+  MessageSquare
 } from 'lucide-react-native';
 import { theme } from '../../styles/theme';
 import { useKitchenStore } from '../../store/useKitchenStore';
 import { useAuthStore } from '../../store/useAuthStore';
+
+// Custom brand color matching Zomato's classic dark red
+const ZOMATO_RED = '#E23744';
+
+type OrderTabFilter = 'live' | 'history';
 
 export default function SellerDashboard() {
   const user = useAuthStore(state => state.user);
@@ -26,6 +37,8 @@ export default function SellerDashboard() {
   const fetchKitchens = useKitchenStore(state => state.fetchKitchens);
   const fetchOrders = useKitchenStore(state => state.fetchOrders);
   const updateOrderStatus = useKitchenStore(state => state.updateOrderStatus);
+
+  const [activeTab, setActiveTab] = useState<OrderTabFilter>('live');
 
   // Fetch kitchens and orders on mount
   useEffect(() => {
@@ -43,7 +56,6 @@ export default function SellerDashboard() {
   const selectedKitchenId = myKitchen?.id || 'k3';
 
   const kitchenInfo = myKitchen || kitchens[0] || { name: 'My Kitchen', revenue: 0 };
-  const kitchenProducts = products[selectedKitchenId] || [];
   const kitchenOrders = orders.filter(o => o.kitchenId === selectedKitchenId);
 
   const handleOrderStatusToggle = async (orderId: string, currentStatus: string) => {
@@ -53,9 +65,8 @@ export default function SellerDashboard() {
     } else if (currentStatus === 'preparing') {
       nextStatus = 'ready';
     } else {
-      return; // Seller cannot progress past ready. Rider picks up and completes delivery.
+      return; 
     }
-    
     await updateOrderStatus(orderId, nextStatus);
   };
 
@@ -64,107 +75,220 @@ export default function SellerDashboard() {
   if (!isApproved) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 24 }]}>
-        <ChefHat size={64} color={theme.colors.warning} style={{ marginBottom: 20 }} />
-        <Text style={{ color: theme.colors.warning, fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 12 }}>
-          Approval Pending
+        <ChefHat size={72} color={ZOMATO_RED} style={{ marginBottom: 20 }} />
+        <Text style={{ color: ZOMATO_RED, fontSize: 22, fontWeight: 'bold', textAlign: 'center', marginBottom: 12 }}>
+          Kitchen Approval Pending
         </Text>
-        <Text style={{ color: '#FFF', fontSize: 13, textAlign: 'center', lineHeight: 20, paddingHorizontal: 10 }}>
-          Your kitchen "{kitchenInfo.name}" is pending approval from the SuperAdmin.
+        <Text style={{ color: '#FFF', fontSize: 13, textAlign: 'center', lineHeight: 22, paddingHorizontal: 10 }}>
+          Your kitchen "{kitchenInfo.name}" registration is being reviewed by the SuperAdmin.
         </Text>
-        <Text style={{ color: theme.colors.textSecondary, fontSize: 11, textAlign: 'center', marginTop: 8, lineHeight: 18, paddingHorizontal: 20 }}>
-          Once approved, you will be able to manage orders, setup categories, and add items to your menu.
+        <View style={styles.pendingBadge}>
+          <Clock size={14} color="#FF9500" />
+          <Text style={styles.pendingBadgeText}>Status: Under Review</Text>
+        </View>
+        <Text style={{ color: theme.colors.textSecondary, fontSize: 11, textAlign: 'center', marginTop: 15, lineHeight: 18, paddingHorizontal: 20 }}>
+          We will notify you via email once your store dashboard goes live. Thank you for partnering with us!
         </Text>
       </View>
     );
   }
 
-  const soldOrders = kitchenOrders.filter(o => o.status === 'delivered');
-  const cancelledOrders = kitchenOrders.filter(o => o.status === 'cancelled');
+  const liveOrders = kitchenOrders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled');
+  const pastOrders = kitchenOrders.filter(o => o.status === 'delivered' || o.status === 'cancelled');
+
+  const totalEarnings = pastOrders.filter(o => o.status === 'delivered').reduce((sum, o) => sum + Number(o.total), 0);
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'placed': return '#007AFF';
+      case 'preparing': return '#FF9500';
+      case 'ready': return '#5856D6';
+      case 'on_the_way': return '#FFCC00';
+      case 'delivered': return '#34C759';
+      case 'cancelled': return '#FF3B30';
+      default: return '#8E8E93';
+    }
+  };
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.sellerHeader}>
-        <ChefHat size={28} color={theme.colors.primary} />
-        <View style={styles.sellerHeaderMeta}>
-          <Text style={styles.sellerRoleText}>Kitchen Owner Workspace</Text>
-          <Text style={styles.sellerKitchenName}>{kitchenInfo.name}</Text>
+      {/* Brand Header */}
+      <View style={styles.header}>
+        <View style={styles.headerTitleContainer}>
+          <Text style={styles.headerSub}>Zomato Partner Workspace</Text>
+          <Text style={styles.headerMain}>{kitchenInfo.name}</Text>
+        </View>
+        <View style={styles.onlineIndicator}>
+          <View style={styles.pulseDot} />
+          <Text style={styles.onlineText}>ONLINE</Text>
         </View>
       </View>
 
-      {/* Operational Stats */}
-      <View style={styles.kpiGrid}>
-        <View style={styles.kpiCard}>
-          <TrendingUp size={16} color={theme.colors.success} />
-          <Text style={styles.kpiValue}>₹{kitchenInfo.revenue}</Text>
-          <Text style={styles.kpiLabel}>Kitchen Earnings</Text>
+      {/* KPI Stats Panel */}
+      <View style={styles.kpiContainer}>
+        <View style={[styles.kpiCard, { borderLeftColor: ZOMATO_RED, borderLeftWidth: 3 }]}>
+          <View style={styles.kpiRow}>
+            <Text style={styles.kpiVal}>₹{totalEarnings.toFixed(0)}</Text>
+            <TrendingUp size={16} color={theme.colors.success} />
+          </View>
+          <Text style={styles.kpiLabel}>Today's Earnings</Text>
         </View>
-        <View style={styles.kpiCard}>
-          <ShoppingBag size={16} color={theme.colors.primary} />
-          <Text style={styles.kpiValue}>{kitchenOrders.length}</Text>
+
+        <View style={[styles.kpiCard, { borderLeftColor: '#007AFF', borderLeftWidth: 3 }]}>
+          <View style={styles.kpiRow}>
+            <Text style={styles.kpiVal}>{kitchenOrders.length}</Text>
+            <ShoppingBag size={16} color="#007AFF" />
+          </View>
           <Text style={styles.kpiLabel}>Total Orders</Text>
         </View>
       </View>
 
-      <View style={[styles.kpiGrid, { marginTop: -12, marginBottom: 24 }]}>
-        <View style={styles.kpiCard}>
-          <ShoppingBag size={16} color={theme.colors.veg} />
-          <Text style={styles.kpiValue}>{soldOrders.length}</Text>
-          <Text style={styles.kpiLabel}>Orders Sold</Text>
+      {/* Quick Details Bar */}
+      <View style={styles.quickDetailsBar}>
+        <View style={styles.detailItem}>
+          <CheckCircle size={12} color="#34C759" />
+          <Text style={styles.detailText}>{pastOrders.filter(o => o.status === 'delivered').length} Delivered</Text>
         </View>
-        <View style={styles.kpiCard}>
-          <ShoppingBag size={16} color={theme.colors.nonVeg} />
-          <Text style={styles.kpiValue}>{cancelledOrders.length}</Text>
-          <Text style={styles.kpiLabel}>Returned/Rejected</Text>
+        <View style={styles.detailItem}>
+          <XCircle size={12} color="#FF3B30" />
+          <Text style={styles.detailText}>{pastOrders.filter(o => o.status === 'cancelled').length} Cancelled</Text>
+        </View>
+        <View style={styles.detailItem}>
+          <Clock size={12} color="#FF9500" />
+          <Text style={styles.detailText}>{liveOrders.length} Pending</Text>
         </View>
       </View>
 
-      {/* Live Incoming Orders Queue */}
-      <View style={styles.sellerSection}>
-        <Text style={styles.sellerSectionTitle}>Live Kitchen Orders ({kitchenOrders.filter(o => o.status !== 'delivered').length})</Text>
-        {kitchenOrders.filter(o => o.status !== 'delivered').map((order) => (
-          <View key={order.id} style={styles.orderCard}>
-            <View style={styles.orderCardHeader}>
-              <View>
-                <Text style={styles.orderCardClient}>{order.customerName}</Text>
-                <Text style={styles.orderCardId}>{order.id} • {order.paymentMethod.toUpperCase()}</Text>
-              </View>
-              <View style={styles.statusBadgeYellow}>
-                <Text style={styles.statusTextYellow}>{order.status.toUpperCase()}</Text>
-              </View>
-            </View>
+      {/* Tab Segment Selector */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity 
+          style={[styles.tabButton, activeTab === 'live' && styles.tabActive]}
+          onPress={() => setActiveTab('live')}
+        >
+          <Text style={[styles.tabText, activeTab === 'live' && styles.tabTextActive]}>
+            Live Orders ({liveOrders.length})
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.tabButton, activeTab === 'history' && styles.tabActive]}
+          onPress={() => setActiveTab('history')}
+        >
+          <Text style={[styles.tabText, activeTab === 'history' && styles.tabTextActive]}>
+            Order Logs ({pastOrders.length})
+          </Text>
+        </TouchableOpacity>
+      </View>
 
-            <View style={styles.orderCardItemsList}>
-              {order.items.map((item, idx) => (
-                <Text key={idx} style={styles.orderCardItem}>
-                  {item.quantity}x {item.name}
-                </Text>
-              ))}
-            </View>
-
-            <View style={styles.orderCardFooter}>
-              <Text style={styles.orderCardTotal}>Total Bill: ₹{order.total}</Text>
-              {order.status === 'placed' || order.status === 'preparing' ? (
-                <TouchableOpacity 
-                  style={styles.actionStatusBtn}
-                  onPress={() => handleOrderStatusToggle(order.id, order.status)}
-                >
-                  <Text style={styles.actionStatusText}>
-                    {order.status === 'placed' ? 'Accept / Start Preparing' : 'Mark Food Ready'}
+      {/* Orders List Render */}
+      <View style={styles.listContainer}>
+        {activeTab === 'live' ? (
+          liveOrders.map((order) => (
+            <View key={order.id} style={styles.orderCard}>
+              <View style={styles.cardHeader}>
+                <View>
+                  <Text style={styles.clientName}>{order.customerName}</Text>
+                  <Text style={styles.orderId}>{order.id} • {order.paymentMethod.toUpperCase()}</Text>
+                </View>
+                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status) + '15', borderColor: getStatusColor(order.status) }]}>
+                  <Text style={[styles.statusText, { color: getStatusColor(order.status) }]}>
+                    {order.status === 'placed' ? 'INCOMING' : order.status.toUpperCase()}
                   </Text>
-                </TouchableOpacity>
-              ) : (
-                <Text style={{ color: '#aaa', fontSize: 11, fontStyle: 'italic', fontWeight: 'bold' }}>
-                  {order.status === 'ready' ? 'Waiting for Rider Pickup...' : 'Rider Dispatched'}
-                </Text>
+                </View>
+              </View>
+
+              {/* Items List */}
+              <View style={styles.itemsBox}>
+                <Text style={styles.itemsSectionTitle}>FOOD ITEMS</Text>
+                {order.items.map((item, idx) => (
+                  <View key={idx} style={styles.itemRow}>
+                    <UtensilsCrossed size={12} color="#666" style={{ marginRight: 8 }} />
+                    <Text style={styles.itemText}>{item.quantity}x {item.name}</Text>
+                  </View>
+                ))}
+              </View>
+
+              {/* Delivery info if rider is assigned */}
+              {order.deliveryAddress && (
+                <View style={styles.addressBox}>
+                  <Text style={styles.addressText} numberOfLines={1}>
+                    📍 Deliver to: {order.deliveryAddress}
+                  </Text>
+                </View>
               )}
+
+              {/* Action and Price footer */}
+              <View style={styles.cardFooter}>
+                <View>
+                  <Text style={styles.totalLabel}>Grand Total</Text>
+                  <Text style={styles.totalVal}>₹{order.total}</Text>
+                </View>
+
+                {order.status === 'placed' || order.status === 'preparing' ? (
+                  <TouchableOpacity 
+                    style={styles.actionBtn}
+                    onPress={() => handleOrderStatusToggle(order.id, order.status)}
+                  >
+                    <Text style={styles.actionText}>
+                      {order.status === 'placed' ? '✓ Accept Order' : '⚡ Mark Food Ready'}
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  <View style={styles.waitingBadge}>
+                    <Clock size={12} color="#8E8E93" style={{ marginRight: 5 }} />
+                    <Text style={styles.waitingText}>
+                      {order.status === 'ready' ? 'Food Ready. Awaiting Pickup' : 'Out for Delivery'}
+                    </Text>
+                  </View>
+                )}
+              </View>
             </View>
+          ))
+        ) : (
+          pastOrders.map((order) => (
+            <View key={order.id} style={[styles.orderCard, { opacity: 0.8 }]}>
+              <View style={styles.cardHeader}>
+                <View>
+                  <Text style={styles.clientName}>{order.customerName}</Text>
+                  <Text style={styles.orderId}>{order.id} • {order.paymentMethod.toUpperCase()}</Text>
+                </View>
+                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status) + '15', borderColor: getStatusColor(order.status) }]}>
+                  <Text style={[styles.statusText, { color: getStatusColor(order.status) }]}>
+                    {order.status.toUpperCase()}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Items List */}
+              <View style={styles.itemsBox}>
+                {order.items.map((item, idx) => (
+                  <Text key={idx} style={styles.pastItemText}>
+                    • {item.quantity}x {item.name}
+                  </Text>
+                ))}
+              </View>
+
+              <View style={[styles.cardFooter, { borderTopWidth: 0, paddingTop: 4 }]}>
+                <Text style={styles.orderDateText}>{order.date}</Text>
+                <Text style={styles.pastPriceText}>Bill Total: ₹{order.total}</Text>
+              </View>
+            </View>
+          ))
+        )}
+
+        {activeTab === 'live' && liveOrders.length === 0 && (
+          <View style={styles.emptyContainer}>
+            <ChefHat size={48} color="#444" style={{ marginBottom: 12 }} />
+            <Text style={styles.emptyText}>Kitchen is quiet. No active incoming orders right now.</Text>
           </View>
-        ))}
-        {kitchenOrders.filter(o => o.status !== 'delivered').length === 0 && (
-          <Text style={styles.emptyQueueText}>No active incoming orders currently.</Text>
+        )}
+
+        {activeTab === 'history' && pastOrders.length === 0 && (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No completed order records available.</Text>
+          </View>
         )}
       </View>
-      <View style={{ height: 40 }} />
+      <View style={{ height: 60 }} />
     </ScrollView>
   );
 }
@@ -175,136 +299,276 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
     paddingTop: 50,
   },
-  sellerHeader: {
+  header: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    marginBottom: 24,
+    marginBottom: 20,
   },
-  sellerHeaderMeta: {
-    marginLeft: 12,
+  headerTitleContainer: {
+    flex: 1,
   },
-  sellerRoleText: {
-    fontSize: 10,
+  headerSub: {
+    fontSize: 9,
     fontWeight: 'bold',
-    color: theme.colors.primary,
+    color: ZOMATO_RED,
     textTransform: 'uppercase',
   },
-  sellerKitchenName: {
-    fontSize: 20,
+  headerMain: {
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#FFF',
     marginTop: 2,
   },
-  kpiGrid: {
+  onlineIndicator: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    marginBottom: 24,
+    alignItems: 'center',
+    backgroundColor: 'rgba(52,199,89,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(52,199,89,0.2)',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+  },
+  pulseDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#34C759',
+    marginRight: 6,
+  },
+  onlineText: {
+    fontSize: 9,
+    fontWeight: 'bold',
+    color: '#34C759',
+  },
+  kpiContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 12,
+    marginBottom: 12,
   },
   kpiCard: {
     flex: 1,
     backgroundColor: '#121212',
     borderWidth: 1,
     borderColor: '#1F1F1F',
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 14,
+    padding: 14,
     marginHorizontal: 4,
   },
-  kpiValue: {
-    fontSize: 16,
+  kpiRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  kpiVal: {
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#FFF',
-    marginTop: 8,
   },
   kpiLabel: {
     fontSize: 9,
     color: theme.colors.textSecondary,
-    marginTop: 2,
-    textTransform: 'uppercase',
+    marginTop: 6,
   },
-  sellerSection: {
+  quickDetailsBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
     paddingHorizontal: 16,
-    marginBottom: 24,
+    paddingVertical: 10,
+    backgroundColor: '#121212',
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#1F1F1F',
+    marginBottom: 20,
   },
-  sellerSectionTitle: {
-    fontSize: 14,
+  detailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  detailText: {
+    fontSize: 10,
+    color: '#AAA',
+    marginLeft: 6,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#1F1F1F',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 18,
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  tabActive: {
+    backgroundColor: ZOMATO_RED,
+  },
+  tabText: {
+    fontSize: 11,
     fontWeight: 'bold',
+    color: '#888',
+  },
+  tabTextActive: {
     color: '#FFF',
-    marginBottom: 16,
+  },
+  listContainer: {
+    paddingHorizontal: 16,
   },
   orderCard: {
     backgroundColor: '#121212',
     borderWidth: 1,
     borderColor: '#1F1F1F',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 14,
   },
-  orderCardHeader: {
+  cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: '#1F1F1F',
     paddingBottom: 10,
+    marginBottom: 10,
   },
-  orderCardClient: {
-    fontSize: 14,
+  clientName: {
+    fontSize: 13,
     fontWeight: 'bold',
     color: '#FFF',
   },
-  orderCardId: {
-    fontSize: 10,
+  orderId: {
+    fontSize: 9,
     color: theme.colors.textSecondary,
     marginTop: 2,
   },
-  statusBadgeYellow: {
-    backgroundColor: 'rgba(255,204,0,0.1)',
-    paddingVertical: 4,
+  statusBadge: {
+    borderWidth: 1,
+    paddingVertical: 3,
     paddingHorizontal: 8,
-    borderRadius: 6,
+    borderRadius: 8,
   },
-  statusTextYellow: {
+  statusText: {
     fontSize: 9,
     fontWeight: 'bold',
-    color: theme.colors.warning,
   },
-  orderCardItemsList: {
-    paddingVertical: 12,
+  itemsBox: {
+    marginBottom: 10,
   },
-  orderCardItem: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
+  itemsSectionTitle: {
+    fontSize: 8,
+    fontWeight: 'bold',
+    color: '#666',
+    letterSpacing: 1,
+    marginBottom: 6,
+  },
+  itemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 4,
   },
-  orderCardFooter: {
+  itemText: {
+    fontSize: 12,
+    color: '#CCC',
+  },
+  addressBox: {
+    backgroundColor: '#0A0A0A',
+    borderRadius: 8,
+    padding: 6,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#151515',
+  },
+  addressText: {
+    fontSize: 9,
+    color: '#888',
+  },
+  cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderTopWidth: 1,
     borderTopColor: '#1F1F1F',
-    paddingTop: 12,
+    paddingTop: 10,
   },
-  orderCardTotal: {
-    fontSize: 12,
+  totalLabel: {
+    fontSize: 9,
+    color: theme.colors.textSecondary,
+  },
+  totalVal: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: ZOMATO_RED,
+  },
+  actionBtn: {
+    backgroundColor: ZOMATO_RED,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+  },
+  actionText: {
+    fontSize: 10,
     fontWeight: 'bold',
     color: '#FFF',
   },
-  actionStatusBtn: {
-    backgroundColor: theme.colors.primary,
-    paddingVertical: 8,
+  waitingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(142,142,147,0.1)',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+  },
+  waitingText: {
+    fontSize: 9,
+    fontWeight: 'bold',
+    color: '#8E8E93',
+  },
+  pendingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,149,0,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,149,0,0.2)',
+    paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 10,
+    marginTop: 15,
   },
-  actionStatusText: {
+  pendingBadgeText: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: '#000',
+    color: '#FF9500',
+    marginLeft: 6,
   },
-  emptyQueueText: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
+  pastItemText: {
+    fontSize: 11,
+    color: '#888',
+    marginBottom: 2,
+  },
+  orderDateText: {
+    fontSize: 9,
+    color: '#555',
+  },
+  pastPriceText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#999',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyText: {
+    fontSize: 11,
+    color: '#555',
     textAlign: 'center',
-    paddingVertical: 20,
   }
 });

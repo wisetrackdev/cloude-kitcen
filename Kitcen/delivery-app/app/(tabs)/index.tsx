@@ -32,6 +32,7 @@ export default function RiderDashboard() {
 
   // Chat state
   const [chatOrder, setChatOrder] = useState<any>(null);
+  const [chatRecipientType, setChatRecipientType] = useState<'seller' | 'customer'>('customer');
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessageText, setNewMessageText] = useState('');
   const [chatInterval, setChatInterval] = useState<any>(null);
@@ -256,66 +257,88 @@ export default function RiderDashboard() {
                 </View>
               </View>
 
-              {/* Show Pickup Kitchen details first, then Customer details when picked up */}
+              {/* Timeline containing both Step 1 (Pickup) and Step 2 (Dropoff) with Navigate, Call, and Chat actions */}
               <View style={styles.pathContainer}>
-                {!isPickedUp ? (
-                  <View style={styles.pathNode}>
-                    <MapPin size={16} color={theme.colors.veg} />
-                    <View style={styles.nodeDetails}>
-                      <Text style={styles.nodeTitle}>Step 1: Go to Pickup Shop</Text>
-                      <Text style={styles.nodeName}>{delivery.kitchenName}</Text>
-                      <Text style={styles.nodeAddress}>
-                        Address: {kitchens.find(k => k.id === delivery.kitchenId)?.address || 'Collect from Vendor Counter'}
-                      </Text>
-                      
-                      <View style={{ flexDirection: 'row', marginTop: 8 }}>
-                        <TouchableOpacity 
-                          style={styles.mapLinkBtn}
-                          onPress={() => handleOpenMaps(`${delivery.kitchenName} Kitchen address: ${kitchens.find(k => k.id === delivery.kitchenId)?.address || ''}`)}
-                        >
-                          <Text style={styles.mapLinkText}>🗺 Navigate Shop</Text>
-                        </TouchableOpacity>
+                {/* Step 1: Go to Pickup Shop */}
+                <View style={styles.pathNode}>
+                  <MapPin size={16} color={theme.colors.veg} />
+                  <View style={styles.nodeDetails}>
+                    <Text style={[styles.nodeTitle, !isPickedUp && { color: theme.colors.primary, fontWeight: 'bold' }]}>
+                      Step 1: Go to Pickup Shop {!isPickedUp && '★ (CURRENT)'}
+                    </Text>
+                    <Text style={styles.nodeName}>{delivery.kitchenName}</Text>
+                    <Text style={styles.nodeAddress}>
+                      Address: {kitchens.find(k => k.id === delivery.kitchenId)?.address || 'Collect from Vendor Counter'}
+                    </Text>
+                    
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 }}>
+                      <TouchableOpacity 
+                        style={styles.mapLinkBtn}
+                        onPress={() => handleOpenMaps(kitchens.find(k => k.id === delivery.kitchenId)?.address || delivery.kitchenName)}
+                      >
+                        <Text style={styles.mapLinkText}>🗺 Navigate Shop</Text>
+                      </TouchableOpacity>
 
-                        {kitchens.find(k => k.id === delivery.kitchenId)?.ownerPhone && (
-                          <TouchableOpacity 
-                            style={[styles.mapLinkBtn, { marginLeft: 10, borderColor: 'rgba(52,199,89,0.2)', backgroundColor: 'rgba(52,199,89,0.1)' }]}
-                            onPress={() => Linking.openURL(`tel:${kitchens.find(k => k.id === delivery.kitchenId)?.ownerPhone}`)}
-                          >
-                            <Text style={[styles.mapLinkText, { color: theme.colors.success }]}>📞 Call Seller</Text>
-                          </TouchableOpacity>
-                        )}
-                      </View>
+                      <TouchableOpacity 
+                        style={[styles.mapLinkBtn, { marginLeft: 8, borderColor: 'rgba(52,199,89,0.2)', backgroundColor: 'rgba(52,199,89,0.1)' }]}
+                        onPress={() => Linking.openURL(`tel:${kitchens.find(k => k.id === delivery.kitchenId)?.ownerPhone || '+91 9876543210'}`)}
+                      >
+                        <Text style={[styles.mapLinkText, { color: theme.colors.success }]}>📞 Call Seller</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity 
+                        style={[styles.mapLinkBtn, { marginLeft: 8, borderColor: 'rgba(0,122,255,0.2)', backgroundColor: 'rgba(0,122,255,0.1)' }]}
+                        onPress={() => {
+                          setChatRecipientType('seller');
+                          setChatOrder(delivery);
+                        }}
+                      >
+                        <Text style={[styles.mapLinkText, { color: '#007AFF' }]}>💬 Chat Seller</Text>
+                      </TouchableOpacity>
                     </View>
                   </View>
-                ) : (
-                  <View style={styles.pathNode}>
-                    <MapPin size={16} color={theme.colors.primary} />
-                    <View style={styles.nodeDetails}>
-                      <Text style={styles.nodeTitle}>Step 2: Deliver to Customer</Text>
-                      <Text style={styles.nodeName}>{delivery.customerName}</Text>
-                      <Text style={styles.nodeAddress}>Contact Mobile: {delivery.customerPhone || '+91 98765 43210'}</Text>
-                      <Text style={styles.nodeAddress}>Address: {delivery.deliveryAddress || 'Royal Residency, Pune'}</Text>
+                </View>
 
-                      <View style={{ flexDirection: 'row', marginTop: 8 }}>
-                        <TouchableOpacity 
-                          style={styles.mapLinkBtn}
-                          onPress={() => handleOpenMaps(`${delivery.deliveryAddress || 'Royal Residency Pune'} customer ${delivery.customerName}`)}
-                        >
-                          <Text style={styles.mapLinkText}>🗺 Navigate Customer</Text>
-                        </TouchableOpacity>
+                {/* Dotted separator line */}
+                <View style={styles.verticalDottedLine} />
 
-                        {delivery.customerPhone && (
-                          <TouchableOpacity 
-                            style={[styles.mapLinkBtn, { marginLeft: 10, borderColor: 'rgba(52,199,89,0.2)', backgroundColor: 'rgba(52,199,89,0.1)' }]}
-                            onPress={() => Linking.openURL(`tel:${delivery.customerPhone}`)}
-                          >
-                            <Text style={[styles.mapLinkText, { color: theme.colors.success }]}>📞 Call Customer</Text>
-                          </TouchableOpacity>
-                        )}
-                      </View>
+                {/* Step 2: Deliver to Customer */}
+                <View style={styles.pathNode}>
+                  <MapPin size={16} color={theme.colors.primary} />
+                  <View style={styles.nodeDetails}>
+                    <Text style={[styles.nodeTitle, isPickedUp && { color: theme.colors.primary, fontWeight: 'bold' }]}>
+                      Step 2: Deliver to Customer {isPickedUp && '★ (CURRENT)'}
+                    </Text>
+                    <Text style={styles.nodeName}>{delivery.customerName}</Text>
+                    <Text style={styles.nodeAddress}>Address: {delivery.deliveryAddress || 'Royal Residency, Pune'}</Text>
+
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 }}>
+                      <TouchableOpacity 
+                        style={styles.mapLinkBtn}
+                        onPress={() => handleOpenMaps(delivery.deliveryAddress || 'Royal Residency, Pune')}
+                      >
+                        <Text style={styles.mapLinkText}>🗺 Navigate Customer</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity 
+                        style={[styles.mapLinkBtn, { marginLeft: 8, borderColor: 'rgba(52,199,89,0.2)', backgroundColor: 'rgba(52,199,89,0.1)' }]}
+                        onPress={() => Linking.openURL(`tel:${delivery.customerPhone || '+91 9876543210'}`)}
+                      >
+                        <Text style={[styles.mapLinkText, { color: theme.colors.success }]}>📞 Call Customer</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity 
+                        style={[styles.mapLinkBtn, { marginLeft: 8, borderColor: 'rgba(0,122,255,0.2)', backgroundColor: 'rgba(0,122,255,0.1)' }]}
+                        onPress={() => {
+                          setChatRecipientType('customer');
+                          setChatOrder(delivery);
+                        }}
+                      >
+                        <Text style={[styles.mapLinkText, { color: '#007AFF' }]}>💬 Chat Customer</Text>
+                      </TouchableOpacity>
                     </View>
                   </View>
-                )}
+                </View>
               </View>
 
               {/* Order Placement, Start, End Timestamps */}
@@ -332,24 +355,14 @@ export default function RiderDashboard() {
                 )}
               </View>
 
-              {/* Footer and Buttons */}
+              {/* Footer and Primary Actions */}
               <View style={styles.cardFooter}>
-                <TouchableOpacity 
-                  style={[styles.actionBtn, { flex: 1, marginRight: 8, backgroundColor: '#222', borderColor: '#444', borderWidth: 1 }]}
-                  onPress={() => setChatOrder(delivery)}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-                    <MessageSquare size={14} color="#FFF" style={{ marginRight: 6 }} />
-                    <Text style={[styles.actionBtnText, { color: '#FFF' }]}>Chat Customer</Text>
-                  </View>
-                </TouchableOpacity>
-
                 <TouchableOpacity 
                   style={[styles.actionBtn, { flex: 1, backgroundColor: delivery.status === 'preparing' ? '#333' : theme.colors.primary }]}
                   disabled={delivery.status === 'preparing'}
                   onPress={() => handleUpdateStatus(delivery.id, delivery.status)}
                 >
-                  <Text style={[styles.actionBtnText, { color: delivery.status === 'preparing' ? '#888' : '#000' }]}>
+                  <Text style={[styles.actionBtnText, { color: delivery.status === 'preparing' ? '#888' : '#000', textAlign: 'center' }]}>
                     {delivery.status === 'preparing' 
                       ? 'Waiting for Vendor...' 
                       : delivery.status === 'ready' 
@@ -382,7 +395,11 @@ export default function RiderDashboard() {
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Chat with Customer ({chatOrder.customerName})</Text>
+                <Text style={styles.modalTitle}>
+                  {chatRecipientType === 'seller' 
+                    ? `Chat with Seller (${chatOrder.kitchenName})` 
+                    : `Chat with Customer (${chatOrder.customerName})`}
+                </Text>
                 <TouchableOpacity onPress={() => setChatOrder(null)} style={styles.closeBtn}>
                   <X size={18} color="#FFF" />
                 </TouchableOpacity>
@@ -442,40 +459,7 @@ export default function RiderDashboard() {
         </View>
       </View>
 
-      {/* Completed Orders Logs */}
-      <Text style={styles.sectionTitle}>Completed Orders Logs ({orders.filter(o => o.riderId === riderId && o.status === 'delivered').length})</Text>
-      <View style={styles.deliveriesList}>
-        {orders.filter(o => o.riderId === riderId && o.status === 'delivered').map((order) => (
-          <View key={order.id} style={styles.completedCard}>
-            <View style={styles.completedHeader}>
-              <Text style={styles.completedId}>{order.id}</Text>
-              <Text style={styles.completedDate}>{order.date}</Text>
-            </View>
-            <Text style={styles.completedDetails}>From: {order.kitchenName}</Text>
-            <Text style={styles.completedDetails}>To: {order.customerName}</Text>
-            <Text style={styles.completedAddress}>Address: {order.deliveryAddress || 'Customer Location'}</Text>
-            <View style={styles.timestampsContainer}>
-              <Text style={styles.timestampText}>🕒 Ordered At: {order.createdAt || order.date}</Text>
-              {order.acceptedByRiderAt && (
-                <Text style={styles.timestampText}>🏍 Accepted At: {order.acceptedByRiderAt}</Text>
-              )}
-              {order.pickedUpAt && (
-                <Text style={styles.timestampText}>📦 Picked Up At: {order.pickedUpAt}</Text>
-              )}
-              {order.deliveredAt && (
-                <Text style={styles.timestampText}>✅ Delivered At: {order.deliveredAt}</Text>
-              )}
-            </View>
-            <View style={styles.completedFooter}>
-              <Text style={styles.earningAmt}>Earnings: ₹{order.deliveryCharge || 40}</Text>
-              <Text style={styles.deliveredLabel}>✓ DELIVERED</Text>
-            </View>
-          </View>
-        ))}
-        {orders.filter(o => o.riderId === riderId && o.status === 'delivered').length === 0 && (
-          <Text style={{ color: '#666', fontSize: 13, textAlign: 'center', marginVertical: 10, marginBottom: 30 }}>No completed orders history found.</Text>
-        )}
-      </View>
+
     </ScrollView>
   );
 }

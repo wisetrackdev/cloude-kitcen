@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tabs, Redirect } from 'expo-router';
-import { Navigation, User } from 'lucide-react-native';
+import { Navigation, User, History } from 'lucide-react-native';
 import { theme } from '../../styles/theme';
 import { useAuthStore } from '../../store/useAuthStore';
 
@@ -36,6 +36,13 @@ export default function TabLayout() {
         options={{
           title: 'Deliveries',
           tabBarIcon: ({ color }) => <Navigation size={20} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="history"
+        options={{
+          title: 'History',
+          tabBarIcon: ({ color }) => <History size={20} color={color} />,
         }}
       />
       <Tabs.Screen
