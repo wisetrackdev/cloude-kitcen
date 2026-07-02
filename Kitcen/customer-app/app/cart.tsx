@@ -14,11 +14,14 @@ import { ArrowLeft, Trash2, Tag, ChevronRight, Plus, Minus, CreditCard, MapPin, 
 import { theme } from '../styles/theme';
 import { useCartStore } from '../store/useCartStore';
 import { useKitchenStore } from '../store/useKitchenStore';
+import { useAuthStore } from '../store/useAuthStore';
 import * as Location from 'expo-location';
 
 export default function CartScreen() {
   const router = useRouter();
   
+  const isDarkMode = useAuthStore(state => state.isDarkMode);
+
   const cartItems = useCartStore(state => state.items);
   const updateQuantity = useCartStore(state => state.updateQuantity);
   const removeItem = useCartStore(state => state.removeItem);
@@ -40,6 +43,15 @@ export default function CartScreen() {
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'wallet' | 'card'>('cod');
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [loadingLocation, setLoadingLocation] = useState(false);
+
+  const themeColors = {
+    background: isDarkMode ? '#0B0B0C' : '#F5F6F8',
+    card: isDarkMode ? '#121214' : '#FFFFFF',
+    border: isDarkMode ? '#1F1F22' : '#EAEAEA',
+    text: isDarkMode ? '#FFFFFF' : '#1E2022',
+    textSecondary: isDarkMode ? '#8E8E93' : '#686E73',
+    inputBg: isDarkMode ? '#0F0F0F' : '#F0F2F4'
+  };
 
   const detectLocation = async () => {
     setLoadingLocation(true);
@@ -106,7 +118,7 @@ export default function CartScreen() {
       const orderId = await placeOrder({
         kitchenId: restaurantId || 'k1',
         kitchenName: restaurantName || 'The Pizza Box',
-        customerName: 'Sneha Mehta',
+        customerName: user?.name || 'Customer User',
         items: cartItems.map(item => ({
           id: item.id,
           name: item.name,
@@ -123,7 +135,6 @@ export default function CartScreen() {
         deliveryAddress: deliveryAddress
       });
 
-      // Simulate order placement
       Alert.alert(
         'Order Confirmed',
         'Your order has been placed successfully!',
@@ -132,7 +143,6 @@ export default function CartScreen() {
             text: 'Track Order',
             onPress: () => {
               clearCart();
-              // Go to live tracking screen with real generated order ID
               router.replace(`/tracking/${orderId}`);
             }
           }
@@ -145,8 +155,8 @@ export default function CartScreen() {
 
   if (cartItems.length === 0) {
     return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>Your cart is empty 🛍️</Text>
+      <View style={[styles.emptyContainer, { backgroundColor: themeColors.background }]}>
+        <Text style={[styles.emptyText, { color: themeColors.text }]}>Your cart is empty 🛍️</Text>
         <TouchableOpacity style={styles.shopButton} onPress={() => router.replace('/')}>
           <Text style={styles.shopButtonText}>Shop Now</Text>
         </TouchableOpacity>
@@ -155,42 +165,43 @@ export default function CartScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: themeColors.background }]}>
+      
       {/* Top Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <ArrowLeft size={20} color="#FFF" />
+      <View style={[styles.header, { borderBottomColor: themeColors.border, backgroundColor: themeColors.card }]}>
+        <TouchableOpacity style={[styles.backButton, { backgroundColor: isDarkMode ? '#121212' : '#EAEAEA' }]} onPress={() => router.back()}>
+          <ArrowLeft size={20} color={themeColors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Checkout Cart</Text>
+        <Text style={[styles.headerTitle, { color: themeColors.text }]}>Checkout Cart</Text>
         <TouchableOpacity onPress={clearCart}>
-          <Trash2 size={18} color={theme.colors.error} />
+          <Trash2 size={18} color="#FF3B30" />
         </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.scrollArea} showsVerticalScrollIndicator={false}>
         {/* Items List */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Items Ordered</Text>
+        <View style={[styles.section, { backgroundColor: themeColors.card, borderBottomColor: themeColors.border }]}>
+          <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Items Ordered</Text>
           {cartItems.map((item) => (
             <View key={item.id} style={styles.itemRow}>
               <View style={styles.itemMeta}>
-                <Text style={styles.itemName}>{item.name}</Text>
-                <Text style={styles.itemPrice}>₹{item.price * item.quantity}</Text>
+                <Text style={[styles.itemName, { color: themeColors.text }]}>{item.name}</Text>
+                <Text style={[styles.itemPrice, { color: themeColors.textSecondary }]}>₹{item.price * item.quantity}</Text>
               </View>
 
-              <View style={styles.qtyContainer}>
+              <View style={[styles.qtyContainer, { backgroundColor: themeColors.inputBg, borderColor: themeColors.border }]}>
                 <TouchableOpacity 
                   style={styles.qtyBtn} 
                   onPress={() => updateQuantity(item.id, -1)}
                 >
-                  <Minus size={12} color="#FFF" />
+                  <Minus size={12} color={themeColors.text} />
                 </TouchableOpacity>
-                <Text style={styles.qtyValue}>{item.quantity}</Text>
+                <Text style={[styles.qtyValue, { color: themeColors.text }]}>{item.quantity}</Text>
                 <TouchableOpacity 
                   style={styles.qtyBtn} 
                   onPress={() => updateQuantity(item.id, 1)}
                 >
-                  <Plus size={12} color="#FFF" />
+                  <Plus size={12} color={themeColors.text} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -198,28 +209,28 @@ export default function CartScreen() {
         </View>
 
         {/* Cooking notes */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Cooking Instructions</Text>
+        <View style={[styles.section, { backgroundColor: themeColors.card, borderBottomColor: themeColors.border }]}>
+          <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Cooking Instructions</Text>
           <TextInput
             placeholder="E.g. Make it spicy, No onions, etc."
             placeholderTextColor="#888"
             value={cookingInstruction}
             onChangeText={setCookingInstruction}
-            style={styles.textInput}
+            style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
           />
         </View>
 
         {/* Delivery Address selection */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Delivery Address</Text>
-          <View style={styles.addressContainer}>
+        <View style={[styles.section, { backgroundColor: themeColors.card, borderBottomColor: themeColors.border }]}>
+          <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Delivery Address</Text>
+          <View style={[styles.addressContainer, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
             <TextInput
               placeholder="H.No. / Flat, Building, Street, Area, City"
               placeholderTextColor="#888"
               value={deliveryAddress}
               onChangeText={setDeliveryAddress}
               multiline
-              style={[styles.textInput, { height: 60, textAlignVertical: 'top', paddingVertical: 8, marginBottom: 8 }]}
+              style={[styles.textInput, { height: 60, textAlignVertical: 'top', paddingVertical: 8, marginBottom: 8, backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
             />
             <TouchableOpacity 
               style={styles.gpsButton} 
@@ -227,10 +238,10 @@ export default function CartScreen() {
               disabled={loadingLocation}
             >
               {loadingLocation ? (
-                <ActivityIndicator size="small" color={theme.colors.primary} />
+                <ActivityIndicator size="small" color="#FF5252" />
               ) : (
                 <>
-                  <Navigation size={14} color={theme.colors.primary} style={{ marginRight: 6 }} />
+                  <Navigation size={14} color="#FF5252" style={{ marginRight: 6 }} />
                   <Text style={styles.gpsButtonText}>Detect via GPS</Text>
                 </>
               )}
@@ -239,8 +250,8 @@ export default function CartScreen() {
         </View>
 
         {/* Coupons section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Apply Coupon</Text>
+        <View style={[styles.section, { backgroundColor: themeColors.card, borderBottomColor: themeColors.border }]}>
+          <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Apply Coupon</Text>
           <View style={styles.couponRow}>
             <TextInput
               placeholder="Enter promo code (Try: ITALY50)"
@@ -248,7 +259,7 @@ export default function CartScreen() {
               autoCapitalize="characters"
               value={promoCodeInput}
               onChangeText={setPromoCodeInput}
-              style={[styles.textInput, { flex: 1, marginBottom: 0, marginRight: 10 }]}
+              style={[styles.textInput, { flex: 1, marginBottom: 0, marginRight: 10, backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
             />
             <TouchableOpacity style={styles.couponApplyBtn} onPress={handleApplyCoupon}>
               <Text style={styles.couponApplyBtnText}>Apply</Text>
@@ -256,28 +267,30 @@ export default function CartScreen() {
           </View>
           {coupon && (
             <View style={styles.couponSuccessBadge}>
-              <Tag size={12} color={theme.colors.success} />
+              <Tag size={12} color="#2ecc71" />
               <Text style={styles.couponSuccessText}>Applied: "{coupon.code}" (Saved ₹{totals.discount})</Text>
             </View>
           )}
         </View>
 
         {/* Payments selection */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Payment Method</Text>
+        <View style={[styles.section, { backgroundColor: themeColors.card, borderBottomColor: themeColors.border }]}>
+          <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Payment Method</Text>
           <View style={styles.paymentMethodRow}>
             {(['cod'] as const).map((method) => (
               <TouchableOpacity
                 key={method}
                 style={[
                   styles.paymentOption,
-                  paymentMethod === method && styles.paymentOptionActive
+                  { backgroundColor: themeColors.inputBg, borderColor: themeColors.border },
+                  paymentMethod === method && { borderColor: '#FF5252', backgroundColor: 'rgba(255,82,82,0.05)' }
                 ]}
                 onPress={() => setPaymentMethod(method)}
               >
                 <Text style={[
                   styles.paymentLabel,
-                  paymentMethod === method && styles.paymentLabelActive
+                  { color: themeColors.textSecondary },
+                  paymentMethod === method && { color: '#FF5252' }
                 ]}>
                   {method === 'cod' ? 'Cash on Delivery' : method === 'wallet' ? 'Wallet' : 'Card'}
                 </Text>
@@ -287,47 +300,47 @@ export default function CartScreen() {
         </View>
 
         {/* Summary pricing */}
-        <View style={[styles.section, { marginBottom: 40 }]}>
-          <Text style={styles.sectionTitle}>Bill Details</Text>
+        <View style={[styles.section, { marginBottom: 40, backgroundColor: themeColors.card, borderBottomColor: themeColors.border }]}>
+          <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Bill Details</Text>
           
           <View style={styles.billRow}>
-            <Text style={styles.billLabel}>Item Subtotal</Text>
-            <Text style={styles.billValue}>₹{totals.subtotal}</Text>
+            <Text style={[styles.billLabel, { color: themeColors.textSecondary }]}>Item Subtotal</Text>
+            <Text style={[styles.billValue, { color: themeColors.text }]}>₹{totals.subtotal}</Text>
           </View>
           
           <View style={styles.billRow}>
-            <Text style={styles.billLabel}>Delivery Charges</Text>
-            <Text style={styles.billValue}>₹{totals.deliveryCharge}</Text>
+            <Text style={[styles.billLabel, { color: themeColors.textSecondary }]}>Delivery Charges</Text>
+            <Text style={[styles.billValue, { color: themeColors.text }]}>₹{totals.deliveryCharge}</Text>
           </View>
           
           <View style={styles.billRow}>
-            <Text style={styles.billLabel}>Taxes & GST (15%)</Text>
-            <Text style={styles.billValue}>₹{totals.tax}</Text>
+            <Text style={[styles.billLabel, { color: themeColors.textSecondary }]}>Taxes & GST (15%)</Text>
+            <Text style={[styles.billValue, { color: themeColors.text }]}>₹{totals.tax}</Text>
           </View>
 
           {totals.discount > 0 && (
             <View style={styles.billRow}>
-              <Text style={[styles.billLabel, { color: theme.colors.success }]}>Coupon Discount</Text>
-              <Text style={[styles.billValue, { color: theme.colors.success }]}>-₹{totals.discount}</Text>
+              <Text style={[styles.billLabel, { color: '#2ecc71' }]}>Coupon Discount</Text>
+              <Text style={[styles.billValue, { color: '#2ecc71' }]}>-₹{totals.discount}</Text>
             </View>
           )}
 
-          <View style={[styles.billRow, styles.billRowTotal]}>
-            <Text style={styles.billLabelTotal}>To Pay</Text>
+          <View style={[styles.billRow, styles.billRowTotal, { borderTopColor: themeColors.border }]}>
+            <Text style={[styles.billLabelTotal, { color: themeColors.text }]}>To Pay</Text>
             <Text style={styles.billValueTotal}>₹{totals.total}</Text>
           </View>
         </View>
       </ScrollView>
 
       {/* Footer trigger */}
-      <View style={styles.footerBar}>
+      <View style={[styles.footerBar, { borderTopColor: themeColors.border, backgroundColor: themeColors.card }]}>
         <View>
-          <Text style={styles.footerPrice}>₹{totals.total}</Text>
-          <Text style={styles.footerLabel}>Grand Total</Text>
+          <Text style={[styles.footerPrice, { color: themeColors.text }]}>₹{totals.total}</Text>
+          <Text style={[styles.footerLabel, { color: themeColors.textSecondary }]}>Grand Total</Text>
         </View>
         <TouchableOpacity style={styles.payButton} onPress={handleCheckout}>
           <Text style={styles.payButtonText}>Place Order</Text>
-          <ChevronRight size={16} color="#000" />
+          <ChevronRight size={16} color="#FFF" />
         </TouchableOpacity>
       </View>
     </View>
@@ -337,24 +350,20 @@ export default function CartScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
-    paddingTop: 50,
   },
   emptyContainer: {
     flex: 1,
-    backgroundColor: theme.colors.background,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
   },
   emptyText: {
     fontSize: 16,
-    color: theme.colors.textSecondary,
     fontWeight: 'bold',
     marginBottom: 20,
   },
   shopButton: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: '#FF5252',
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 12,
@@ -362,29 +371,27 @@ const styles = StyleSheet.create({
   shopButtonText: {
     fontSize: 13,
     fontWeight: 'bold',
-    color: '#000',
+    color: '#FFF',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
+    paddingTop: 50,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#1F1F1F',
   },
   backButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#121212',
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#FFF',
   },
   scrollArea: {
     flex: 1,
@@ -392,12 +399,10 @@ const styles = StyleSheet.create({
   section: {
     padding: 16,
     borderBottomWidth: 8,
-    borderBottomColor: '#050505',
   },
   sectionTitle: {
     fontSize: 13,
     fontWeight: 'bold',
-    color: '#FFF',
     marginBottom: 16,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -413,20 +418,16 @@ const styles = StyleSheet.create({
   },
   itemName: {
     fontSize: 14,
-    color: '#FFF',
     fontWeight: '600',
   },
   itemPrice: {
     fontSize: 12,
-    color: theme.colors.textSecondary,
     marginTop: 4,
   },
   qtyContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#121212',
     borderWidth: 1,
-    borderColor: '#1F1F1F',
     borderRadius: 10,
     padding: 4,
   },
@@ -434,23 +435,18 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 6,
-    backgroundColor: '#222',
     alignItems: 'center',
     justifyContent: 'center',
   },
   qtyValue: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#FFF',
     marginHorizontal: 12,
   },
   textInput: {
-    backgroundColor: '#121212',
     borderWidth: 1,
-    borderColor: '#1F1F1F',
     borderRadius: 12,
     padding: 12,
-    color: '#FFF',
     fontSize: 13,
     marginBottom: 12,
   },
@@ -459,9 +455,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   couponApplyBtn: {
-    backgroundColor: '#1F1F1F',
-    borderWidth: 1,
-    borderColor: theme.colors.primary,
+    backgroundColor: '#FF5252',
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 20,
@@ -470,19 +464,19 @@ const styles = StyleSheet.create({
   couponApplyBtnText: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: theme.colors.primary,
+    color: '#FFF',
   },
   couponSuccessBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(52,199,89,0.1)',
+    backgroundColor: 'rgba(46,204,113,0.1)',
     borderRadius: 8,
     padding: 8,
     marginTop: 8,
   },
   couponSuccessText: {
     fontSize: 11,
-    color: theme.colors.success,
+    color: '#2ecc71',
     fontWeight: 'bold',
     marginLeft: 6,
   },
@@ -492,25 +486,15 @@ const styles = StyleSheet.create({
   },
   paymentOption: {
     flex: 1,
-    backgroundColor: '#121212',
     borderWidth: 1,
-    borderColor: '#1F1F1F',
     borderRadius: 12,
     paddingVertical: 12,
     marginHorizontal: 4,
     alignItems: 'center',
   },
-  paymentOptionActive: {
-    borderColor: theme.colors.primary,
-    backgroundColor: 'rgba(255,107,0,0.05)',
-  },
   paymentLabel: {
     fontSize: 11,
-    color: theme.colors.textSecondary,
     fontWeight: 'bold',
-  },
-  paymentLabelActive: {
-    color: theme.colors.primary,
   },
   billRow: {
     flexDirection: 'row',
@@ -519,33 +503,27 @@ const styles = StyleSheet.create({
   },
   billLabel: {
     fontSize: 13,
-    color: theme.colors.textSecondary,
   },
   billValue: {
     fontSize: 13,
-    color: '#FFF',
     fontWeight: '600',
   },
   billRowTotal: {
     borderTopWidth: 1,
-    borderTopColor: '#1F1F1F',
     paddingTop: 12,
     marginTop: 12,
   },
   billLabelTotal: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#FFF',
   },
   billValueTotal: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: theme.colors.primary,
+    color: '#FF5252',
   },
   footerBar: {
     borderTopWidth: 1,
-    borderTopColor: '#1F1F1F',
-    backgroundColor: '#121212',
     paddingHorizontal: 16,
     paddingVertical: 16,
     flexDirection: 'row',
@@ -555,18 +533,16 @@ const styles = StyleSheet.create({
   footerPrice: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#FFF',
   },
   footerLabel: {
     fontSize: 10,
-    color: theme.colors.textSecondary,
     fontWeight: '600',
     textTransform: 'uppercase',
   },
   payButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.primary,
+    backgroundColor: '#FF5252',
     borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 20,
@@ -574,13 +550,11 @@ const styles = StyleSheet.create({
   payButtonText: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#000',
+    color: '#FFF',
     marginRight: 4,
   },
   addressContainer: {
-    backgroundColor: '#121212',
     borderWidth: 1,
-    borderColor: '#1F1F1F',
     borderRadius: 12,
     padding: 10,
   },
@@ -588,15 +562,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,107,0,0.1)',
+    backgroundColor: 'rgba(255,82,82,0.1)',
     borderRadius: 8,
     paddingVertical: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,107,0,0.2)',
+    borderColor: 'rgba(255,82,82,0.2)',
   },
   gpsButtonText: {
     fontSize: 12,
-    color: theme.colors.primary,
+    color: '#FF5252',
     fontWeight: 'bold',
   }
 });

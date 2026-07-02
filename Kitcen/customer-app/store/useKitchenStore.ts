@@ -161,6 +161,7 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
   kitchens: initialKitchens,
   products: initialProducts,
   orders: [],
+  allProducts: [],
   isLoading: false,
   error: null,
 
@@ -236,6 +237,7 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
       console.warn('API Error, falling back to mock products:', err.message);
       set({ isLoading: false, error: err.message });
     }
+  },
   fetchAllProducts: async () => {
     set({ isLoading: true, error: null });
     try {

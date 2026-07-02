@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -13,11 +13,14 @@ import { ArrowLeft, Star, Clock, ShoppingBag, Check, ShieldCheck } from 'lucide-
 import { theme } from '../../styles/theme';
 import { useCartStore } from '../../store/useCartStore';
 import { useKitchenStore } from '../../store/useKitchenStore';
+import { useAuthStore } from '../../store/useAuthStore';
 
 export default function RestaurantDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   
+  const isDarkMode = useAuthStore(state => state.isDarkMode);
+
   // Zustand store mappings
   const kitchens = useKitchenStore(state => state.kitchens);
   const products = useKitchenStore(state => state.products);
@@ -33,13 +36,13 @@ export default function RestaurantDetailScreen() {
   const categories = Array.from(new Set(kitchenProducts.map(item => item.category)));
   const [activeCategory, setActiveCategory] = useState('Tiffin Meals');
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (id) {
       fetchProducts(id as string);
     }
   }, [id]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (categories.length > 0) {
       if (!activeCategory || !categories.includes(activeCategory)) {
         setActiveCategory(categories[0]);
@@ -50,6 +53,15 @@ export default function RestaurantDetailScreen() {
   const [selectedItemForCustomization, setSelectedItemForCustomization] = useState<any | null>(null);
   const [selectedSize, setSelectedSize] = useState<'Regular' | 'Medium' | 'Large'>('Medium');
   const [extraCheese, setExtraCheese] = useState(false);
+
+  const themeColors = {
+    background: isDarkMode ? '#0B0B0C' : '#F5F6F8',
+    card: isDarkMode ? '#121214' : '#FFFFFF',
+    border: isDarkMode ? '#1F1F22' : '#EAEAEA',
+    text: isDarkMode ? '#FFFFFF' : '#1E2022',
+    textSecondary: isDarkMode ? '#8E8E93' : '#686E73',
+    inputBg: isDarkMode ? '#0F0F0F' : '#F0F2F4'
+  };
 
   const handleAddPress = (item: any) => {
     if (item.customizable) {
@@ -101,7 +113,7 @@ export default function RestaurantDetailScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: themeColors.background }]}>
       {/* Header Cover Banner */}
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.coverWrapper}>
@@ -115,32 +127,32 @@ export default function RestaurantDetailScreen() {
         </View>
 
         {/* Info panel */}
-        <View style={styles.infoCard}>
+        <View style={[styles.infoCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.restaurantName}>{kitchenInfo.name}</Text>
+              <Text style={[styles.restaurantName, { color: themeColors.text }]}>{kitchenInfo.name}</Text>
               <Text style={styles.ownerText}>By {kitchenInfo.owner}</Text>
             </View>
             {kitchenInfo.logoUrl && kitchenInfo.logoUrl.trim() !== '' && (
               <Image source={{ uri: kitchenInfo.logoUrl }} style={styles.shopLogoImage} />
             )}
           </View>
-          <Text style={styles.cuisines}>{kitchenInfo.cuisines}</Text>
+          <Text style={[styles.cuisines, { color: themeColors.textSecondary }]}>{kitchenInfo.cuisines}</Text>
           
           <View style={styles.metricsRow}>
             <View style={styles.metricItem}>
               <Star size={14} color="#FFD700" style={{ fill: '#FFD700' }} />
-              <Text style={styles.metricText}>{kitchenInfo.rating} ({kitchenInfo.ratingCount}+ ratings)</Text>
+              <Text style={[styles.metricText, { color: themeColors.textSecondary }]}>{kitchenInfo.rating} ({kitchenInfo.ratingCount}+ ratings)</Text>
             </View>
-            <Text style={styles.bullet}>•</Text>
+            <Text style={[styles.bullet, { color: themeColors.textSecondary }]}>•</Text>
             <View style={styles.metricItem}>
-              <Clock size={14} color={theme.colors.textSecondary} />
-              <Text style={styles.metricText}>{kitchenInfo.time} ({kitchenInfo.distance})</Text>
+              <Clock size={14} color={themeColors.textSecondary} />
+              <Text style={[styles.metricText, { color: themeColors.textSecondary }]}>{kitchenInfo.time} ({kitchenInfo.distance})</Text>
             </View>
           </View>
 
           <View style={styles.offerBanner}>
-            <Text style={styles.offerText}>{kitchenInfo.offer}</Text>
+            <Text style={styles.offerText}>{kitchenInfo.offer || 'Flat 50% OFF'}</Text>
           </View>
         </View>
 
@@ -150,10 +162,18 @@ export default function RestaurantDetailScreen() {
             {categories.map(cat => (
               <TouchableOpacity 
                 key={cat}
-                style={[styles.categoryBtn, activeCategory === cat && styles.categoryBtnActive]}
+                style={[
+                  styles.categoryBtn, 
+                  { backgroundColor: themeColors.card, borderColor: themeColors.border },
+                  activeCategory === cat && { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }
+                ]}
                 onPress={() => setActiveCategory(cat)}
               >
-                <Text style={[styles.categoryBtnText, activeCategory === cat && styles.categoryBtnTextActive]}>
+                <Text style={[
+                  styles.categoryBtnText, 
+                  { color: themeColors.textSecondary },
+                  activeCategory === cat && { color: '#000', fontWeight: 'bold' }
+                ]}>
                   {cat}
                 </Text>
               </TouchableOpacity>
@@ -166,38 +186,38 @@ export default function RestaurantDetailScreen() {
           {kitchenProducts.filter(item => item.category === activeCategory).map(item => {
             const qty = getQuantityInCart(item.id);
             return (
-              <View key={item.id} style={styles.menuItem}>
+              <View key={item.id} style={[styles.menuItem, { borderBottomColor: themeColors.border }]}>
                 <View style={styles.itemInfo}>
                   <View style={[styles.vegBadge, { borderColor: item.isVeg ? theme.colors.veg : theme.colors.nonVeg }]}>
                     <View style={[styles.vegDot, { backgroundColor: item.isVeg ? theme.colors.veg : theme.colors.nonVeg }]} />
                   </View>
-                  <Text style={styles.itemName}>{item.name}</Text>
-                  <Text style={styles.itemPrice}>₹{item.price}</Text>
-                  <Text style={styles.itemDesc} numberOfLines={2}>{item.desc}</Text>
+                  <Text style={[styles.itemName, { color: themeColors.text }]}>{item.name}</Text>
+                  <Text style={[styles.itemPrice, { color: themeColors.text }]}>₹{item.price}</Text>
+                  <Text style={[styles.itemDesc, { color: themeColors.textSecondary }]} numberOfLines={2}>{item.desc}</Text>
                 </View>
                 
                 <View style={styles.itemImageContainer}>
                   <Image source={{ uri: item.image }} style={styles.itemImage} />
                   
                   {qty > 0 ? (
-                    <View style={styles.qtyControlContainer}>
-                      <Text style={styles.qtyText}>{qty} in cart</Text>
+                    <View style={[styles.qtyControlContainer, { backgroundColor: themeColors.border }]}>
+                      <Text style={[styles.qtyText, { color: themeColors.text }]}>{qty} in cart</Text>
                     </View>
                   ) : (
                     <TouchableOpacity 
-                      style={styles.addButton}
+                      style={[styles.addButton, { backgroundColor: themeColors.card, borderColor: theme.colors.primary }]}
                       onPress={() => handleAddPress(item)}
                     >
                       <Text style={styles.addButtonText}>ADD</Text>
                     </TouchableOpacity>
                   )}
-                  {item.customizable && <Text style={styles.customizableText}>Customizable</Text>}
+                  {item.customizable && <Text style={[styles.customizableText, { color: themeColors.textSecondary }]}>Customizable</Text>}
                 </View>
               </View>
             );
           })}
           {kitchenProducts.length === 0 && (
-            <Text style={styles.noItemsText}>No items added to this kitchen yet.</Text>
+            <Text style={[styles.noItemsText, { color: themeColors.textSecondary }]}>No items added to this kitchen yet.</Text>
           )}
         </View>
         <View style={{ height: 100 }} />
@@ -229,20 +249,20 @@ export default function RestaurantDetailScreen() {
           onRequestClose={() => setSelectedItemForCustomization(null)}
         >
           <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
+            <View style={[styles.modalContent, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
               <Text style={styles.modalHeaderTitle}>Customize Item</Text>
-              <Text style={styles.modalItemName}>{selectedItemForCustomization.name}</Text>
+              <Text style={[styles.modalItemName, { color: themeColors.text }]}>{selectedItemForCustomization.name}</Text>
 
               {/* Sizes */}
               <View style={styles.modalSection}>
-                <Text style={styles.modalSectionTitle}>Choose Size</Text>
+                <Text style={[styles.modalSectionTitle, { color: themeColors.text }]}>Choose Size</Text>
                 {['Regular', 'Medium', 'Large'].map((size: any) => (
                   <TouchableOpacity 
                     key={size}
-                    style={styles.optionRow}
+                    style={[styles.optionRow, { borderBottomColor: themeColors.border }]}
                     onPress={() => setSelectedSize(size)}
                   >
-                    <Text style={styles.optionLabel}>
+                    <Text style={[styles.optionLabel, { color: themeColors.text }]}>
                       {size} {size === 'Regular' ? '(-₹30)' : size === 'Large' ? '(+₹60)' : ''}
                     </Text>
                     <View style={[styles.radioCircle, selectedSize === size && styles.radioCircleActive]}>
@@ -254,12 +274,12 @@ export default function RestaurantDetailScreen() {
 
               {/* Addons */}
               <View style={styles.modalSection}>
-                <Text style={styles.modalSectionTitle}>Extra Addons</Text>
+                <Text style={[styles.modalSectionTitle, { color: themeColors.text }]}>Extra Addons</Text>
                 <TouchableOpacity 
-                  style={styles.optionRow}
+                  style={[styles.optionRow, { borderBottomColor: themeColors.border }]}
                   onPress={() => setExtraCheese(!extraCheese)}
                 >
-                  <Text style={styles.optionLabel}>Extra Mozzarella Cheese (+₹40)</Text>
+                  <Text style={[styles.optionLabel, { color: themeColors.text }]}>Extra Mozzarella Cheese (+₹40)</Text>
                   <View style={[styles.checkbox, extraCheese && styles.checkboxActive]}>
                     {extraCheese && <Check size={12} color="#000" />}
                   </View>
@@ -283,7 +303,6 @@ export default function RestaurantDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
   },
   coverWrapper: {
     position: 'relative',
@@ -306,9 +325,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   infoCard: {
-    backgroundColor: '#121212',
     borderWidth: 1,
-    borderColor: '#1F1F1F',
     borderRadius: 20,
     marginHorizontal: 16,
     marginTop: -30,
@@ -317,7 +334,6 @@ const styles = StyleSheet.create({
   restaurantName: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#FFF',
   },
   shopLogoImage: {
     width: 50,
@@ -330,13 +346,12 @@ const styles = StyleSheet.create({
   ownerText: {
     fontSize: 11,
     fontWeight: 'bold',
-    color: theme.colors.primary,
+    color: '#E23744',
     marginTop: 2,
     textTransform: 'uppercase',
   },
   cuisines: {
     fontSize: 13,
-    color: theme.colors.textSecondary,
     marginTop: 4,
   },
   metricsRow: {
@@ -350,12 +365,10 @@ const styles = StyleSheet.create({
   },
   metricText: {
     fontSize: 12,
-    color: theme.colors.textSecondary,
     fontWeight: '600',
     marginLeft: 4,
   },
   bullet: {
-    color: theme.colors.textSecondary,
     marginHorizontal: 8,
   },
   offerBanner: {
@@ -369,7 +382,7 @@ const styles = StyleSheet.create({
   },
   offerText: {
     fontSize: 11,
-    color: theme.colors.primary,
+    color: '#E23744',
     fontWeight: 'bold',
     textAlign: 'center',
   },
@@ -383,18 +396,15 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 12,
-    backgroundColor: '#121212',
     borderWidth: 1,
-    borderColor: '#1F1F1F',
     marginRight: 10,
   },
   categoryBtnActive: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
+    backgroundColor: '#FF5252',
+    borderColor: '#FF5252',
   },
   categoryBtnText: {
     fontSize: 12,
-    color: theme.colors.textSecondary,
     fontWeight: 'bold',
   },
   categoryBtnTextActive: {
@@ -408,7 +418,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#1F1F1F',
   },
   itemInfo: {
     flex: 1,
@@ -431,17 +440,14 @@ const styles = StyleSheet.create({
   itemName: {
     fontSize: 15,
     fontWeight: 'bold',
-    color: '#FFF',
   },
   itemPrice: {
     fontSize: 13,
     fontWeight: 'bold',
-    color: theme.colors.text,
     marginTop: 4,
   },
   itemDesc: {
     fontSize: 11,
-    color: theme.colors.textSecondary,
     marginTop: 6,
     lineHeight: 16,
   },
@@ -458,9 +464,7 @@ const styles = StyleSheet.create({
   addButton: {
     position: 'absolute',
     bottom: -10,
-    backgroundColor: '#121212',
     borderWidth: 1,
-    borderColor: theme.colors.primary,
     borderRadius: 10,
     paddingVertical: 6,
     paddingHorizontal: 20,
@@ -472,12 +476,11 @@ const styles = StyleSheet.create({
   addButtonText: {
     fontSize: 11,
     fontWeight: 'bold',
-    color: theme.colors.primary,
+    color: '#2ecc71',
   },
   qtyControlContainer: {
     position: 'absolute',
     bottom: -10,
-    backgroundColor: '#1F1F1F',
     borderRadius: 10,
     paddingVertical: 6,
     paddingHorizontal: 10,
@@ -485,16 +488,13 @@ const styles = StyleSheet.create({
   qtyText: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: theme.colors.textSecondary,
   },
   customizableText: {
     fontSize: 9,
-    color: theme.colors.textSecondary,
     marginTop: 14,
   },
   noItemsText: {
     fontSize: 12,
-    color: theme.colors.textSecondary,
     textAlign: 'center',
     paddingVertical: 40,
   },
@@ -503,7 +503,7 @@ const styles = StyleSheet.create({
     bottom: 30,
     left: 16,
     right: 16,
-    backgroundColor: theme.colors.primary,
+    backgroundColor: '#FFCC00',
     borderRadius: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -544,23 +544,20 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#121212',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
     borderTopWidth: 1,
-    borderTopColor: '#1F1F1F',
   },
   modalHeaderTitle: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: theme.colors.primary,
+    color: '#FF5252',
     textTransform: 'uppercase',
   },
   modalItemName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#FFF',
     marginTop: 4,
     marginBottom: 20,
   },
@@ -570,7 +567,6 @@ const styles = StyleSheet.create({
   modalSectionTitle: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#FFF',
     marginBottom: 12,
   },
   optionRow: {
@@ -579,11 +575,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1F1F1F',
   },
   optionLabel: {
     fontSize: 13,
-    color: theme.colors.text,
   },
   radioCircle: {
     width: 20,
@@ -595,13 +589,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   radioCircleActive: {
-    borderColor: theme.colors.primary,
+    borderColor: '#FF5252',
   },
   radioDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: theme.colors.primary,
+    backgroundColor: '#FF5252',
   },
   checkbox: {
     width: 20,
@@ -613,11 +607,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   checkboxActive: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
+    backgroundColor: '#FF5252',
+    borderColor: '#FF5252',
   },
   modalSubmitButton: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: '#FF5252',
     borderRadius: 16,
     paddingVertical: 16,
     alignItems: 'center',
@@ -626,6 +620,6 @@ const styles = StyleSheet.create({
   modalSubmitText: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#000',
+    color: '#FFF',
   }
 });

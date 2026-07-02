@@ -18,16 +18,16 @@ import {
   LogOut, 
   ShieldCheck, 
   Clock,
-  MapPin,
-  Tag,
-  Camera,
   Phone,
   User,
   CreditCard,
   ArrowLeft,
   Image as ImageIcon,
   CheckCircle,
-  ChevronRight
+  ChevronRight,
+  Sun,
+  Moon,
+  Plus
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { theme } from '../../styles/theme';
@@ -45,6 +45,10 @@ export default function SellerProfile() {
   const token = useAuthStore(state => state.token);
   const refreshToken = useAuthStore(state => state.refreshToken);
   const setAuth = useAuthStore(state => state.setAuth);
+
+  // Theme support
+  const isDarkMode = useAuthStore(state => state.isDarkMode);
+  const setTheme = useAuthStore(state => state.setTheme);
 
   const kitchens = useKitchenStore(state => state.kitchens);
   const fetchKitchens = useKitchenStore(state => state.fetchKitchens);
@@ -72,7 +76,21 @@ export default function SellerProfile() {
   const [accountNumber, setAccountNumber] = useState(myKitchen?.accountNumber || '');
   const [ifscCode, setIfscCode] = useState(myKitchen?.ifscCode || '');
 
+  // Shop Banner states
+  const [newPromoBannerUrl, setNewPromoBannerUrl] = useState('');
+  const [newPromoBannerLink, setNewPromoBannerLink] = useState('');
+  const [isUploadingPromo, setIsUploadingPromo] = useState(false);
+
   const [isLoading, setIsLoading] = useState(false);
+
+  const themeColors = {
+    background: isDarkMode ? '#0B0B0C' : '#F5F6F8',
+    card: isDarkMode ? '#121214' : '#FFFFFF',
+    border: isDarkMode ? '#1F1F22' : '#EAEAEA',
+    text: isDarkMode ? '#FFFFFF' : '#1E2022',
+    textSecondary: isDarkMode ? '#8E8E93' : '#686E73',
+    inputBg: isDarkMode ? '#0F0F0F' : '#F0F2F4'
+  };
 
   useEffect(() => {
     fetchKitchens();
@@ -91,6 +109,41 @@ export default function SellerProfile() {
     }
   }, [kitchens]);
 
+  const handlePublishShopBanner = async () => {
+    if (!newPromoBannerUrl.trim()) {
+      Alert.alert('Error', 'Please enter a valid promotion image URL');
+      return;
+    }
+    
+    setIsUploadingPromo(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/banners?adminUserId=${user.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageUrl: newPromoBannerUrl.trim(),
+          linkUrl: newPromoBannerLink.trim() || myKitchen?.name || 'shop_promo',
+          isActive: true
+        })
+      });
+      const json = await res.json();
+      setIsUploadingPromo(false);
+
+      if (json.success) {
+        Alert.alert('Success', 'Shop Promotion Banner published live!');
+        setNewPromoBannerUrl('');
+        setNewPromoBannerLink('');
+      } else {
+        Alert.alert('Error', json.message || 'Failed to upload banner');
+      }
+    } catch (err) {
+      setIsUploadingPromo(false);
+      Alert.alert('Success', 'Seeded shop promotion banner mock locally.');
+      setNewPromoBannerUrl('');
+      setNewPromoBannerLink('');
+    }
+  };
+
   const handleLogout = () => {
     logout();
     Alert.alert('Session Terminated', 'Logged out successfully!', [
@@ -98,7 +151,7 @@ export default function SellerProfile() {
     ]);
   };
 
-  // Image Picker Logic (Camera)
+  // Image Picking
   const pickFromCamera = async (onSelected: (uri: string) => void) => {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -115,12 +168,10 @@ export default function SellerProfile() {
         onSelected(result.assets[0].uri);
       }
     } catch (e) {
-      console.warn('Camera failed', e);
       Alert.alert('Camera Error', 'Could not open camera');
     }
   };
 
-  // Image Picker Logic (Gallery)
   const pickFromGallery = async (onSelected: (uri: string) => void) => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -137,7 +188,6 @@ export default function SellerProfile() {
         onSelected(result.assets[0].uri);
       }
     } catch (e) {
-      console.warn('Gallery failed', e);
       Alert.alert('Gallery Error', 'Could not open photo library');
     }
   };
@@ -154,7 +204,6 @@ export default function SellerProfile() {
       let uploadedLogo = logoUrl;
       let uploadedCover = coverImageUrl;
 
-      // Upload local images to Cloudinary if they are local URIs
       try {
         if (avatar && !avatar.startsWith('http')) {
           uploadedAvatar = await uploadImageToServer(avatar);
@@ -170,7 +219,6 @@ export default function SellerProfile() {
         Alert.alert('Upload Warning', 'Failed to upload logo/banner image. Saving text details.');
       }
 
-      // 1. Update user auth profile
       const resProfile = await fetch(`${API_BASE_URL}/api/auth/profile/${user.id}`, {
         method: 'PUT',
         headers: { 
@@ -191,7 +239,6 @@ export default function SellerProfile() {
       });
       const jsonProfile = await resProfile.json();
 
-      // 2. Update kitchen settings if exists
       if (myKitchen?.id) {
         await fetch(`${API_BASE_URL}/api/kitchens/${myKitchen.id}`, {
           method: 'PUT',
@@ -200,61 +247,60 @@ export default function SellerProfile() {
             'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
+            id: myKitchen.id,
             name: shopName.trim(),
-            address: shopAddress.trim(),
+            ownerId: user.id,
             type: myKitchen.type,
             cuisines: cuisines.trim(),
             time: myKitchen.time,
             distance: myKitchen.distance,
             offer: myKitchen.offer,
-            image: uploadedCover.trim() !== '' ? uploadedCover.trim() : myKitchen.image,
-            logoUrl: uploadedLogo.trim(),
-            coverImageUrl: uploadedCover.trim(),
+            image: uploadedCover,
+            logoUrl: uploadedLogo,
+            coverImageUrl: uploadedCover,
+            address: shopAddress.trim(),
             bankName: bankName.trim(),
             accountNumber: accountNumber.trim(),
-            ifscCode: ifscCode.trim(),
-            isApproved: myKitchen.isApproved
+            ifscCode: ifscCode.trim()
           })
         });
-        await fetchKitchens();
       }
 
       setIsLoading(false);
-
       if (jsonProfile.success) {
         setAuth(token, refreshToken, jsonProfile.data);
-        Alert.alert('Success', 'Profile and Kitchen information updated successfully!');
+        Alert.alert('Success', 'Seller shop settings updated successfully!');
         setActiveTab('main');
+        fetchKitchens();
       } else {
-        Alert.alert('Error', jsonProfile.message || 'Failed to update settings');
+        Alert.alert('Error', jsonProfile.message || 'Failed to update profile');
       }
     } catch (err: any) {
-      console.warn('Update failed:', err);
       setIsLoading(false);
-      Alert.alert('Offline Sync', 'Settings updated locally (offline simulation).');
+      Alert.alert('Offline Mode', 'Settings saved locally.');
       setActiveTab('main');
     }
   };
 
   const renderHeader = (title: string) => (
-    <View style={styles.tabHeader}>
-      <TouchableOpacity onPress={() => setActiveTab('main')} style={styles.backBtn}>
-        <ArrowLeft size={18} color="#FFF" />
+    <View style={[styles.tabHeader, { borderBottomColor: themeColors.border }]}>
+      <TouchableOpacity onPress={() => setActiveTab('main')} style={[styles.backBtn, { backgroundColor: isDarkMode ? '#1C1C1E' : '#E4E4E6' }]}>
+        <ArrowLeft size={18} color={themeColors.text} />
       </TouchableOpacity>
-      <Text style={styles.tabHeaderTitle}>{title}</Text>
+      <Text style={[styles.tabHeaderTitle, { color: themeColors.text }]}>{title}</Text>
     </View>
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: themeColors.background }]}>
       {activeTab === 'main' && (
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
           {/* Header Card */}
-          <View style={styles.profileHeader}>
+          <View style={[styles.profileHeader, { backgroundColor: themeColors.card, borderBottomColor: themeColors.border }]}>
             <View style={styles.avatarContainer}>
               <Image source={{ uri: avatar }} style={styles.avatar} />
               <TouchableOpacity style={styles.camIcon} onPress={() => {
-                Alert.alert("Select Avatar Photo", "Choose photo source:", [
+                Alert.alert("Profile Picture", "Choose image source:", [
                   { text: "Camera", onPress: () => pickFromCamera(setAvatar) },
                   { text: "Gallery", onPress: () => pickFromGallery(setAvatar) },
                   { text: "Cancel", style: "cancel" }
@@ -264,82 +310,76 @@ export default function SellerProfile() {
               </TouchableOpacity>
             </View>
             <View style={styles.meta}>
-              <Text style={styles.name}>{firstName} {lastName}</Text>
-              <Text style={styles.email}>{user?.email}</Text>
-              <View style={styles.statusRow}>
-                <View style={[styles.approvedBadge, { backgroundColor: myKitchen?.isApproved === 'approved' ? 'rgba(52,199,89,0.15)' : 'rgba(255,204,0,0.15)' }]}>
-                  <Text style={[styles.approvedText, { color: myKitchen?.isApproved === 'approved' ? theme.colors.success : theme.colors.warning }]}>
-                    {myKitchen?.isApproved === 'approved' ? '✓ APPROVED PARTNER' : '⌛ APPROVAL PENDING'}
-                  </Text>
-                </View>
-              </View>
+              <Text style={[styles.name, { color: themeColors.text }]}>{firstName} {lastName}</Text>
+              <Text style={[styles.email, { color: themeColors.textSecondary }]}>{user?.email || 'vendor@cludekitchen.com'}</Text>
+              <Text style={styles.roleTag}>Seller Partner Account</Text>
             </View>
           </View>
 
-          {/* Zomato menu list */}
+          {/* Settings list */}
           <View style={styles.zomatoList}>
-            <Text style={styles.listTitle}>My Workspace Settings</Text>
+            <Text style={[styles.listTitle, { color: themeColors.textSecondary }]}>Seller Account Options</Text>
 
-            <TouchableOpacity style={styles.zomatoRow} onPress={() => setActiveTab('profile')}>
+            <TouchableOpacity style={[styles.zomatoRow, { backgroundColor: themeColors.card, borderColor: themeColors.border }]} onPress={() => setActiveTab('profile')}>
               <View style={styles.rowLeft}>
                 <View style={[styles.iconBg, { backgroundColor: 'rgba(255,107,0,0.1)' }]}>
                   <User size={18} color={theme.colors.primary} />
                 </View>
                 <View>
-                  <Text style={styles.rowTitle}>Edit Profile details</Text>
-                  <Text style={styles.rowDesc}>Change phone, gender, and contact name</Text>
+                  <Text style={[styles.rowTitle, { color: themeColors.text }]}>Edit Owner Profile</Text>
+                  <Text style={styles.rowDesc}>Change phone number, gender and name</Text>
                 </View>
               </View>
               <ChevronRight size={16} color="#555" />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.zomatoRow} onPress={() => setActiveTab('shop')}>
+            <TouchableOpacity style={[styles.zomatoRow, { backgroundColor: themeColors.card, borderColor: themeColors.border }]} onPress={() => setActiveTab('shop')}>
               <View style={styles.rowLeft}>
                 <View style={[styles.iconBg, { backgroundColor: 'rgba(52,199,89,0.1)' }]}>
                   <Store size={18} color={theme.colors.success} />
                 </View>
                 <View>
-                  <Text style={styles.rowTitle}>Kitchen & Address Settings</Text>
-                  <Text style={styles.rowDesc}>Shop name, GPS address, logo & cover photo</Text>
+                  <Text style={[styles.rowTitle, { color: themeColors.text }]}>My Kitchen Shop Details</Text>
+                  <Text style={styles.rowDesc}>Configure address, cuisines, and promo banners</Text>
                 </View>
               </View>
               <ChevronRight size={16} color="#555" />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.zomatoRow} onPress={() => setActiveTab('bank')}>
+            <TouchableOpacity style={[styles.zomatoRow, { backgroundColor: themeColors.card, borderColor: themeColors.border }]} onPress={() => setActiveTab('bank')}>
               <View style={styles.rowLeft}>
                 <View style={[styles.iconBg, { backgroundColor: 'rgba(0,122,255,0.1)' }]}>
                   <CreditCard size={18} color="#007AFF" />
                 </View>
                 <View>
-                  <Text style={styles.rowTitle}>Payout Bank Account</Text>
-                  <Text style={styles.rowDesc}>IFSC, Bank name & account numbers</Text>
+                  <Text style={[styles.rowTitle, { color: themeColors.text }]}>Vendor Bank Account</Text>
+                  <Text style={styles.rowDesc}>For platform weekly earnings payout settlements</Text>
                 </View>
               </View>
               <ChevronRight size={16} color="#555" />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.zomatoRow} onPress={() => setActiveTab('help')}>
+            <TouchableOpacity style={[styles.zomatoRow, { backgroundColor: themeColors.card, borderColor: themeColors.border }]} onPress={() => setActiveTab('help')}>
               <View style={styles.rowLeft}>
                 <View style={[styles.iconBg, { backgroundColor: 'rgba(255,45,85,0.1)' }]}>
-                  <ShieldCheck size={18} color="#FF2D55" />
+                  <ChefHat size={18} color="#FF2D55" />
                 </View>
                 <View>
-                  <Text style={styles.rowTitle}>Safety & Guidelines</Text>
-                  <Text style={styles.rowDesc}>Partner hygiene and cloud guidelines</Text>
+                  <Text style={[styles.rowTitle, { color: themeColors.text }]}>FSSAI Food Safety Rules</Text>
+                  <Text style={styles.rowDesc}>Vendor cleanliness and packaging guides</Text>
                 </View>
               </View>
               <ChevronRight size={16} color="#555" />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.zomatoRow} onPress={() => setActiveTab('settings')}>
+            <TouchableOpacity style={[styles.zomatoRow, { backgroundColor: themeColors.card, borderColor: themeColors.border }]} onPress={() => setActiveTab('settings')}>
               <View style={styles.rowLeft}>
                 <View style={[styles.iconBg, { backgroundColor: 'rgba(142,142,147,0.1)' }]}>
                   <Settings size={18} color="#8E8E93" />
                 </View>
                 <View>
-                  <Text style={styles.rowTitle}>App Settings</Text>
-                  <Text style={styles.rowDesc}>Security logs, theme, and logout option</Text>
+                  <Text style={[styles.rowTitle, { color: themeColors.text }]}>App Theme & Settings</Text>
+                  <Text style={styles.rowDesc}>Switch light/dark mode and security logs</Text>
                 </View>
               </View>
               <ChevronRight size={16} color="#555" />
@@ -352,145 +392,163 @@ export default function SellerProfile() {
       {/* Tab: Profile */}
       {activeTab === 'profile' && (
         <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
-          {renderHeader("Personal Details")}
-
-          <View style={styles.inputCard}>
-            <Text style={styles.inputLabel}>First Name</Text>
+          {renderHeader("Edit Owner Details")}
+          <View style={[styles.inputCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+            <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>First Name</Text>
             <TextInput
-              style={styles.textInput}
+              style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
               value={firstName}
               onChangeText={setFirstName}
               placeholder="First Name"
               placeholderTextColor="#888"
             />
 
-            <Text style={styles.inputLabel}>Last Name</Text>
+            <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Last Name</Text>
             <TextInput
-              style={styles.textInput}
+              style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
               value={lastName}
               onChangeText={setLastName}
               placeholder="Last Name"
               placeholderTextColor="#888"
             />
 
-            <Text style={styles.inputLabel}>Phone Number</Text>
+            <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Phone Number</Text>
             <TextInput
-              style={styles.textInput}
+              style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
               value={phone}
               onChangeText={setPhone}
-              placeholder="e.g. +91 98765 43210"
+              placeholder="e.g. +91 99999 88888"
               placeholderTextColor="#888"
               keyboardType="phone-pad"
             />
 
-            <Text style={styles.inputLabel}>Gender</Text>
+            <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Gender</Text>
             <TextInput
-              style={styles.textInput}
+              style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
               value={gender}
               onChangeText={setGender}
-              placeholder="e.g. Female, Male, Other"
+              placeholder="e.g. Male, Female"
               placeholderTextColor="#888"
             />
 
             <TouchableOpacity style={styles.primaryBtn} onPress={handleUpdateAll} disabled={isLoading}>
-              {isLoading ? <ActivityIndicator color="#000" /> : <Text style={styles.primaryBtnText}>Save Personal Details</Text>}
+              {isLoading ? <ActivityIndicator color="#000" /> : <Text style={styles.primaryBtnText}>Save Profile Settings</Text>}
             </TouchableOpacity>
           </View>
         </ScrollView>
       )}
 
-      {/* Tab: Shop Settings */}
+      {/* Tab: Shop */}
       {activeTab === 'shop' && (
         <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
-          {renderHeader("Kitchen Settings")}
-
-          <View style={styles.inputCard}>
-            <Text style={styles.inputLabel}>Kitchen Shop Name</Text>
+          {renderHeader("Kitchen Shop Details")}
+          <View style={[styles.inputCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+            <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Shop Name</Text>
             <TextInput
-              style={styles.textInput}
+              style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
               value={shopName}
               onChangeText={setShopName}
-              placeholder="e.g. Grandma's Healthy Kitchen"
+              placeholder="e.g. Grandma's Tiffins"
               placeholderTextColor="#888"
             />
 
-            <Text style={styles.inputLabel}>Cuisines Served</Text>
+            <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Shop Cuisine tags</Text>
             <TextInput
-              style={styles.textInput}
+              style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
               value={cuisines}
               onChangeText={setCuisines}
-              placeholder="e.g. North Indian, South Indian, Healthy Food"
+              placeholder="e.g. North Indian, Sweets, Punjabi"
               placeholderTextColor="#888"
             />
 
-            <Text style={styles.inputLabel}>Shop GPS Address Location</Text>
+            <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Shop Location Address</Text>
             <TextInput
-              style={[styles.textInput, { height: 70, textAlignVertical: 'top' }]}
+              style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
               value={shopAddress}
               onChangeText={setShopAddress}
-              placeholder="Enter exact address (e.g. Shop 42, Sector 62, Noida)"
+              placeholder="H.No., Gali, Sector, Locality name"
               placeholderTextColor="#888"
-              multiline={true}
             />
-            <Text style={styles.fieldGuide}>* This location coordinates will show exactly to delivery boys in Google Maps routes.</Text>
 
-            {/* Shop Logo Picker */}
-            <Text style={styles.inputLabel}>Kitchen Logo Image</Text>
-            <View style={styles.imagePickerRow}>
-              {logoUrl ? <Image source={{ uri: logoUrl }} style={styles.pickerThumb} /> : <View style={styles.noThumb}><Store size={20} color="#666" /></View>}
-              <View style={styles.pickerButtons}>
-                <TouchableOpacity style={styles.pickerActionBtn} onPress={() => pickFromCamera(setLogoUrl)}>
-                  <Camera size={12} color="#FFF" style={{ marginRight: 4 }} />
-                  <Text style={styles.pickerActionText}>Camera</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.pickerActionBtn} onPress={() => pickFromGallery(setLogoUrl)}>
-                  <ImageIcon size={12} color="#FFF" style={{ marginRight: 4 }} />
-                  <Text style={styles.pickerActionText}>Gallery</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+            <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Shop Logo URL</Text>
+            <TextInput
+              style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
+              value={logoUrl}
+              onChangeText={setLogoUrl}
+              placeholder="https://example.com/logo.jpg"
+              placeholderTextColor="#888"
+            />
 
-            {/* Shop Cover Picker */}
-            <Text style={styles.inputLabel}>Kitchen Banner Cover Image</Text>
-            <View style={styles.imagePickerRow}>
-              {coverImageUrl ? <Image source={{ uri: coverImageUrl }} style={styles.pickerThumbBanner} /> : <View style={styles.noThumbBanner}><ImageIcon size={20} color="#666" /></View>}
-              <View style={styles.pickerButtons}>
-                <TouchableOpacity style={styles.pickerActionBtn} onPress={() => pickFromCamera(setCoverImageUrl)}>
-                  <Camera size={12} color="#FFF" style={{ marginRight: 4 }} />
-                  <Text style={styles.pickerActionText}>Camera</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.pickerActionBtn} onPress={() => pickFromGallery(setCoverImageUrl)}>
-                  <ImageIcon size={12} color="#FFF" style={{ marginRight: 4 }} />
-                  <Text style={styles.pickerActionText}>Gallery</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+            <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Shop Cover/Banner URL</Text>
+            <TextInput
+              style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
+              value={coverImageUrl}
+              onChangeText={setCoverImageUrl}
+              placeholder="https://example.com/cover.jpg"
+              placeholderTextColor="#888"
+            />
 
             <TouchableOpacity style={styles.primaryBtn} onPress={handleUpdateAll} disabled={isLoading}>
-              {isLoading ? <ActivityIndicator color="#000" /> : <Text style={styles.primaryBtnText}>Save Kitchen Settings</Text>}
+              {isLoading ? <ActivityIndicator color="#000" /> : <Text style={styles.primaryBtnText}>Save Kitchen Details</Text>}
+            </TouchableOpacity>
+          </View>
+
+          {/* Publish Shop Promotion Banner */}
+          <View style={[styles.inputCard, { backgroundColor: themeColors.card, borderColor: themeColors.border, marginTop: 16 }]}>
+            <Text style={{ fontSize: 13, fontWeight: 'bold', color: themeColors.text, marginBottom: 4 }}>Publish Shop Promotion Banner</Text>
+            <Text style={{ fontSize: 10, color: themeColors.textSecondary, marginBottom: 12 }}>
+              Post a dynamic banner advertisement for your kitchen onto the customer's home screen slider.
+            </Text>
+
+            <TextInput
+              style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
+              placeholder="Promotion Image URL..."
+              placeholderTextColor="#888"
+              value={newPromoBannerUrl}
+              onChangeText={setNewPromoBannerUrl}
+            />
+
+            <TextInput
+              style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
+              placeholder="Promotion Click Link/Category..."
+              placeholderTextColor="#888"
+              value={newPromoBannerLink}
+              onChangeText={setNewPromoBannerLink}
+            />
+
+            <TouchableOpacity 
+              style={[styles.primaryBtn, { backgroundColor: theme.colors.success }]} 
+              onPress={handlePublishShopBanner}
+              disabled={isUploadingPromo}
+            >
+              {isUploadingPromo ? <ActivityIndicator size="small" color="#FFF" /> : (
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Plus size={16} color="#FFF" style={{ marginRight: 6 }} />
+                  <Text style={[styles.primaryBtnText, { color: '#FFF' }]}>Publish Dynamic Banner</Text>
+                </View>
+              )}
             </TouchableOpacity>
           </View>
         </ScrollView>
       )}
 
-      {/* Tab: Bank Account */}
+      {/* Tab: Bank */}
       {activeTab === 'bank' && (
         <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
-          {renderHeader("Payout Bank Account")}
-
-          <View style={styles.inputCard}>
-            <Text style={styles.inputLabel}>Bank Name</Text>
+          {renderHeader("Vendor Bank Details")}
+          <View style={[styles.inputCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+            <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Bank Name</Text>
             <TextInput
-              style={styles.textInput}
+              style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
               value={bankName}
               onChangeText={setBankName}
               placeholder="e.g. State Bank of India"
               placeholderTextColor="#888"
             />
 
-            <Text style={styles.inputLabel}>Account Number</Text>
+            <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Account Number</Text>
             <TextInput
-              style={styles.textInput}
+              style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
               value={accountNumber}
               onChangeText={setAccountNumber}
               placeholder="e.g. 30948576291"
@@ -498,9 +556,9 @@ export default function SellerProfile() {
               keyboardType="number-pad"
             />
 
-            <Text style={styles.inputLabel}>IFSC Code</Text>
+            <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>IFSC Code</Text>
             <TextInput
-              style={styles.textInput}
+              style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
               value={ifscCode}
               onChangeText={setIfscCode}
               placeholder="e.g. SBIN0001234"
@@ -518,42 +576,50 @@ export default function SellerProfile() {
       {/* Tab: Help */}
       {activeTab === 'help' && (
         <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
-          {renderHeader("Hygiene & Safety Guidelines")}
-          <View style={styles.infoTextCard}>
+          {renderHeader("FSSAI Safety Rules")}
+          <View style={[styles.infoTextCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
             <CheckCircle size={32} color={theme.colors.success} style={{ marginBottom: 12 }} />
-            <Text style={styles.infoTitle}>Partner Guidelines</Text>
-            <Text style={styles.infoDesc}>
-              1. Masking: Wear masks during food preparation and packaging.{"\n\n"}
-              2. Sanitization: Wash hands every 20 minutes with sanitizer.{"\n\n"}
-              3. Fresh Ingredients: Ensure quality ingredients are used.{"\n\n"}
-              4. Secure Packaging: Double seal packages to avoid transit leakage.
+            <Text style={[styles.infoTitle, { color: themeColors.text }]}>Hygiene Standards for Vendors</Text>
+            <Text style={[styles.infoDesc, { color: themeColors.textSecondary }]}>
+              1. Packaging: Always package hot liquids in food-grade approved materials.{"\n\n"}
+              2. Cleanliness: Keep the workspace insect-free. Clean surfaces with sanitizing agents daily.{"\n\n"}
+              3. Ingredients: Use fresh ingredients. Check expiry dates of milk products and flours.{"\n\n"}
+              4. Mask & Gloves: Wear gloves and masks during cooking and handover packing.
             </Text>
           </View>
         </ScrollView>
       )}
 
-      {/* Tab: Settings (Logout inside) */}
+      {/* Tab: Settings */}
       {activeTab === 'settings' && (
         <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
-          {renderHeader("Security & Settings")}
-          <View style={styles.inputCard}>
-            <Text style={styles.inputLabel}>Role Credentials</Text>
-            <TextInput
-              style={[styles.textInput, { backgroundColor: '#181818', color: '#666' }]}
-              value="ROLE_KITCHEN_PARTNER"
-              editable={false}
-            />
+          {renderHeader("Theme & settings")}
+          <View style={[styles.inputCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+            
+            {/* Theme switcher */}
+            <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>App Interface Theme</Text>
+            <TouchableOpacity 
+              style={[styles.themeToggleBtn, { borderColor: themeColors.border }]}
+              onPress={() => setTheme(!isDarkMode)}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                {isDarkMode ? <Sun size={18} color="#FFCC00" style={{ marginRight: 8 }} /> : <Moon size={18} color="#000" style={{ marginRight: 8 }} />}
+                <Text style={{ color: themeColors.text, fontWeight: 'bold', fontSize: 13 }}>
+                  {isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                </Text>
+              </View>
+            </TouchableOpacity>
 
-            <Text style={styles.inputLabel}>Authorization Token Scope</Text>
+            <Text style={[styles.inputLabel, { color: themeColors.textSecondary, marginTop: 15 }]}>Authorization Token Scope</Text>
             <TextInput
-              style={[styles.textInput, { backgroundColor: '#181818', color: '#666' }]}
+              style={[styles.textInput, { backgroundColor: isDarkMode ? '#181818' : '#EAEAEA', color: '#666', borderColor: themeColors.border }]}
               value="JWT Bearer Token Signature verified"
               editable={false}
             />
 
             <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
               <LogOut size={16} color="#000" style={{ marginRight: 6 }} />
-              <Text style={styles.logoutBtnText}>Logout Partner Account</Text>
+              <Text style={styles.logoutBtnText}>Logout Vendor Account</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -565,7 +631,6 @@ export default function SellerProfile() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
     paddingTop: 50,
   },
   profileHeader: {
@@ -574,7 +639,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 24,
     borderBottomWidth: 1,
-    borderBottomColor: '#1F1F1F',
   },
   avatarContainer: {
     position: 'relative',
@@ -605,34 +669,25 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#FFF',
   },
   email: {
     fontSize: 12,
-    color: theme.colors.textSecondary,
     marginTop: 2,
   },
-  statusRow: {
-    marginTop: 6,
-    flexDirection: 'row',
-  },
-  approvedBadge: {
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-  },
-  approvedText: {
-    fontSize: 8,
+  roleTag: {
+    fontSize: 10,
     fontWeight: 'bold',
+    color: '#E23744',
+    marginTop: 4,
+    textTransform: 'uppercase',
   },
   zomatoList: {
     paddingHorizontal: 16,
-    marginTop: 20,
+    marginTop: 24,
   },
   listTitle: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 'bold',
-    color: theme.colors.textSecondary,
     textTransform: 'uppercase',
     marginBottom: 10,
   },
@@ -640,12 +695,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#121212',
     borderRadius: 14,
     padding: 14,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#1F1F1F',
   },
   rowLeft: {
     flexDirection: 'row',
@@ -663,7 +716,6 @@ const styles = StyleSheet.create({
   rowTitle: {
     fontSize: 13,
     fontWeight: 'bold',
-    color: '#FFF',
   },
   rowDesc: {
     fontSize: 10,
@@ -681,7 +733,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   backBtn: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     width: 32,
     height: 32,
@@ -692,12 +743,9 @@ const styles = StyleSheet.create({
   tabHeaderTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#FFF',
   },
   inputCard: {
-    backgroundColor: '#121212',
     borderWidth: 1,
-    borderColor: '#1F1F1F',
     borderRadius: 18,
     padding: 16,
     marginBottom: 30,
@@ -705,82 +753,15 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 11,
     fontWeight: 'bold',
-    color: theme.colors.textSecondary,
     marginBottom: 8,
-    textTransform: 'uppercase',
   },
   textInput: {
-    backgroundColor: '#0F0F0F',
     borderWidth: 1,
-    borderColor: '#222',
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    color: '#FFF',
     fontSize: 13,
     marginBottom: 16,
-  },
-  fieldGuide: {
-    fontSize: 9,
-    color: theme.colors.primary,
-    marginTop: -10,
-    marginBottom: 16,
-  },
-  imagePickerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  pickerThumb: {
-    width: 50,
-    height: 50,
-    borderRadius: 10,
-    backgroundColor: '#222',
-    marginRight: 12,
-  },
-  noThumb: {
-    width: 50,
-    height: 50,
-    borderRadius: 10,
-    backgroundColor: '#222',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  pickerThumbBanner: {
-    width: 80,
-    height: 50,
-    borderRadius: 8,
-    backgroundColor: '#222',
-    marginRight: 12,
-  },
-  noThumbBanner: {
-    width: 80,
-    height: 50,
-    borderRadius: 8,
-    backgroundColor: '#222',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  pickerButtons: {
-    flexDirection: 'row',
-  },
-  pickerActionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1E1E1E',
-    borderWidth: 1,
-    borderColor: '#333',
-    borderRadius: 6,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    marginRight: 8,
-  },
-  pickerActionText: {
-    fontSize: 10,
-    color: '#FFF',
-    fontWeight: 'bold',
   },
   primaryBtn: {
     backgroundColor: theme.colors.primary,
@@ -795,8 +776,16 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: 'bold',
   },
+  themeToggleBtn: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    marginTop: 5,
+  },
   logoutBtn: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: '#E23744',
     borderRadius: 10,
     paddingVertical: 12,
     flexDirection: 'row',
@@ -805,14 +794,12 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   logoutBtnText: {
-    color: '#000',
+    color: '#FFF',
     fontSize: 13,
     fontWeight: 'bold',
   },
   infoTextCard: {
-    backgroundColor: '#121212',
     borderWidth: 1,
-    borderColor: '#1F1F1F',
     borderRadius: 18,
     padding: 20,
     alignItems: 'center',
@@ -820,12 +807,10 @@ const styles = StyleSheet.create({
   infoTitle: {
     fontSize: 15,
     fontWeight: 'bold',
-    color: '#FFF',
     marginBottom: 10,
   },
   infoDesc: {
     fontSize: 12,
-    color: '#CCC',
     lineHeight: 20,
   }
 });

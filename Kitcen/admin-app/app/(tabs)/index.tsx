@@ -19,6 +19,7 @@ import {
 } from 'lucide-react-native';
 import { theme } from '../../styles/theme';
 import { useKitchenStore } from '../../store/useKitchenStore';
+import { useAuthStore } from '../../store/useAuthStore';
 
 export default function AdminDashboard() {
   const kitchens = useKitchenStore(state => state.kitchens);
@@ -26,6 +27,9 @@ export default function AdminDashboard() {
   const fetchKitchens = useKitchenStore(state => state.fetchKitchens);
   const fetchOrders = useKitchenStore(state => state.fetchOrders);
   const approveKitchen = useKitchenStore(state => state.approveKitchen);
+
+  // Theme support
+  const isDarkMode = useAuthStore(state => state.isDarkMode);
 
   const [selectedKitchen, setSelectedKitchen] = useState<any>(null);
 
@@ -47,7 +51,7 @@ export default function AdminDashboard() {
     const interval = setInterval(() => {
       fetchKitchens();
       fetchOrders();
-    }, 5000); // Poll every 5s for live updates
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -55,51 +59,60 @@ export default function AdminDashboard() {
   const totalOrdersCount = orders.length;
   const totalShopsCount = kitchens.length;
 
+  const themeColors = {
+    background: isDarkMode ? '#0B0B0C' : '#F5F6F8',
+    card: isDarkMode ? '#121214' : '#FFFFFF',
+    border: isDarkMode ? '#1F1F22' : '#EAEAEA',
+    text: isDarkMode ? '#FFFFFF' : '#1E2022',
+    textSecondary: isDarkMode ? '#8E8E93' : '#686E73',
+    inputBg: isDarkMode ? '#0F0F0F' : '#F0F2F4'
+  };
+
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={[styles.container, { backgroundColor: themeColors.background }]} showsVerticalScrollIndicator={false}>
       <View style={styles.sellerHeader}>
-        <Users size={28} color={theme.colors.primary} />
+        <Users size={28} color="#FF5252" />
         <View style={styles.sellerHeaderMeta}>
           <Text style={styles.sellerRoleText}>Super Admin Panel</Text>
-          <Text style={styles.sellerKitchenName}>Global Analytics</Text>
+          <Text style={[styles.sellerKitchenName, { color: themeColors.text }]}>Global Analytics</Text>
         </View>
       </View>
 
       {/* Global KPI Counters */}
       <View style={styles.kpiGrid}>
-        <View style={styles.kpiCard}>
-          <TrendingUp size={16} color={theme.colors.success} />
-          <Text style={styles.kpiValue}>₹{totalSales}</Text>
-          <Text style={styles.kpiLabel}>Platform Sales</Text>
+        <View style={[styles.kpiCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+          <TrendingUp size={16} color="#2ecc71" />
+          <Text style={[styles.kpiValue, { color: themeColors.text }]}>₹{totalSales}</Text>
+          <Text style={[styles.kpiLabel, { color: themeColors.textSecondary }]}>Platform Sales</Text>
         </View>
-        <View style={styles.kpiCard}>
-          <ShoppingBag size={16} color={theme.colors.primary} />
-          <Text style={styles.kpiValue}>{totalOrdersCount}</Text>
-          <Text style={styles.kpiLabel}>Orders Handled</Text>
+        <View style={[styles.kpiCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+          <ShoppingBag size={16} color="#FF5252" />
+          <Text style={[styles.kpiValue, { color: themeColors.text }]}>{totalOrdersCount}</Text>
+          <Text style={[styles.kpiLabel, { color: themeColors.textSecondary }]}>Orders Handled</Text>
         </View>
-        <View style={styles.kpiCard}>
+        <View style={[styles.kpiCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
           <Store size={16} color="#00C49F" />
-          <Text style={styles.kpiValue}>{totalShopsCount}</Text>
-          <Text style={styles.kpiLabel}>Active Shops</Text>
+          <Text style={[styles.kpiValue, { color: themeColors.text }]}>{totalShopsCount}</Text>
+          <Text style={[styles.kpiLabel, { color: themeColors.textSecondary }]}>Active Shops</Text>
         </View>
       </View>
 
       {/* Kitchen Sales breakdowns */}
       <View style={styles.sellerSection}>
-        <Text style={styles.sellerSectionTitle}>Listed Kitchens & Performance (Tap to view details)</Text>
+        <Text style={[styles.sellerSectionTitle, { color: themeColors.text }]}>Listed Kitchens & Performance</Text>
         {kitchens.map((kitchen) => (
           <TouchableOpacity 
             key={kitchen.id} 
-            style={styles.kitchenAdminCard}
+            style={[styles.kitchenAdminCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}
             onPress={() => setSelectedKitchen(kitchen)}
           >
             <View style={[styles.kitchenAdminMeta, { flex: 1, marginRight: 12 }]}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.kitchenAdminName}>{kitchen.name}</Text>
+                <Text style={[styles.kitchenAdminName, { color: themeColors.text }]}>{kitchen.name}</Text>
                 {kitchen.address ? (
                   <Text style={[styles.kitchenAdminOwner, { fontSize: 10 }]}>Addr: {kitchen.address}</Text>
                 ) : null}
-                <Text style={styles.kitchenAdminOwner}>Owner ID: {kitchen.owner}</Text>
+                <Text style={[styles.kitchenAdminOwner, { color: themeColors.textSecondary }]}>Owner ID: {kitchen.owner}</Text>
                 <Text style={styles.kitchenAdminType}>
                   {kitchen.type === 'home_tiffin' ? 'Housewife Homestyle Tiffin' : 'Standard Restaurant'}
                 </Text>
@@ -108,7 +121,7 @@ export default function AdminDashboard() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
                   {kitchen.isApproved === 'approved' ? (
                     <View style={styles.statusApprovedBadge}>
-                      <CheckCircle size={10} color={theme.colors.veg} />
+                      <CheckCircle size={10} color="#2ecc71" />
                       <Text style={styles.statusApprovedText}>APPROVED</Text>
                     </View>
                   ) : kitchen.isApproved === 'rejected' ? (
@@ -118,7 +131,7 @@ export default function AdminDashboard() {
                     </View>
                   ) : (
                     <View style={styles.statusPendingBadge}>
-                      <Clock size={10} color={theme.colors.warning} />
+                      <Clock size={10} color="#FF9500" />
                       <Text style={styles.statusPendingText}>PENDING APPROVAL</Text>
                     </View>
                   )}
@@ -127,7 +140,7 @@ export default function AdminDashboard() {
             </View>
             <View style={styles.kitchenAdminStats}>
               <Text style={styles.adminStatVal}>₹{kitchen.revenue}</Text>
-              <Text style={styles.adminStatLabel}>{kitchen.ordersCount} Orders</Text>
+              <Text style={[styles.adminStatLabel, { color: themeColors.textSecondary }]}>{kitchen.ordersCount} Orders</Text>
               
               {kitchen.isApproved !== 'approved' && kitchen.isApproved !== 'rejected' && (
                 <View style={{ marginTop: 8, flexDirection: 'row' }}>
@@ -135,7 +148,7 @@ export default function AdminDashboard() {
                     style={[styles.approveActionBtn, { marginRight: 6 }]}
                     onPress={() => {
                       approveKitchen(kitchen.id, 'approved');
-                      Alert.alert('Approved', `Kitchen "${kitchen.name}" has been approved!`);
+                      Alert.alert('Approved', `Kitchen "${kitchen.name}" approved!`);
                     }}
                   >
                     <Text style={styles.approveActionText}>Approve</Text>
@@ -144,7 +157,7 @@ export default function AdminDashboard() {
                     style={[styles.approveActionBtn, { backgroundColor: '#FF3B30' }]}
                     onPress={() => {
                       approveKitchen(kitchen.id, 'rejected');
-                      Alert.alert('Rejected', `Kitchen "${kitchen.name}" has been rejected.`);
+                      Alert.alert('Rejected', `Kitchen "${kitchen.name}" rejected.`);
                     }}
                   >
                     <Text style={[styles.approveActionText, { color: '#FFF' }]}>Reject</Text>
@@ -158,15 +171,15 @@ export default function AdminDashboard() {
 
       {/* System transaction log feed */}
       <View style={styles.sellerSection}>
-        <Text style={styles.sellerSectionTitle}>Global Transactions Log</Text>
+        <Text style={[styles.sellerSectionTitle, { color: themeColors.text }]}>Global Transactions Log</Text>
         {orders.map((order) => (
-          <View key={order.id} style={styles.logCard}>
+          <View key={order.id} style={[styles.logCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
             <View style={styles.logHeader}>
-              <Text style={styles.logId}>{order.id}</Text>
-              <Text style={styles.logDate}>{order.date}</Text>
+              <Text style={[styles.logId, { color: themeColors.text }]}>{order.id}</Text>
+              <Text style={[styles.logDate, { color: themeColors.textSecondary }]}>{order.date}</Text>
             </View>
-            <Text style={styles.logSummary}>
-              Customer **{order.customerName}** paid **₹{order.total}** to **{order.kitchenName}**
+            <Text style={[styles.logSummary, { color: themeColors.textSecondary }]}>
+              Customer <Text style={{ color: themeColors.text }}>{order.customerName}</Text> paid <Text style={{ color: themeColors.text }}>₹{order.total}</Text> to <Text style={{ color: themeColors.text }}>{order.kitchenName}</Text>
             </Text>
             <View style={[styles.logStatus, { 
               backgroundColor: order.status === 'delivered' ? 'rgba(52,199,89,0.1)' : 'rgba(255,107,0,0.1)',
@@ -174,7 +187,7 @@ export default function AdminDashboard() {
               <Text style={{ 
                 fontSize: 9, 
                 fontWeight: 'bold', 
-                color: order.status === 'delivered' ? theme.colors.veg : theme.colors.primary 
+                color: order.status === 'delivered' ? '#2ecc71' : '#FF5252' 
               }}>
                 {order.status.toUpperCase()}
               </Text>
@@ -192,69 +205,69 @@ export default function AdminDashboard() {
           onRequestClose={() => setSelectedKitchen(null)}
         >
           <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
+            <View style={[styles.modalContent, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+              <View style={[styles.modalHeader, { borderBottomColor: themeColors.border }]}>
                 <Text style={styles.modalTitle}>Shop Administration Details</Text>
-                <TouchableOpacity onPress={() => setSelectedKitchen(null)} style={styles.closeBtn}>
-                  <X size={18} color="#FFF" />
+                <TouchableOpacity onPress={() => setSelectedKitchen(null)} style={[styles.closeBtn, { backgroundColor: themeColors.border }]}>
+                  <X size={18} color={themeColors.text} />
                 </TouchableOpacity>
               </View>
 
               <ScrollView contentContainerStyle={styles.modalScrollBody} showsVerticalScrollIndicator={false}>
                 {/* Shop Basic Details */}
                 <View style={styles.detailSection}>
-                  <Text style={styles.sectionHeader}>Basic Information</Text>
+                  <Text style={[styles.sectionHeader, { color: themeColors.textSecondary }]}>Basic Information</Text>
                   
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Shop Name:</Text>
-                    <Text style={styles.detailValue}>{selectedKitchen.name}</Text>
+                  <View style={[styles.detailRow, { borderBottomColor: themeColors.border }]}>
+                    <Text style={[styles.detailLabel, { color: themeColors.textSecondary }]}>Shop Name:</Text>
+                    <Text style={[styles.detailValue, { color: themeColors.text }]}>{selectedKitchen.name}</Text>
                   </View>
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Owner Name:</Text>
-                    <Text style={styles.detailValue}>{selectedKitchen.ownerName || 'Housewife Partner'}</Text>
+                  <View style={[styles.detailRow, { borderBottomColor: themeColors.border }]}>
+                    <Text style={[styles.detailLabel, { color: themeColors.textSecondary }]}>Owner Name:</Text>
+                    <Text style={[styles.detailValue, { color: themeColors.text }]}>{selectedKitchen.ownerName || 'Housewife Partner'}</Text>
                   </View>
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Bank Account:</Text>
-                    <Text style={styles.detailValue}>{selectedKitchen.bankAccount || 'SBI A/C 30948576291'}</Text>
+                  <View style={[styles.detailRow, { borderBottomColor: themeColors.border }]}>
+                    <Text style={[styles.detailLabel, { color: themeColors.textSecondary }]}>Bank Account:</Text>
+                    <Text style={[styles.detailValue, { color: themeColors.text }]}>{selectedKitchen.bankAccount || 'SBI A/C 30948576291'}</Text>
                   </View>
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Cuisines:</Text>
-                    <Text style={styles.detailValue}>{selectedKitchen.cuisines}</Text>
+                  <View style={[styles.detailRow, { borderBottomColor: themeColors.border }]}>
+                    <Text style={[styles.detailLabel, { color: themeColors.textSecondary }]}>Cuisines:</Text>
+                    <Text style={[styles.detailValue, { color: themeColors.text }]}>{selectedKitchen.cuisines}</Text>
                   </View>
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Address:</Text>
-                    <Text style={styles.detailValue}>{selectedKitchen.address || 'Not Specified'}</Text>
+                  <View style={[styles.detailRow, { borderBottomColor: themeColors.border }]}>
+                    <Text style={[styles.detailLabel, { color: themeColors.textSecondary }]}>Address:</Text>
+                    <Text style={[styles.detailValue, { color: themeColors.text }]}>{selectedKitchen.address || 'Not Specified'}</Text>
                   </View>
                 </View>
 
                 {/* Dynamic Orders Stats */}
                 <View style={styles.detailSection}>
-                  <Text style={styles.sectionHeader}>Operational Metrics</Text>
+                  <Text style={[styles.sectionHeader, { color: themeColors.textSecondary }]}>Operational Metrics</Text>
                   
                   <View style={styles.metricsGrid}>
-                    <View style={styles.metricItem}>
-                      <Text style={styles.metricLabel}>Total Orders</Text>
-                      <Text style={styles.metricVal}>{selectedKitchenStats.total}</Text>
+                    <View style={[styles.metricItem, { backgroundColor: themeColors.background, borderColor: themeColors.border }]}>
+                      <Text style={[styles.metricLabel, { color: themeColors.textSecondary }]}>Total Orders</Text>
+                      <Text style={[styles.metricVal, { color: themeColors.text }]}>{selectedKitchenStats.total}</Text>
                     </View>
-                    <View style={styles.metricItem}>
-                      <Text style={styles.metricLabel}>Pending</Text>
-                      <Text style={[styles.metricVal, { color: theme.colors.warning }]}>{selectedKitchenStats.pending}</Text>
+                    <View style={[styles.metricItem, { backgroundColor: themeColors.background, borderColor: themeColors.border }]}>
+                      <Text style={[styles.metricLabel, { color: themeColors.textSecondary }]}>Pending</Text>
+                      <Text style={[styles.metricVal, { color: '#FF9500' }]}>{selectedKitchenStats.pending}</Text>
                     </View>
-                    <View style={styles.metricItem}>
-                      <Text style={styles.metricLabel}>Returned</Text>
-                      <Text style={[styles.metricVal, { color: theme.colors.error }]}>{selectedKitchenStats.returned}</Text>
+                    <View style={[styles.metricItem, { backgroundColor: themeColors.background, borderColor: themeColors.border }]}>
+                      <Text style={[styles.metricLabel, { color: themeColors.textSecondary }]}>Returned</Text>
+                      <Text style={[styles.metricVal, { color: '#FF3B30' }]}>{selectedKitchenStats.returned}</Text>
                     </View>
                   </View>
 
-                  <View style={[styles.detailRow, { marginTop: 15, borderTopWidth: 1, borderTopColor: '#222', paddingTop: 10 }]}>
-                    <Text style={[styles.detailLabel, { fontWeight: 'bold', color: '#FFF' }]}>Total Earnings:</Text>
-                    <Text style={[styles.detailValue, { fontWeight: 'bold', color: theme.colors.success, fontSize: 16 }]}>
+                  <View style={[styles.detailRow, { marginTop: 15, borderTopWidth: 1, borderTopColor: themeColors.border, paddingTop: 10 }]}>
+                    <Text style={[styles.detailLabel, { fontWeight: 'bold', color: themeColors.text }]}>Total Earnings:</Text>
+                    <Text style={[styles.detailValue, { fontWeight: 'bold', color: '#2ecc71', fontSize: 16 }]}>
                       ₹{selectedKitchenStats.earnings}
                     </Text>
                   </View>
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Last Transaction:</Text>
-                    <Text style={[styles.detailValue, { fontSize: 11, color: '#888' }]}>{selectedKitchenStats.lastUpdated}</Text>
+                  <View style={[styles.detailRow, { borderBottomColor: 'transparent' }]}>
+                    <Text style={[styles.detailLabel, { color: themeColors.textSecondary }]}>Last Transaction:</Text>
+                    <Text style={[styles.detailValue, { fontSize: 11, color: themeColors.textSecondary }]}>{selectedKitchenStats.lastUpdated}</Text>
                   </View>
                 </View>
               </ScrollView>
@@ -269,7 +282,6 @@ export default function AdminDashboard() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
     paddingTop: 50,
   },
   sellerHeader: {
@@ -284,13 +296,12 @@ const styles = StyleSheet.create({
   sellerRoleText: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: theme.colors.primary,
+    color: '#FF5252',
     textTransform: 'uppercase',
   },
   sellerKitchenName: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#FFF',
     marginTop: 2,
   },
   kpiGrid: {
@@ -301,9 +312,7 @@ const styles = StyleSheet.create({
   },
   kpiCard: {
     flex: 1,
-    backgroundColor: '#121212',
     borderWidth: 1,
-    borderColor: '#1F1F1F',
     borderRadius: 16,
     padding: 16,
     marginHorizontal: 4,
@@ -311,12 +320,10 @@ const styles = StyleSheet.create({
   kpiValue: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#FFF',
     marginTop: 8,
   },
   kpiLabel: {
     fontSize: 9,
-    color: theme.colors.textSecondary,
     marginTop: 2,
     textTransform: 'uppercase',
   },
@@ -327,16 +334,13 @@ const styles = StyleSheet.create({
   sellerSectionTitle: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#FFF',
     marginBottom: 16,
   },
   kitchenAdminCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#121212',
     borderWidth: 1,
-    borderColor: '#1F1F1F',
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
@@ -348,16 +352,14 @@ const styles = StyleSheet.create({
   kitchenAdminName: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#FFF',
   },
   kitchenAdminOwner: {
     fontSize: 11,
-    color: theme.colors.textSecondary,
     marginTop: 2,
   },
   kitchenAdminType: {
     fontSize: 9,
-    color: theme.colors.primary,
+    color: '#FF5252',
     fontWeight: '600',
     marginTop: 4,
   },
@@ -367,20 +369,19 @@ const styles = StyleSheet.create({
   adminStatVal: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: theme.colors.success,
+    color: '#2ecc71',
   },
   adminStatLabel: {
     fontSize: 10,
-    color: theme.colors.textSecondary,
     marginTop: 2,
   },
   logCard: {
-    backgroundColor: '#121212',
     borderRadius: 12,
     padding: 12,
     marginBottom: 10,
     borderLeftWidth: 3,
-    borderLeftColor: theme.colors.primary,
+    borderLeftColor: '#FF5252',
+    borderWidth: 1,
   },
   logHeader: {
     flexDirection: 'row',
@@ -390,15 +391,12 @@ const styles = StyleSheet.create({
   logId: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: '#FFF',
   },
   logDate: {
     fontSize: 9,
-    color: theme.colors.textSecondary,
   },
   logSummary: {
     fontSize: 11,
-    color: theme.colors.textSecondary,
     lineHeight: 16,
   },
   logStatus: {
@@ -411,7 +409,7 @@ const styles = StyleSheet.create({
   statusApprovedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(52,199,89,0.1)',
+    backgroundColor: 'rgba(46,204,113,0.1)',
     borderRadius: 4,
     paddingVertical: 2,
     paddingHorizontal: 6,
@@ -419,7 +417,7 @@ const styles = StyleSheet.create({
   statusApprovedText: {
     fontSize: 8,
     fontWeight: 'bold',
-    color: theme.colors.veg,
+    color: '#2ecc71',
     marginLeft: 4,
   },
   statusPendingBadge: {
@@ -433,7 +431,7 @@ const styles = StyleSheet.create({
   statusPendingText: {
     fontSize: 8,
     fontWeight: 'bold',
-    color: theme.colors.warning,
+    color: '#FF9500',
     marginLeft: 4,
   },
   statusRejectedBadge: {
@@ -451,7 +449,7 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   approveActionBtn: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: '#FF5252',
     borderRadius: 6,
     paddingVertical: 4,
     paddingHorizontal: 8,
@@ -460,19 +458,17 @@ const styles = StyleSheet.create({
   approveActionText: {
     fontSize: 9,
     fontWeight: 'bold',
-    color: '#000',
+    color: '#FFF',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.85)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#0F0F0F',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderWidth: 1,
-    borderColor: '#222',
     maxHeight: '80%',
     paddingBottom: 30,
   },
@@ -482,15 +478,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#222',
   },
   modalTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: theme.colors.primary,
+    color: '#FF5252',
   },
   closeBtn: {
-    backgroundColor: '#1E1E1E',
     borderRadius: 16,
     width: 32,
     height: 32,
@@ -506,7 +500,6 @@ const styles = StyleSheet.create({
   sectionHeader: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#888',
     textTransform: 'uppercase',
     marginBottom: 12,
     letterSpacing: 0.5,
@@ -517,15 +510,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#1A1A1A',
   },
   detailLabel: {
     fontSize: 13,
-    color: '#AAA',
   },
   detailValue: {
     fontSize: 13,
-    color: '#FFF',
     fontWeight: '500',
   },
   metricsGrid: {
@@ -535,9 +525,7 @@ const styles = StyleSheet.create({
   },
   metricItem: {
     flex: 1,
-    backgroundColor: '#181818',
     borderWidth: 1,
-    borderColor: '#222',
     borderRadius: 12,
     padding: 12,
     marginHorizontal: 4,
@@ -545,14 +533,12 @@ const styles = StyleSheet.create({
   },
   metricLabel: {
     fontSize: 9,
-    color: '#888',
     textTransform: 'uppercase',
     textAlign: 'center',
   },
   metricVal: {
     fontSize: 15,
     fontWeight: 'bold',
-    color: '#FFF',
     marginTop: 6,
   }
 });

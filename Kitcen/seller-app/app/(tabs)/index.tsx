@@ -23,7 +23,6 @@ import { theme } from '../../styles/theme';
 import { useKitchenStore } from '../../store/useKitchenStore';
 import { useAuthStore } from '../../store/useAuthStore';
 
-// Custom brand color matching Zomato's classic dark red
 const ZOMATO_RED = '#E23744';
 
 type OrderTabFilter = 'live' | 'history';
@@ -38,25 +37,35 @@ export default function SellerDashboard() {
   const fetchOrders = useKitchenStore(state => state.fetchOrders);
   const updateOrderStatus = useKitchenStore(state => state.updateOrderStatus);
 
+  // Theme states
+  const isDarkMode = useAuthStore(state => state.isDarkMode);
+
   const [activeTab, setActiveTab] = useState<OrderTabFilter>('live');
 
-  // Fetch kitchens and orders on mount
   useEffect(() => {
     fetchKitchens();
     fetchOrders(); 
     const interval = setInterval(() => {
       fetchKitchens();
       fetchOrders();
-    }, 5000); // Poll every 5s for live updates
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 
-  // Find user's kitchen by matching ownerId
   const myKitchen = kitchens.find(k => k.owner === user?.id) || kitchens[0];
   const selectedKitchenId = myKitchen?.id || 'k3';
 
   const kitchenInfo = myKitchen || kitchens[0] || { name: 'My Kitchen', revenue: 0 };
   const kitchenOrders = orders.filter(o => o.kitchenId === selectedKitchenId);
+
+  const themeColors = {
+    background: isDarkMode ? '#0B0B0C' : '#F5F6F8',
+    card: isDarkMode ? '#121214' : '#FFFFFF',
+    border: isDarkMode ? '#1F1F22' : '#EAEAEA',
+    text: isDarkMode ? '#FFFFFF' : '#1E2022',
+    textSecondary: isDarkMode ? '#8E8E93' : '#686E73',
+    inputBg: isDarkMode ? '#0F0F0F' : '#F0F2F4'
+  };
 
   const handleOrderStatusToggle = async (orderId: string, currentStatus: string) => {
     let nextStatus: typeof orders[0]['status'] = 'placed';
@@ -74,19 +83,19 @@ export default function SellerDashboard() {
 
   if (!isApproved) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 24 }]}>
+      <View style={[styles.container, { backgroundColor: themeColors.background, justifyContent: 'center', alignItems: 'center', padding: 24 }]}>
         <ChefHat size={72} color={ZOMATO_RED} style={{ marginBottom: 20 }} />
         <Text style={{ color: ZOMATO_RED, fontSize: 22, fontWeight: 'bold', textAlign: 'center', marginBottom: 12 }}>
           Kitchen Approval Pending
         </Text>
-        <Text style={{ color: '#FFF', fontSize: 13, textAlign: 'center', lineHeight: 22, paddingHorizontal: 10 }}>
+        <Text style={{ color: themeColors.text, fontSize: 13, textAlign: 'center', lineHeight: 22, paddingHorizontal: 10 }}>
           Your kitchen "{kitchenInfo.name}" registration is being reviewed by the SuperAdmin.
         </Text>
         <View style={styles.pendingBadge}>
           <Clock size={14} color="#FF9500" />
           <Text style={styles.pendingBadgeText}>Status: Under Review</Text>
         </View>
-        <Text style={{ color: theme.colors.textSecondary, fontSize: 11, textAlign: 'center', marginTop: 15, lineHeight: 18, paddingHorizontal: 20 }}>
+        <Text style={{ color: themeColors.textSecondary, fontSize: 11, textAlign: 'center', marginTop: 15, lineHeight: 18, paddingHorizontal: 20 }}>
           We will notify you via email once your store dashboard goes live. Thank you for partnering with us!
         </Text>
       </View>
@@ -111,12 +120,12 @@ export default function SellerDashboard() {
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={[styles.container, { backgroundColor: themeColors.background }]} showsVerticalScrollIndicator={false}>
       {/* Brand Header */}
       <View style={styles.header}>
         <View style={styles.headerTitleContainer}>
           <Text style={styles.headerSub}>Zomato Partner Workspace</Text>
-          <Text style={styles.headerMain}>{kitchenInfo.name}</Text>
+          <Text style={[styles.headerMain, { color: themeColors.text }]}>{kitchenInfo.name}</Text>
         </View>
         <View style={styles.onlineIndicator}>
           <View style={styles.pulseDot} />
@@ -126,41 +135,41 @@ export default function SellerDashboard() {
 
       {/* KPI Stats Panel */}
       <View style={styles.kpiContainer}>
-        <View style={[styles.kpiCard, { borderLeftColor: ZOMATO_RED, borderLeftWidth: 3 }]}>
+        <View style={[styles.kpiCard, { backgroundColor: themeColors.card, borderColor: themeColors.border, borderLeftColor: ZOMATO_RED, borderLeftWidth: 3 }]}>
           <View style={styles.kpiRow}>
-            <Text style={styles.kpiVal}>₹{totalEarnings.toFixed(0)}</Text>
-            <TrendingUp size={16} color={theme.colors.success} />
+            <Text style={[styles.kpiVal, { color: themeColors.text }]}>₹{totalEarnings.toFixed(0)}</Text>
+            <TrendingUp size={16} color="#34C759" />
           </View>
-          <Text style={styles.kpiLabel}>Today's Earnings</Text>
+          <Text style={[styles.kpiLabel, { color: themeColors.textSecondary }]}>Today's Earnings</Text>
         </View>
 
-        <View style={[styles.kpiCard, { borderLeftColor: '#007AFF', borderLeftWidth: 3 }]}>
+        <View style={[styles.kpiCard, { backgroundColor: themeColors.card, borderColor: themeColors.border, borderLeftColor: '#007AFF', borderLeftWidth: 3 }]}>
           <View style={styles.kpiRow}>
-            <Text style={styles.kpiVal}>{kitchenOrders.length}</Text>
+            <Text style={[styles.kpiVal, { color: themeColors.text }]}>{kitchenOrders.length}</Text>
             <ShoppingBag size={16} color="#007AFF" />
           </View>
-          <Text style={styles.kpiLabel}>Total Orders</Text>
+          <Text style={[styles.kpiLabel, { color: themeColors.textSecondary }]}>Total Orders</Text>
         </View>
       </View>
 
       {/* Quick Details Bar */}
-      <View style={styles.quickDetailsBar}>
+      <View style={[styles.quickDetailsBar, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
         <View style={styles.detailItem}>
           <CheckCircle size={12} color="#34C759" />
-          <Text style={styles.detailText}>{pastOrders.filter(o => o.status === 'delivered').length} Delivered</Text>
+          <Text style={[styles.detailText, { color: themeColors.textSecondary }]}>{pastOrders.filter(o => o.status === 'delivered').length} Delivered</Text>
         </View>
         <View style={styles.detailItem}>
           <XCircle size={12} color="#FF3B30" />
-          <Text style={styles.detailText}>{pastOrders.filter(o => o.status === 'cancelled').length} Cancelled</Text>
+          <Text style={[styles.detailText, { color: themeColors.textSecondary }]}>{pastOrders.filter(o => o.status === 'cancelled').length} Cancelled</Text>
         </View>
         <View style={styles.detailItem}>
           <Clock size={12} color="#FF9500" />
-          <Text style={styles.detailText}>{liveOrders.length} Pending</Text>
+          <Text style={[styles.detailText, { color: themeColors.textSecondary }]}>{liveOrders.length} Pending</Text>
         </View>
       </View>
 
       {/* Tab Segment Selector */}
-      <View style={styles.tabContainer}>
+      <View style={[styles.tabContainer, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
         <TouchableOpacity 
           style={[styles.tabButton, activeTab === 'live' && styles.tabActive]}
           onPress={() => setActiveTab('live')}
@@ -183,11 +192,11 @@ export default function SellerDashboard() {
       <View style={styles.listContainer}>
         {activeTab === 'live' ? (
           liveOrders.map((order) => (
-            <View key={order.id} style={styles.orderCard}>
-              <View style={styles.cardHeader}>
+            <View key={order.id} style={[styles.orderCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+              <View style={[styles.cardHeader, { borderBottomColor: themeColors.border }]}>
                 <View>
-                  <Text style={styles.clientName}>{order.customerName}</Text>
-                  <Text style={styles.orderId}>{order.id} • {order.paymentMethod.toUpperCase()}</Text>
+                  <Text style={[styles.clientName, { color: themeColors.text }]}>{order.customerName}</Text>
+                  <Text style={[styles.orderId, { color: themeColors.textSecondary }]}>{order.id} • {order.paymentMethod.toUpperCase()}</Text>
                 </View>
                 <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status) + '15', borderColor: getStatusColor(order.status) }]}>
                   <Text style={[styles.statusText, { color: getStatusColor(order.status) }]}>
@@ -201,25 +210,25 @@ export default function SellerDashboard() {
                 <Text style={styles.itemsSectionTitle}>FOOD ITEMS</Text>
                 {order.items.map((item, idx) => (
                   <View key={idx} style={styles.itemRow}>
-                    <UtensilsCrossed size={12} color="#666" style={{ marginRight: 8 }} />
-                    <Text style={styles.itemText}>{item.quantity}x {item.name}</Text>
+                    <UtensilsCrossed size={12} color="#888" style={{ marginRight: 8 }} />
+                    <Text style={[styles.itemText, { color: themeColors.text }]}>{item.quantity}x {item.name}</Text>
                   </View>
                 ))}
               </View>
 
-              {/* Delivery info if rider is assigned */}
+              {/* Delivery Address */}
               {order.deliveryAddress && (
-                <View style={styles.addressBox}>
-                  <Text style={styles.addressText} numberOfLines={1}>
+                <View style={[styles.addressBox, { backgroundColor: themeColors.inputBg, borderColor: themeColors.border }]}>
+                  <Text style={[styles.addressText, { color: themeColors.textSecondary }]} numberOfLines={1}>
                     📍 Deliver to: {order.deliveryAddress}
                   </Text>
                 </View>
               )}
 
               {/* Action and Price footer */}
-              <View style={styles.cardFooter}>
+              <View style={[styles.cardFooter, { borderTopColor: themeColors.border }]}>
                 <View>
-                  <Text style={styles.totalLabel}>Grand Total</Text>
+                  <Text style={[styles.totalLabel, { color: themeColors.textSecondary }]}>Grand Total</Text>
                   <Text style={styles.totalVal}>₹{order.total}</Text>
                 </View>
 
@@ -245,11 +254,11 @@ export default function SellerDashboard() {
           ))
         ) : (
           pastOrders.map((order) => (
-            <View key={order.id} style={[styles.orderCard, { opacity: 0.8 }]}>
-              <View style={styles.cardHeader}>
+            <View key={order.id} style={[styles.orderCard, { backgroundColor: themeColors.card, borderColor: themeColors.border, opacity: 0.8 }]}>
+              <View style={[styles.cardHeader, { borderBottomColor: themeColors.border }]}>
                 <View>
-                  <Text style={styles.clientName}>{order.customerName}</Text>
-                  <Text style={styles.orderId}>{order.id} • {order.paymentMethod.toUpperCase()}</Text>
+                  <Text style={[styles.clientName, { color: themeColors.text }]}>{order.customerName}</Text>
+                  <Text style={[styles.orderId, { color: themeColors.textSecondary }]}>{order.id} • {order.paymentMethod.toUpperCase()}</Text>
                 </View>
                 <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status) + '15', borderColor: getStatusColor(order.status) }]}>
                   <Text style={[styles.statusText, { color: getStatusColor(order.status) }]}>
@@ -261,15 +270,15 @@ export default function SellerDashboard() {
               {/* Items List */}
               <View style={styles.itemsBox}>
                 {order.items.map((item, idx) => (
-                  <Text key={idx} style={styles.pastItemText}>
+                  <Text key={idx} style={[styles.pastItemText, { color: themeColors.textSecondary }]}>
                     • {item.quantity}x {item.name}
                   </Text>
                 ))}
               </View>
 
-              <View style={[styles.cardFooter, { borderTopWidth: 0, paddingTop: 4 }]}>
+              <View style={[styles.cardFooter, { borderTopColor: 'transparent', paddingTop: 4 }]}>
                 <Text style={styles.orderDateText}>{order.date}</Text>
-                <Text style={styles.pastPriceText}>Bill Total: ₹{order.total}</Text>
+                <Text style={[styles.pastPriceText, { color: themeColors.text }]}>Bill Total: ₹{order.total}</Text>
               </View>
             </View>
           ))
@@ -277,14 +286,14 @@ export default function SellerDashboard() {
 
         {activeTab === 'live' && liveOrders.length === 0 && (
           <View style={styles.emptyContainer}>
-            <ChefHat size={48} color="#444" style={{ marginBottom: 12 }} />
-            <Text style={styles.emptyText}>Kitchen is quiet. No active incoming orders right now.</Text>
+            <ChefHat size={48} color="#888" style={{ marginBottom: 12 }} />
+            <Text style={[styles.emptyText, { color: themeColors.textSecondary }]}>Kitchen is quiet. No active incoming orders right now.</Text>
           </View>
         )}
 
         {activeTab === 'history' && pastOrders.length === 0 && (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No completed order records available.</Text>
+            <Text style={[styles.emptyText, { color: themeColors.textSecondary }]}>No completed order records available.</Text>
           </View>
         )}
       </View>
@@ -296,7 +305,6 @@ export default function SellerDashboard() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
     paddingTop: 50,
   },
   header: {
@@ -318,7 +326,6 @@ const styles = StyleSheet.create({
   headerMain: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#FFF',
     marginTop: 2,
   },
   onlineIndicator: {
@@ -350,9 +357,7 @@ const styles = StyleSheet.create({
   },
   kpiCard: {
     flex: 1,
-    backgroundColor: '#121212',
     borderWidth: 1,
-    borderColor: '#1F1F1F',
     borderRadius: 14,
     padding: 14,
     marginHorizontal: 4,
@@ -365,11 +370,9 @@ const styles = StyleSheet.create({
   kpiVal: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#FFF',
   },
   kpiLabel: {
     fontSize: 9,
-    color: theme.colors.textSecondary,
     marginTop: 6,
   },
   quickDetailsBar: {
@@ -377,10 +380,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#121212',
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#1F1F1F',
     marginBottom: 20,
   },
   detailItem: {
@@ -389,15 +390,12 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 10,
-    color: '#AAA',
     marginLeft: 6,
   },
   tabContainer: {
     flexDirection: 'row',
     marginHorizontal: 16,
-    backgroundColor: '#121212',
     borderWidth: 1,
-    borderColor: '#1F1F1F',
     borderRadius: 12,
     padding: 4,
     marginBottom: 18,
@@ -414,7 +412,6 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 11,
     fontWeight: 'bold',
-    color: '#888',
   },
   tabTextActive: {
     color: '#FFF',
@@ -423,9 +420,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   orderCard: {
-    backgroundColor: '#121212',
     borderWidth: 1,
-    borderColor: '#1F1F1F',
     borderRadius: 18,
     padding: 14,
     marginBottom: 14,
@@ -435,18 +430,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#1F1F1F',
     paddingBottom: 10,
     marginBottom: 10,
   },
   clientName: {
     fontSize: 13,
     fontWeight: 'bold',
-    color: '#FFF',
   },
   orderId: {
     fontSize: 9,
-    color: theme.colors.textSecondary,
     marginTop: 2,
   },
   statusBadge: {
@@ -476,31 +468,25 @@ const styles = StyleSheet.create({
   },
   itemText: {
     fontSize: 12,
-    color: '#CCC',
   },
   addressBox: {
-    backgroundColor: '#0A0A0A',
     borderRadius: 8,
     padding: 6,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#151515',
   },
   addressText: {
     fontSize: 9,
-    color: '#888',
   },
   cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: '#1F1F1F',
     paddingTop: 10,
   },
   totalLabel: {
     fontSize: 9,
-    color: theme.colors.textSecondary,
   },
   totalVal: {
     fontSize: 13,
@@ -550,17 +536,15 @@ const styles = StyleSheet.create({
   },
   pastItemText: {
     fontSize: 11,
-    color: '#888',
     marginBottom: 2,
   },
   orderDateText: {
     fontSize: 9,
-    color: '#555',
+    color: '#888',
   },
   pastPriceText: {
     fontSize: 11,
     fontWeight: 'bold',
-    color: '#999',
   },
   emptyContainer: {
     alignItems: 'center',
@@ -568,7 +552,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 11,
-    color: '#555',
     textAlign: 'center',
   }
 });

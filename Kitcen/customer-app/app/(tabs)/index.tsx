@@ -22,17 +22,16 @@ import {
   Mic, 
   Plus, 
   Sparkles,
-  ArrowRight,
-  Flame,
   Award,
   Gift,
-  Compass,
-  LayoutGrid
+  ShoppingBag,
+  Flame
 } from 'lucide-react-native';
 import { theme } from '../../styles/theme';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useKitchenStore } from '../../store/useKitchenStore';
 import { useCartStore } from '../../store/useCartStore';
+import { API_BASE_URL } from '../../store/apiConfig';
 
 const mindCategories = [
   { id: '1', name: 'Meals', image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=120' },
@@ -59,19 +58,39 @@ export default function HomeScreen() {
 
   const addItem = useCartStore(state => state.addItem);
   const cartItems = useCartStore(state => state.items);
+  const cartTotals = useCartStore(state => state.getTotals());
 
   // Home controls
   const [activeCategory, setActiveCategory] = useState<TopCategory>('food');
+  const [selectedMindCategory, setSelectedMindCategory] = useState<string | null>(null);
   const [isVegOnly, setIsVegOnly] = useState(false);
   const [addressModalVisible, setAddressModalVisible] = useState(false);
   const [newAddressInput, setNewAddressInput] = useState('');
+
+  // Dynamic Banners
+  const [liveBanners, setLiveBanners] = useState<any[]>([]);
 
   // Fetch initial data
   useEffect(() => {
     fetchKitchens();
     fetchAllProducts();
     detectLocation();
+    fetchLiveBanners();
   }, []);
+
+  const fetchLiveBanners = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/banners`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data.length > 0) {
+          setLiveBanners(json.data);
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to load live banners:', err);
+    }
+  };
 
   const themeColors = {
     background: isDarkMode ? '#0B0B0C' : '#F5F6F8',
@@ -83,7 +102,6 @@ export default function HomeScreen() {
   };
 
   const handleAddProductToCart = (prod: any) => {
-    // Find kitchen details
     const kId = prod.kitchenId || 'shp-seed-10';
     const kName = prod.kitchenName || 'Rumali By Enoki';
 
@@ -114,10 +132,24 @@ export default function HomeScreen() {
     Alert.alert('GPS Location', 'Live location detected successfully.');
   };
 
-  // Filtered lists for sections
-  const highProteinDishes = allProducts.filter(p => p.name.includes('Roll'));
-  const store99Dishes = allProducts.filter(p => p.price <= 99);
-  const boltScoops = allProducts.filter(p => p.desc.includes('SCOOPS'));
+  // Filtered Products
+  const getFilteredDishes = () => {
+    let list = allProducts || [];
+    if (selectedMindCategory) {
+      const catLower = selectedMindCategory.toLowerCase();
+      list = list.filter(p => 
+        p.category.toLowerCase().includes(catLower) || 
+        p.name.toLowerCase().includes(catLower) ||
+        (p.desc && p.desc.toLowerCase().includes(catLower))
+      );
+    }
+    if (isVegOnly) {
+      list = list.filter(p => p.isVeg);
+    }
+    return list;
+  };
+
+  const filteredDishes = getFilteredDishes();
 
   return (
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
@@ -175,14 +207,14 @@ export default function HomeScreen() {
         </ScrollView>
       </View>
 
-      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 110 }}>
         
         {/* Search Bar Row with Veg Toggle */}
         <View style={styles.searchRow}>
           <View style={[styles.searchBar, { backgroundColor: themeColors.searchBg, borderColor: themeColors.border }]}>
             <Search size={18} color="#8E8E93" />
             <TextInput
-              placeholder="Search for 'Biryani'"
+              placeholder="Search for dishes, rolls, sweets..."
               placeholderTextColor="#8E8E93"
               style={[styles.searchInput, { color: themeColors.text }]}
               onSubmitEditing={() => router.push('/search')}
@@ -202,14 +234,28 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* PAY DAY Discount Slider Banner */}
-        <View style={styles.payDayBanner}>
-          <Text style={styles.payDayHeader}>PAY DAY</Text>
-          <Text style={styles.payDaySub}>FLAT ₹200 OFF & MORE</Text>
-          <View style={styles.payDayBadge}>
-            <Text style={styles.payDayBadgeText}>ORDER NOW</Text>
+        {/* Dynamic & Static Promo Banners Slider */}
+        {liveBanners.length > 0 ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingLeft: 16, marginVertical: 12 }}>
+            {liveBanners.map((banner) => (
+              <View key={banner.id} style={styles.dynamicBannerWrapper}>
+                <Image source={{ uri: banner.imageUrl }} style={styles.dynamicBannerImg} />
+                <View style={styles.dynamicBannerOverlay}>
+                  <Text style={styles.dynamicBannerText}>{banner.linkUrl}</Text>
+                </View>
+              </View>
+            ))}
+          </ScrollView>
+        ) : (
+          /* Fallback Payday Banner */
+          <View style={styles.payDayBanner}>
+            <Text style={styles.payDayHeader}>PAY DAY</Text>
+            <Text style={styles.payDaySub}>FLAT ₹200 OFF & MORE</Text>
+            <View style={styles.payDayBadge}>
+              <Text style={styles.payDayBadgeText}>ORDER NOW</Text>
+            </View>
           </View>
-        </View>
+        )}
 
         {/* Purple Promotion Banner (EatRight) */}
         <View style={styles.purplePromoBanner}>
@@ -229,184 +275,101 @@ export default function HomeScreen() {
         {/* What's on your mind? Section */}
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: themeColors.text }]}>What's on your mind?</Text>
+          <Text style={styles.sectionSubtitle}>Tap a category bubble to filter local dishes</Text>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.circularSlider}>
-          {mindCategories.map((item) => (
-            <TouchableOpacity key={item.id} style={styles.circularCard} onPress={() => router.push('/search')}>
-              <Image source={{ uri: item.image }} style={styles.circularImage} />
-              <Text style={[styles.circularName, { color: themeColors.text }]}>{item.name}</Text>
-            </TouchableOpacity>
-          ))}
+          {mindCategories.map((item) => {
+            const isSelected = selectedMindCategory === item.name;
+            return (
+              <TouchableOpacity 
+                key={item.id} 
+                style={styles.circularCard} 
+                onPress={() => setSelectedMindCategory(isSelected ? null : item.name)}
+              >
+                <Image 
+                  source={{ uri: item.image }} 
+                  style={[
+                    styles.circularImage, 
+                    isSelected && { borderWidth: 3, borderColor: '#FF5252' }
+                  ]} 
+                />
+                <Text style={[styles.circularName, { color: themeColors.text, fontWeight: isSelected ? 'bold' : 'normal' }]}>{item.name}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
 
-        {/* Section 1: High Protein Low Cal Dishes (customer-view-1) */}
+        {/* Dynamic Filtered Products Grid (Takes place of Top Kitchens Nearby) */}
         <View style={styles.sectionHeader}>
-          <View>
-            <Text style={[styles.sectionTitle, { color: themeColors.text }]}>High Protein Low Cal Dishes</Text>
-            <Text style={styles.sectionSubtitle}>Dishes to support your fitness goals</Text>
-          </View>
+          <Text style={[styles.sectionTitle, { color: themeColors.text }]}>
+            {selectedMindCategory ? `Popular ${selectedMindCategory} Menu` : 'Fresh Featured Dishes'}
+          </Text>
+          <Text style={styles.sectionSubtitle}>Prepared live by approved Cloud Partners</Text>
         </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalProductsScroll}>
-          {highProteinDishes.map((prod) => (
-            <View key={prod.id} style={[styles.productCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
-              <Image source={{ uri: prod.image }} style={styles.productImg} />
-              <View style={styles.highProteinBadge}>
-                <Award size={10} color="#FFF" style={{ marginRight: 2 }} />
-                <Text style={styles.highProteinBadgeText}>HIGH PROTEIN</Text>
-              </View>
 
-              <View style={styles.prodDetails}>
-                <View style={styles.ratingRow}>
-                  <Text style={styles.ratingLabel}>★ 4.2 (16)</Text>
-                </View>
-                <Text style={[styles.prodName, { color: themeColors.text }]} numberOfLines={1}>{prod.name}</Text>
-                <Text style={styles.prodDesc} numberOfLines={1}>{prod.desc}</Text>
-                
-                <Text style={[styles.prodKitchen, { color: themeColors.textSecondary }]}>By {prod.kitchenName}</Text>
-                
-                <View style={styles.priceRow}>
-                  <Text style={[styles.prodPrice, { color: themeColors.text }]}>₹{prod.price}</Text>
-                  <TouchableOpacity style={styles.addBtn} onPress={() => handleAddProductToCart(prod)}>
-                    <Text style={styles.addBtnText}>ADD</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          ))}
-        </ScrollView>
-
-        {/* Section 2: 99 Store Banner & items (customer-view-2) */}
-        <View style={[styles.store99Banner, { backgroundColor: '#0083B0' }]}>
-          <View style={styles.store99Content}>
-            <Text style={styles.store99Title}>99 store</Text>
-            <Text style={styles.store99Sub}>Meals at ₹99 + Free Delivery</Text>
-          </View>
-          <Image 
-            source={{ uri: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=150' }} 
-            style={styles.store99Img} 
-          />
-        </View>
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: themeColors.text }]}><Flame size={16} color="#FFCC00" /> Trending dishes near you!</Text>
-        </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalProductsScroll}>
-          {store99Dishes.map((prod) => (
-            <View key={prod.id} style={[styles.productCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
-              <Image source={{ uri: prod.image }} style={styles.productImg} />
-              
-              <View style={styles.yellowDiscountBadge}>
-                <Text style={styles.yellowDiscountText}>₹{prod.price}</Text>
-              </View>
-
-              <View style={styles.prodDetails}>
-                <Text style={[styles.prodName, { color: themeColors.text }]} numberOfLines={1}>{prod.name}</Text>
-                <Text style={[styles.prodKitchen, { color: themeColors.textSecondary }]}>By {prod.kitchenName}</Text>
-                
-                <View style={styles.priceRow}>
-                  <Text style={[styles.prodPrice, { color: themeColors.text }]}>₹{prod.price}</Text>
-                  <TouchableOpacity style={styles.addBtn} onPress={() => handleAddProductToCart(prod)}>
-                    <Text style={styles.addBtnText}>ADD</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          ))}
-        </ScrollView>
-
-        {/* Section 3: Bolt (15 Min Delivery) scoops (customer-view-3) */}
-        <View style={[styles.boltBanner, { backgroundColor: '#800020' }]}>
-          <View style={styles.boltContent}>
-            <Text style={styles.boltTitle}>Bolt ⚡</Text>
-            <Text style={styles.boltSub}>Food in 15 mins! Fresh, Hot & Crisp</Text>
-          </View>
-          <Image 
-            source={{ uri: 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=150' }} 
-            style={styles.boltImg} 
-          />
-        </View>
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: themeColors.text }]}>15 MIN SCOOPS</Text>
-        </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalProductsScroll}>
-          {boltScoops.map((prod) => (
-            <View key={prod.id} style={[styles.productCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
-              <Image source={{ uri: prod.image }} style={styles.productImg} />
-              
-              <View style={styles.yellowDiscountBadge}>
-                <Text style={styles.yellowDiscountText}>₹169</Text>
-              </View>
-
-              <View style={styles.prodDetails}>
-                <Text style={[styles.prodName, { color: themeColors.text }]} numberOfLines={1}>{prod.name}</Text>
-                <Text style={styles.prodDesc} numberOfLines={1}>{prod.desc}</Text>
-                <Text style={[styles.prodKitchen, { color: themeColors.textSecondary }]}>By {prod.kitchenName}</Text>
-                
-                <View style={styles.priceRow}>
-                  <Text style={[styles.prodPrice, { color: themeColors.text }]}>₹{prod.price}</Text>
-                  <TouchableOpacity style={styles.addBtn} onPress={() => handleAddProductToCart(prod)}>
-                    <Text style={styles.addBtnText}>ADD</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          ))}
-        </ScrollView>
-
-        {/* Section 4: Top Outlets (customer-view-4) */}
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Top Kitchens Nearby</Text>
-        </View>
-        <View style={styles.restaurantContainer}>
-          {kitchens.map((kitchen) => (
-            <TouchableOpacity 
-              key={kitchen.id}
-              style={[styles.restaurantCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}
-              activeOpacity={0.95}
-              onPress={() => router.push(`/restaurant/${kitchen.id}`)}
+        <View style={styles.featuredGrid}>
+          {filteredDishes.map((prod) => (
+            <View 
+              key={prod.id} 
+              style={[
+                styles.gridCard, 
+                { backgroundColor: themeColors.card, borderColor: themeColors.border }
+              ]}
             >
-              <Image source={{ uri: kitchen.image }} style={styles.restaurantImage} />
+              <Image source={{ uri: prod.image }} style={styles.gridImg} />
               
-              <View style={styles.itemsOverlayBadge}>
-                <Text style={styles.itemsOverlayText}>ITEMS AT ₹99</Text>
+              {/* Veg Indicator */}
+              <View style={[styles.vegOverlayBadge, { borderColor: prod.isVeg ? theme.colors.veg : theme.colors.nonVeg }]}>
+                <View style={[styles.vegDot, { backgroundColor: prod.isVeg ? theme.colors.veg : theme.colors.nonVeg }]} />
               </View>
 
-              <View style={styles.restaurantDetails}>
-                <View style={styles.restaurantRow}>
-                  <Text style={[styles.restaurantName, { color: themeColors.text }]}>{kitchen.name}</Text>
-                  <View style={styles.ratingBadge}>
-                    <Text style={styles.ratingTextVal}>{kitchen.rating || '4.5'}</Text>
-                    <Star size={8} color="#000" style={{ marginLeft: 2 }} />
-                  </View>
-                </View>
-                <View style={styles.typeBadgeRow}>
-                  <Text style={[styles.restaurantCuisines, { color: themeColors.textSecondary }]}>{kitchen.cuisines}</Text>
-                  <Text style={[styles.kitchenTypeTag, { 
-                    backgroundColor: kitchen.type === 'home_tiffin' ? 'rgba(52,199,89,0.1)' : 'rgba(255,107,0,0.1)',
-                    color: kitchen.type === 'home_tiffin' ? theme.colors.veg : theme.colors.primary
-                  }]}>
-                    {kitchen.type === 'home_tiffin' ? 'Housewife Tiffin' : 'Restaurant'}
-                  </Text>
-                </View>
+              <View style={styles.gridDetails}>
+                <Text style={[styles.gridName, { color: themeColors.text }]} numberOfLines={1}>{prod.name}</Text>
+                <Text style={[styles.gridDesc, { color: themeColors.textSecondary }]} numberOfLines={1}>{prod.desc}</Text>
                 
-                <View style={[styles.deliveryRow, { borderTopColor: themeColors.border }]}>
-                  <View style={styles.statItem}>
-                    <Clock size={12} color={themeColors.textSecondary} />
-                    <Text style={[styles.statText, { color: themeColors.textSecondary }]}>{kitchen.time}</Text>
-                  </View>
-                  <Text style={[styles.bulletSeparator, { color: themeColors.textSecondary }]}>•</Text>
-                  <Text style={[styles.statText, { color: themeColors.textSecondary }]}>{kitchen.distance}</Text>
-                  <Text style={[styles.bulletSeparator, { color: themeColors.textSecondary }]}>•</Text>
-                  <View style={styles.statItem}>
-                    <ShieldCheck size={12} color={theme.colors.veg} />
-                    <Text style={[styles.statText, { color: theme.colors.textSecondary }]}>Safe Homestyle Cooking</Text>
-                  </View>
+                <TouchableOpacity onPress={() => router.push(`/restaurant/${prod.kitchenId}`)}>
+                  <Text style={styles.gridKitchenLink}>★ {prod.kitchenName}</Text>
+                </TouchableOpacity>
+
+                <View style={styles.gridPriceRow}>
+                  <Text style={[styles.gridPriceText, { color: themeColors.text }]}>₹{prod.price}</Text>
+                  
+                  <TouchableOpacity 
+                    style={styles.gridAddBtn}
+                    onPress={() => handleAddProductToCart(prod)}
+                  >
+                    <Text style={styles.gridAddBtnText}>ADD</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
-            </TouchableOpacity>
+            </View>
           ))}
+
+          {filteredDishes.length === 0 && (
+            <View style={styles.emptySearchWrapper}>
+              <Text style={{ color: themeColors.textSecondary, fontSize: 12 }}>No dishes found matching selection.</Text>
+            </View>
+          )}
         </View>
 
       </ScrollView>
+
+      {/* Floating Checkout Cart Badge (Swiggy pattern) */}
+      {cartItems.length > 0 && (
+        <TouchableOpacity 
+          style={styles.floatingCartNotification}
+          activeOpacity={0.9}
+          onPress={() => router.push('/cart')}
+        >
+          <View style={styles.cartInfoWrapper}>
+            <ShoppingBag size={18} color="#FFF" />
+            <Text style={styles.floatingCartQtyText}>{cartItems.reduce((acc, c) => acc + c.quantity, 0)} Items</Text>
+            <Text style={{ color: 'rgba(255,255,255,0.4)', marginHorizontal: 8 }}>|</Text>
+            <Text style={styles.floatingCartPriceText}>₹{cartTotals.total}</Text>
+          </View>
+          <Text style={styles.viewCartActionText}>View Basket ❯</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Address Selection Modal */}
       <Modal
@@ -424,7 +387,6 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Detect live location */}
             <TouchableOpacity 
               style={styles.gpsRow}
               onPress={handleDetectLiveAddress}
@@ -609,6 +571,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
+    marginTop: 8,
   },
   purplePromoLeft: {
     flex: 1,
@@ -666,248 +629,145 @@ const styles = StyleSheet.create({
   circularName: {
     fontSize: 11,
     marginTop: 6,
-    fontWeight: '600',
   },
-  horizontalProductsScroll: {
-    paddingLeft: 16,
-    paddingBottom: 16,
+  featuredGrid: {
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   },
-  productCard: {
-    width: 160,
+  gridCard: {
+    width: '48%',
     borderRadius: 16,
     borderWidth: 1,
     overflow: 'hidden',
-    marginRight: 14,
+    marginBottom: 16,
   },
-  productImg: {
+  gridImg: {
     width: '100%',
-    height: 100,
+    height: 110,
     backgroundColor: '#eee',
   },
-  highProteinBadge: {
+  vegOverlayBadge: {
     position: 'absolute',
     left: 8,
     top: 8,
-    backgroundColor: '#FF5252',
-    flexDirection: 'row',
+    width: 14,
+    height: 14,
+    borderWidth: 1.5,
+    borderRadius: 2,
     alignItems: 'center',
-    paddingVertical: 2,
-    paddingHorizontal: 6,
-    borderRadius: 6,
+    justifyContent: 'center',
+    backgroundColor: '#FFF',
   },
-  highProteinBadgeText: {
-    color: '#FFF',
-    fontSize: 7,
-    fontWeight: 'bold',
+  vegDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
-  yellowDiscountBadge: {
-    position: 'absolute',
-    left: 8,
-    top: 8,
-    backgroundColor: '#FFCC00',
-    paddingVertical: 2,
-    paddingHorizontal: 6,
-    borderRadius: 6,
-  },
-  yellowDiscountText: {
-    color: '#000',
-    fontSize: 8,
-    fontWeight: 'bold',
-  },
-  prodDetails: {
+  gridDetails: {
     padding: 10,
   },
-  ratingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  ratingLabel: {
-    fontSize: 8,
-    fontWeight: 'bold',
-    color: '#2ecc71',
-  },
-  prodName: {
+  gridName: {
     fontSize: 12,
     fontWeight: 'bold',
   },
-  prodDesc: {
+  gridDesc: {
     fontSize: 9,
-    color: '#888',
     marginTop: 2,
   },
-  prodKitchen: {
+  gridKitchenLink: {
     fontSize: 9,
+    fontWeight: 'bold',
+    color: '#FF5252',
     marginTop: 4,
   },
-  priceRow: {
+  gridPriceRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 8,
   },
-  prodPrice: {
+  gridPriceText: {
     fontSize: 11,
     fontWeight: 'bold',
   },
-  addBtn: {
+  gridAddBtn: {
     borderWidth: 1,
     borderColor: '#2ecc71',
     borderRadius: 6,
-    paddingVertical: 4,
-    paddingHorizontal: 12,
+    paddingVertical: 3,
+    paddingHorizontal: 10,
     backgroundColor: 'rgba(46,204,113,0.1)',
   },
-  addBtnText: {
+  gridAddBtnText: {
     color: '#2ecc71',
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: 'bold',
   },
-  store99Banner: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginHorizontal: 16,
-    borderRadius: 16,
-    padding: 14,
-    marginVertical: 12,
-  },
-  store99Content: {
-    flex: 1,
-  },
-  store99Title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFF',
-  },
-  store99Sub: {
-    fontSize: 11,
-    color: '#FFF',
-    marginTop: 2,
-  },
-  store99Img: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
-  },
-  boltBanner: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginHorizontal: 16,
-    borderRadius: 16,
-    padding: 14,
-    marginVertical: 12,
-  },
-  boltContent: {
-    flex: 1,
-  },
-  boltTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFF',
-  },
-  boltSub: {
-    fontSize: 11,
-    color: '#FFF',
-    marginTop: 2,
-  },
-  boltImg: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
-  },
-  restaurantContainer: {
-    paddingHorizontal: 16,
-  },
-  restaurantCard: {
-    borderRadius: 20,
-    borderWidth: 1,
-    marginBottom: 20,
-    overflow: 'hidden',
-  },
-  restaurantImage: {
+  emptySearchWrapper: {
     width: '100%',
-    height: 180,
-    backgroundColor: '#222',
+    alignItems: 'center',
+    paddingVertical: 30,
   },
-  itemsOverlayBadge: {
+  floatingCartNotification: {
     position: 'absolute',
-    left: 12,
-    top: 12,
-    backgroundColor: '#000',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    borderWidth: 0.5,
-    borderColor: '#FFD700',
-  },
-  itemsOverlayText: {
-    fontSize: 9,
-    fontWeight: 'bold',
-    color: '#FFD700',
-  },
-  restaurantDetails: {
-    padding: 16,
-  },
-  restaurantRow: {
+    bottom: 25,
+    left: 16,
+    right: 16,
+    backgroundColor: '#E23744',
+    borderRadius: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
-  restaurantName: {
-    fontSize: 16,
+  floatingCartQtyText: {
+    fontSize: 12,
     fontWeight: 'bold',
+    color: '#FFF',
+    marginLeft: 6,
   },
-  ratingBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFCC00',
-    paddingVertical: 2,
-    paddingHorizontal: 6,
-    borderRadius: 6,
+  floatingCartPriceText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#FFF',
   },
-  ratingTextVal: {
+  viewCartActionText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#FFF',
+  },
+  dynamicBannerWrapper: {
+    width: 280,
+    height: 110,
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginRight: 12,
+    position: 'relative',
+  },
+  dynamicBannerImg: {
+    width: '100%',
+    height: '100%',
+  },
+  dynamicBannerOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  dynamicBannerText: {
+    color: '#FFF',
     fontSize: 10,
     fontWeight: 'bold',
-    color: '#000',
-  },
-  restaurantCuisines: {
-    fontSize: 12,
-    flex: 1,
-    marginRight: 10,
-  },
-  deliveryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 12,
-    borderTopWidth: 1,
-    paddingTop: 12,
-  },
-  statItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statText: {
-    fontSize: 11,
-    fontWeight: '600',
-    marginLeft: 4,
-  },
-  bulletSeparator: {
-    marginHorizontal: 8,
-  },
-  typeBadgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 6,
-  },
-  kitchenTypeTag: {
-    fontSize: 9,
-    fontWeight: 'bold',
-    paddingVertical: 2,
-    paddingHorizontal: 6,
-    borderRadius: 4,
   },
   modalOverlay: {
     flex: 1,
