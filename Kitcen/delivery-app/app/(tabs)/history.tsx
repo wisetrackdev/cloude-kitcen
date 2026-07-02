@@ -7,7 +7,7 @@ import {
   TouchableOpacity, 
   ActivityIndicator
 } from 'react-native';
-import { Calendar, Wallet, CheckCircle, Clock, MapPin, Award } from 'lucide-react-native';
+import { Wallet, CheckCircle, Clock, MapPin, Award } from 'lucide-react-native';
 import { theme } from '../../styles/theme';
 import { useKitchenStore } from '../../store/useKitchenStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -17,6 +17,7 @@ type TimeFilter = 'today' | 'week' | 'all';
 export default function RiderHistoryScreen() {
   const user = useAuthStore(state => state.user);
   const riderId = user?.id || 'usr-rider-simulated';
+  const isDarkMode = useAuthStore(state => state.isDarkMode);
 
   const orders = useKitchenStore(state => state.orders);
   const isLoading = useKitchenStore(state => state.isLoading);
@@ -28,19 +29,60 @@ export default function RiderHistoryScreen() {
     fetchOrders();
   }, []);
 
-  // Filter logic
+  // Theme-based colors
+  const themeColors = {
+    background: isDarkMode ? '#0B0B0C' : '#F5F6F8',
+    card: isDarkMode ? '#121214' : '#FFFFFF',
+    border: isDarkMode ? '#1F1F22' : '#EAEAEA',
+    text: isDarkMode ? '#FFFFFF' : '#1E2022',
+    textSecondary: isDarkMode ? '#8E8E93' : '#686E73',
+  };
+
+  // Date filter helper
+  const isToday = (dateStr: string) => {
+    if (!dateStr) return false;
+    const lower = dateStr.toLowerCase();
+    if (lower.includes('today')) return true;
+
+    try {
+      const d = new Date(dateStr.replace(' ', 'T'));
+      const today = new Date();
+      return d.getDate() === today.getDate() &&
+             d.getMonth() === today.getMonth() &&
+             d.getFullYear() === today.getFullYear();
+    } catch {
+      // Fallback: check if the string contains the locale date parts
+      const todayString = new Date().toLocaleDateString();
+      return dateStr.includes(todayString);
+    }
+  };
+
+  const isThisWeek = (dateStr: string) => {
+    if (!dateStr) return false;
+    const lower = dateStr.toLowerCase();
+    if (lower.includes('today') || lower.includes('yesterday')) return true;
+
+    try {
+      const d = new Date(dateStr.replace(' ', 'T'));
+      const now = new Date();
+      const diffTime = Math.abs(now.getTime() - d.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays <= 7;
+    } catch {
+      return true; // Fallback to true if unparseable custom relative date (for demo mock consistency)
+    }
+  };
+
   const completedOrders = orders.filter(
     (o) => o.riderId === riderId && o.status === 'delivered'
   );
 
   const getFilteredOrders = () => {
     if (activeFilter === 'today') {
-      // Filter by today's date string (simulation checks)
-      return completedOrders.filter(o => o.date.toLowerCase().includes('today') || o.date.includes(new Date().toLocaleDateString()));
+      return completedOrders.filter(o => isToday(o.createdAt || o.date));
     }
     if (activeFilter === 'week') {
-      // Show last 7 orders or simulated weekly logs
-      return completedOrders.slice(0, 7);
+      return completedOrders.filter(o => isThisWeek(o.createdAt || o.date));
     }
     return completedOrders;
   };
@@ -49,191 +91,194 @@ export default function RiderHistoryScreen() {
   const totalEarnings = filteredList.reduce((sum, o) => sum + Number(o.deliveryCharge || 40), 0);
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Premium Header */}
-      <View style={styles.header}>
+    <View style={[styles.container, { backgroundColor: themeColors.background }]}>
+      
+      {/* Fixed Header */}
+      <View style={[styles.header, { backgroundColor: themeColors.card, borderBottomColor: themeColors.border }]}>
         <View style={styles.headerInfo}>
           <Text style={styles.subtitle}>Earnings & Records</Text>
-          <Text style={styles.title}>Delivery History</Text>
+          <Text style={[styles.title, { color: themeColors.text }]}>Delivery History</Text>
         </View>
         <View style={styles.badge}>
-          <Award size={18} color="#000" />
-          <Text style={styles.badgeText}>Zomato Partner</Text>
+          <Award size={14} color="#000" />
+          <Text style={styles.badgeText}>Cloude Kitchen App</Text>
         </View>
       </View>
 
-      {/* Zomato-style Earnings Summary Card */}
-      <View style={styles.summaryCard}>
-        <Text style={styles.summaryTitle}>YOUR SUMMARY PERFORMANCE</Text>
-        <View style={styles.metricsRow}>
-          <View style={styles.metricItem}>
-            <View style={[styles.iconBg, { backgroundColor: 'rgba(52,199,89,0.1)' }]}>
-              <Wallet size={20} color={theme.colors.success} />
+      {/* Scrollable Content (Only body scrolls) */}
+      <ScrollView 
+        style={{ flex: 1 }} 
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 40 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Earnings Summary Card */}
+        <View style={[styles.summaryCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+          <Text style={[styles.summaryTitle, { color: themeColors.textSecondary }]}>YOUR SUMMARY PERFORMANCE</Text>
+          <View style={styles.metricsRow}>
+            <View style={styles.metricItem}>
+              <View style={[styles.iconBg, { backgroundColor: 'rgba(52,199,89,0.1)' }]}>
+                <Wallet size={20} color={theme.colors.success} />
+              </View>
+              <Text style={[styles.metricVal, { color: themeColors.text }]}>₹{totalEarnings}</Text>
+              <Text style={styles.metricLabel}>Total Payout</Text>
             </View>
-            <Text style={styles.metricVal}>₹{totalEarnings}</Text>
-            <Text style={styles.metricLabel}>Total Payout</Text>
-          </View>
-          
-          <View style={styles.dividerLine} />
+            
+            <View style={[styles.dividerLine, { backgroundColor: themeColors.border }]} />
 
-          <View style={styles.metricItem}>
-            <View style={[styles.iconBg, { backgroundColor: 'rgba(255,107,0,0.1)' }]}>
-              <CheckCircle size={20} color={theme.colors.primary} />
+            <View style={styles.metricItem}>
+              <View style={[styles.iconBg, { backgroundColor: 'rgba(255,107,0,0.1)' }]}>
+                <CheckCircle size={20} color={theme.colors.primary} />
+              </View>
+              <Text style={[styles.metricVal, { color: themeColors.text }]}>{filteredList.length}</Text>
+              <Text style={styles.metricLabel}>Trips Done</Text>
             </View>
-            <Text style={styles.metricVal}>{filteredList.length}</Text>
-            <Text style={styles.metricLabel}>Trips Done</Text>
           </View>
         </View>
-      </View>
 
-      {/* Filter Tabs */}
-      <View style={styles.filterRow}>
-        {(['today', 'week', 'all'] as TimeFilter[]).map((filter) => (
-          <TouchableOpacity
-            key={filter}
-            style={[
-              styles.filterTab,
-              activeFilter === filter && styles.filterTabActive
-            ]}
-            onPress={() => setActiveFilter(filter)}
-          >
-            <Text
+        {/* Filter Tabs */}
+        <View style={[styles.filterRow, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+          {(['today', 'week', 'all'] as TimeFilter[]).map((filter) => (
+            <TouchableOpacity
+              key={filter}
               style={[
-                styles.filterText,
-                activeFilter === filter && styles.filterTextActive
+                styles.filterTab,
+                activeFilter === filter && styles.filterTabActive
               ]}
+              onPress={() => setActiveFilter(filter)}
             >
-              {filter === 'today' ? 'Today' : filter === 'week' ? 'This Week' : 'All History'}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* Logs List */}
-      <View style={styles.listContainer}>
-        {isLoading ? (
-          <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginTop: 40 }} />
-        ) : filteredList.map((order) => (
-          <View key={order.id} style={styles.orderCard}>
-            <View style={styles.cardHeader}>
-              <View>
-                <Text style={styles.orderId}>{order.id}</Text>
-                <Text style={styles.orderDate}>{order.date}</Text>
-              </View>
-              <View style={styles.earningsBadge}>
-                <Text style={styles.earningsAmt}>+₹{order.deliveryCharge || 40}</Text>
-              </View>
-            </View>
-
-            {/* Path details */}
-            <View style={styles.pathBox}>
-              <View style={styles.pathNode}>
-                <MapPin size={14} color={theme.colors.veg} />
-                <Text style={styles.pathText} numberOfLines={1}>
-                  From: <Text style={styles.boldText}>{order.kitchenName}</Text>
-                </Text>
-              </View>
-              <View style={styles.pathNode}>
-                <MapPin size={14} color={theme.colors.primary} />
-                <Text style={styles.pathText} numberOfLines={1}>
-                  To: <Text style={styles.boldText}>{order.customerName}</Text>
-                </Text>
-              </View>
-              <Text style={styles.addressText} numberOfLines={2}>
-                📍 Address: {order.deliveryAddress || 'Customer Location'}
+              <Text
+                style={[
+                  styles.filterText,
+                  activeFilter === filter && styles.filterTextActive
+                ]}
+              >
+                {filter === 'today' ? 'Today' : filter === 'week' ? 'This Week' : 'All History'}
               </Text>
-            </View>
+            </TouchableOpacity>
+          ))}
+        </View>
 
-            {/* Timestamps */}
-            <View style={styles.timestampsBlock}>
-              <Text style={styles.timestampRow}>
-                🕒 Ordered: <Text style={styles.timeVal}>{order.createdAt || order.date}</Text>
-              </Text>
-              {order.pickedUpAt && (
-                <Text style={styles.timestampRow}>
-                  📦 Picked Up: <Text style={styles.timeVal}>{order.pickedUpAt}</Text>
+        {/* Logs List */}
+        <View style={styles.listContainer}>
+          {isLoading ? (
+            <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginTop: 40 }} />
+          ) : filteredList.map((order) => (
+            <View key={order.id} style={[styles.orderCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+              <View style={[styles.cardHeader, { borderBottomColor: themeColors.border }]}>
+                <View>
+                  <Text style={[styles.orderId, { color: themeColors.text }]}>{order.id}</Text>
+                  <Text style={styles.orderDate}>{order.date}</Text>
+                </View>
+                <View style={styles.earningsBadge}>
+                  <Text style={styles.earningsAmt}>+₹{order.deliveryCharge || 40}</Text>
+                </View>
+              </View>
+
+              {/* Path details */}
+              <View style={styles.pathBox}>
+                <View style={styles.pathNode}>
+                  <MapPin size={12} color={theme.colors.veg} />
+                  <Text style={[styles.pathText, { color: themeColors.text }]} numberOfLines={1}>
+                    From: <Text style={styles.boldText}>{order.kitchenName}</Text>
+                  </Text>
+                </View>
+                <View style={styles.pathNode}>
+                  <MapPin size={12} color={theme.colors.primary} />
+                  <Text style={[styles.pathText, { color: themeColors.text }]} numberOfLines={1}>
+                    To: <Text style={styles.boldText}>{order.customerName}</Text>
+                  </Text>
+                </View>
+                <Text style={styles.addressText} numberOfLines={2}>
+                  📍 Address: {order.deliveryAddress || 'Customer Location'}
                 </Text>
-              )}
-              {order.deliveredAt && (
+              </View>
+
+              {/* Timestamps */}
+              <View style={[styles.timestampsBlock, { borderTopColor: themeColors.border }]}>
                 <Text style={styles.timestampRow}>
-                  ✅ Delivered: <Text style={styles.timeVal}>{order.deliveredAt}</Text>
+                  🕒 Ordered: <Text style={styles.timeVal}>{order.createdAt || order.date}</Text>
                 </Text>
-              )}
-            </View>
+                {order.pickedUpAt && (
+                  <Text style={styles.timestampRow}>
+                    📦 Picked Up: <Text style={styles.timeVal}>{order.pickedUpAt}</Text>
+                  </Text>
+                )}
+                {order.deliveredAt && (
+                  <Text style={styles.timestampRow}>
+                    ✅ Delivered: <Text style={styles.timeVal}>{order.deliveredAt}</Text>
+                  </Text>
+                )}
+              </View>
 
-            <View style={styles.cardFooter}>
-              <Text style={styles.successLabel}>✓ DELIVERED SUCCESSFUL</Text>
-              <Text style={styles.commissionLabel}>Payout: Cash/Online</Text>
+              <View style={[styles.cardFooter, { borderTopColor: themeColors.border }]}>
+                <Text style={styles.successLabel}>✓ DELIVERED SUCCESSFUL</Text>
+                <Text style={styles.commissionLabel}>Payout: Cash/Online</Text>
+              </View>
             </View>
-          </View>
-        ))}
+          ))}
 
-        {!isLoading && filteredList.length === 0 && (
-          <View style={styles.emptyContainer}>
-            <Clock size={48} color="#444" style={{ marginBottom: 12 }} />
-            <Text style={styles.emptyText}>No completed delivery records found in this timeframe.</Text>
-          </View>
-        )}
-      </View>
-      <View style={{ height: 45 }} />
-    </ScrollView>
+          {!isLoading && filteredList.length === 0 && (
+            <View style={styles.emptyContainer}>
+              <Clock size={44} color="#555" style={{ marginBottom: 12 }} />
+              <Text style={styles.emptyText}>No completed delivery records found in this timeframe.</Text>
+            </View>
+          )}
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
-    paddingTop: 50,
-    paddingHorizontal: 16,
   },
   header: {
+    paddingTop: 50,
+    paddingBottom: 15,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    borderBottomWidth: 1,
   },
   headerInfo: {
     flex: 1,
   },
   title: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#FFF',
     marginTop: 2,
   },
   subtitle: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: 'bold',
-    color: theme.colors.primary,
+    color: '#E23744',
     textTransform: 'uppercase',
   },
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.primary,
+    backgroundColor: '#FFCC00',
     paddingVertical: 4,
     paddingHorizontal: 10,
     borderRadius: 12,
   },
   badgeText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: 'bold',
     color: '#000',
     marginLeft: 4,
   },
   summaryCard: {
-    backgroundColor: '#121212',
     borderWidth: 1,
-    borderColor: '#1F1F1F',
     borderRadius: 20,
     padding: 16,
-    marginBottom: 20,
+    marginBottom: 16,
   },
   summaryTitle: {
     fontSize: 9,
     fontWeight: 'bold',
-    color: theme.colors.textSecondary,
     letterSpacing: 1,
     marginBottom: 12,
   },
@@ -256,35 +301,31 @@ const styles = StyleSheet.create({
   metricVal: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#FFF',
   },
   metricLabel: {
-    fontSize: 10,
-    color: theme.colors.textSecondary,
+    fontSize: 9,
+    color: '#888',
     marginTop: 2,
   },
   dividerLine: {
     width: 1,
     height: 45,
-    backgroundColor: '#1F1F1F',
   },
   filterRow: {
     flexDirection: 'row',
-    marginBottom: 20,
-    backgroundColor: '#121212',
+    marginBottom: 16,
     borderRadius: 12,
     padding: 4,
     borderWidth: 1,
-    borderColor: '#1F1F1F',
   },
   filterTab: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 8,
     alignItems: 'center',
     borderRadius: 8,
   },
   filterTabActive: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: '#E23744',
   },
   filterText: {
     fontSize: 11,
@@ -292,15 +333,13 @@ const styles = StyleSheet.create({
     color: '#888',
   },
   filterTextActive: {
-    color: '#000',
+    color: '#FFF',
   },
   listContainer: {
     marginBottom: 20,
   },
   orderCard: {
-    backgroundColor: '#121212',
     borderWidth: 1,
-    borderColor: '#1F1F1F',
     borderRadius: 18,
     padding: 14,
     marginBottom: 16,
@@ -310,18 +349,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#1F1F1F',
     paddingBottom: 10,
     marginBottom: 10,
   },
   orderId: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#FFF',
   },
   orderDate: {
     fontSize: 10,
-    color: theme.colors.textSecondary,
+    color: '#888',
     marginTop: 2,
   },
   earningsBadge: {
@@ -333,7 +370,7 @@ const styles = StyleSheet.create({
   earningsAmt: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: theme.colors.success,
+    color: '#2ecc71',
   },
   pathBox: {
     marginBottom: 10,
@@ -345,12 +382,10 @@ const styles = StyleSheet.create({
   },
   pathText: {
     fontSize: 11,
-    color: '#CCC',
     marginLeft: 8,
   },
   boldText: {
     fontWeight: 'bold',
-    color: '#FFF',
   },
   addressText: {
     fontSize: 10,
@@ -360,7 +395,6 @@ const styles = StyleSheet.create({
   },
   timestampsBlock: {
     borderTopWidth: 1,
-    borderTopColor: '#1F1F1F',
     paddingTop: 10,
     marginBottom: 10,
   },
@@ -377,24 +411,23 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: '#1F1F1F',
     paddingTop: 10,
   },
   successLabel: {
     fontSize: 9,
     fontWeight: 'bold',
-    color: theme.colors.success,
+    color: '#2ecc71',
   },
   commissionLabel: {
     fontSize: 9,
-    color: theme.colors.textSecondary,
+    color: '#888',
   },
   emptyContainer: {
     alignItems: 'center',
-    paddingVertical: 60,
+    paddingVertical: 40,
   },
   emptyText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#666',
     textAlign: 'center',
     lineHeight: 18,

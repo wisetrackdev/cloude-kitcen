@@ -1,19 +1,34 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   StyleSheet, 
   Text, 
   View, 
   ScrollView, 
   TouchableOpacity, 
+  Linking,
   Alert,
   Modal,
   TextInput,
   ActivityIndicator,
-  Linking,
-  Vibration
+  Switch
 } from 'react-native';
-import { Navigation, MapPin, CheckCircle, Clock, MessageSquare, Send, X, Phone } from 'lucide-react-native';
-import * as ImagePicker from 'expo-image-picker';
+import { 
+  MapPin, 
+  MessageSquare, 
+  Send, 
+  X, 
+  Phone, 
+  Moon, 
+  Sun, 
+  HelpCircle, 
+  AlertTriangle, 
+  Award, 
+  Gift, 
+  ChevronRight, 
+  Clock, 
+  Sparkles,
+  ShieldAlert
+} from 'lucide-react-native';
 import { theme } from '../../styles/theme';
 import { useKitchenStore } from '../../store/useKitchenStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -30,6 +45,12 @@ export default function RiderDashboard() {
   const updateOrderStatus = useKitchenStore(state => state.updateOrderStatus);
   const acceptOrder = useKitchenStore(state => state.acceptOrder);
 
+  // Theme & Duty state from central Zustand store
+  const isDarkMode = useAuthStore(state => state.isDarkMode);
+  const setTheme = useAuthStore(state => state.setTheme);
+  const isOnline = useAuthStore(state => state.isOnline);
+  const setDutyStatus = useAuthStore(state => state.setDutyStatus);
+
   // Chat state
   const [chatOrder, setChatOrder] = useState<any>(null);
   const [chatRecipientType, setChatRecipientType] = useState<'seller' | 'customer'>('customer');
@@ -37,38 +58,46 @@ export default function RiderDashboard() {
   const [newMessageText, setNewMessageText] = useState('');
   const [chatInterval, setChatInterval] = useState<any>(null);
 
+  // Poll orders & kitchens periodically only if online
   useEffect(() => {
-    fetchOrders();
-    fetchKitchens();
-    const interval = setInterval(() => {
+    if (isOnline) {
       fetchOrders();
       fetchKitchens();
-    }, 5000); // Poll every 5s for live updates
-    return () => clearInterval(interval);
-  }, []);
+      const interval = setInterval(() => {
+        fetchOrders();
+        fetchKitchens();
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [isOnline]);
 
   // Poll chat messages when modal is active
   useEffect(() => {
     if (chatOrder) {
-      fetchChats();
-      const interval = setInterval(fetchChats, 2000);
+      loadChatMessages();
+      const interval = setInterval(loadChatMessages, 3000);
       setChatInterval(interval);
       return () => clearInterval(interval);
     } else {
-      if (chatInterval) clearInterval(chatInterval);
+      if (chatInterval) {
+        clearInterval(chatInterval);
+        setChatInterval(null);
+      }
     }
   }, [chatOrder]);
 
-  const fetchChats = async () => {
+  const loadChatMessages = async () => {
     if (!chatOrder) return;
     try {
       const res = await fetch(`${API_BASE_URL}/api/orders/${chatOrder.id}/chats`);
-      const json = await res.json();
-      if (json.success) {
-        setMessages(json.data);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success) {
+          setMessages(json.data);
+        }
       }
-    } catch (err) {
-      console.warn('Failed to fetch chats offline');
+    } catch (err: any) {
+      console.warn('Error loading chat messages:', err.message);
     }
   };
 
@@ -83,306 +112,412 @@ export default function RiderDashboard() {
           message: newMessageText.trim()
         })
       });
-      const json = await res.json();
-      if (json.success) {
+      if (res.ok) {
         setNewMessageText('');
-        fetchChats();
+        loadChatMessages();
       }
-    } catch (err) {
-      // Offline simulation fallback
-      const simulated = {
-        id: 'msg-' + Math.random(),
-        orderId: chatOrder.id,
-        senderId: riderId,
-        senderName: user?.name || 'Rider',
-        message: newMessageText.trim(),
-        createdAt: new Date().toLocaleTimeString()
-      };
-      setMessages(prev => [...prev, simulated]);
-      setNewMessageText('');
+    } catch (err: any) {
+      Alert.alert('Error', 'Failed to send message');
     }
   };
-
-  // Grouping orders
-  const availableOrders = orders.filter(o => o.status === 'placed' && !o.riderId);
-  const activeDeliveries = orders.filter(o => o.riderId === riderId && o.status !== 'delivered' && o.status !== 'cancelled');
 
   const handleAcceptOrder = async (orderId: string) => {
+    if (!isOnline) {
+      Alert.alert('Off Duty', 'You must go online to accept orders.');
+      return;
+    }
     const success = await acceptOrder(orderId, riderId);
     if (success) {
-      Alert.alert('Order Accepted!', 'Proceed to Pickup Location: Shop');
-    }
-  };
-
-  // Ring Alert / Vibration loop on New available orders in Pool
-  const prevAvailableCount = useRef<number>(0);
-
-  useEffect(() => {
-    if (availableOrders.length > prevAvailableCount.current) {
-      // Trigger continuous vibration pattern: vibrate 1s, pause 0.5s, vibrate 1s...
-      Vibration.vibrate([0, 1000, 500, 1000, 500, 1000], true);
-      
-      Alert.alert(
-        "🔔 NEW ORDER INCOMING!",
-        `Order ID: ${availableOrders[availableOrders.length - 1]?.id || 'pool'} is available. Pick up fast!`,
-        [
-          { 
-            text: "Accept Order Immediately", 
-            onPress: () => {
-              Vibration.cancel();
-              const latestOrder = availableOrders[availableOrders.length - 1];
-              if (latestOrder) {
-                handleAcceptOrder(latestOrder.id);
-              }
-            } 
-          },
-          { 
-            text: "Stop Ring Alert", 
-            onPress: () => Vibration.cancel() 
-          }
-        ]
-      );
-    }
-    prevAvailableCount.current = availableOrders.length;
-  }, [orders]);
-
-  const takeOrderPhoto = async (actionLabel: string) => {
-    try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Camera permissions are required to snap a picture of the order.');
-        return false;
-      }
-
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.7,
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        Alert.alert('Photo Captured', `Successfully captured order photo for ${actionLabel}!`);
-        return true;
-      }
-      return false;
-    } catch (err) {
-      console.warn('Camera capture failed:', err);
-      Alert.alert('Simulation Mode', 'Photo captured (simulated).');
-      return true;
+      Alert.alert('Order Accepted', 'Go to pickup kitchen details on your dashboard.');
+    } else {
+      Alert.alert('Error', 'Failed to accept order. It might already be taken.');
     }
   };
 
   const handleUpdateStatus = async (orderId: string, currentStatus: string) => {
-    let nextStatus: typeof orders[0]['status'] = 'on_the_way';
-    if (currentStatus === 'preparing' || currentStatus === 'ready') {
+    let nextStatus: typeof orders[0]['status'] = 'placed';
+    if (currentStatus === 'ready') {
       nextStatus = 'on_the_way';
-      const photoOk = await takeOrderPhoto('Pickup Confirmation');
-      if (!photoOk) return;
-
-      Alert.alert('Status Updated', 'Order picked up! Navigate to Customer Location.');
     } else if (currentStatus === 'on_the_way') {
       nextStatus = 'delivered';
-      const photoOk = await takeOrderPhoto('Delivery Confirmation');
-      if (!photoOk) return;
-
-      Alert.alert('Status Updated', 'Order delivered successfully!');
+    } else {
+      return;
     }
-    await updateOrderStatus(orderId, nextStatus);
+
+    const success = await updateOrderStatus(orderId, nextStatus);
+    if (success) {
+      Alert.alert('Status Updated', `Order status updated to: ${nextStatus.replace('_', ' ').toUpperCase()}`);
+    } else {
+      Alert.alert('Error', 'Failed to update order status.');
+    }
   };
 
-  const handleOpenMaps = (query: string) => {
-    Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`);
+  const handleOpenMaps = (address: string) => {
+    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+    Linking.openURL(url).catch(() => Alert.alert('Error', 'Could not open Google Maps'));
+  };
+
+  const triggerSOS = () => {
+    Alert.alert(
+      'EMERGENCY SOS',
+      'Are you in danger? Clicking call now will connect you directly to the Cloude Kitchen Emergency Line.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Call Now', style: 'destructive', onPress: () => Linking.openURL('tel:+919119119110') }
+      ]
+    );
+  };
+
+  const triggerHelp = () => {
+    Alert.alert(
+      'Rider Support Helpdesk',
+      'Need help with an active delivery? Call support helpline.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Call Support', onPress: () => Linking.openURL('tel:+919888877766') }
+      ]
+    );
+  };
+
+  // Filter orders
+  const activeDeliveries = orders.filter(
+    (o) => o.riderId === riderId && ['ready', 'on_the_way', 'preparing'].includes(o.status)
+  );
+
+  const availableOrdersPool = orders.filter(
+    (o) => !o.riderId && ['ready', 'placed', 'preparing'].includes(o.status)
+  );
+
+  // Dynamic colors based on theme mode
+  const themeColors = {
+    background: isDarkMode ? '#0B0B0C' : '#F5F6F8',
+    card: isDarkMode ? '#121214' : '#FFFFFF',
+    border: isDarkMode ? '#1F1F22' : '#EAEAEA',
+    text: isDarkMode ? '#FFFFFF' : '#1E2022',
+    textSecondary: isDarkMode ? '#8E8E93' : '#686E73',
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.riderHeader}>
-        <Navigation size={28} color={theme.colors.primary} />
-        <View style={styles.headerMeta}>
-          <Text style={styles.roleText}>Rider Workspace</Text>
-          <Text style={styles.riderName}>{user?.name || 'Vikram Singh'}</Text>
+    <View style={[styles.container, { backgroundColor: themeColors.background }]}>
+      
+      {/* Header (Fixed at the top, does not scroll) */}
+      <View style={[styles.header, { backgroundColor: themeColors.card, borderBottomColor: themeColors.border }]}>
+        
+        {/* Toggle Switch Duty */}
+        <TouchableOpacity 
+          style={[
+            styles.toggleDutyBtn, 
+            { backgroundColor: isOnline ? '#2ecc71' : (isDarkMode ? '#222' : '#E0E0E0') }
+          ]}
+          onPress={() => setDutyStatus(!isOnline)}
+          activeOpacity={0.8}
+        >
+          <View style={[styles.toggleDot, { alignSelf: isOnline ? 'flex-end' : 'flex-start' }]} />
+          <Text style={[styles.toggleText, { color: isOnline ? '#000' : themeColors.text }]}>
+            {isOnline ? 'Online' : 'Offline'}
+          </Text>
+        </TouchableOpacity>
+
+        {/* Action icons */}
+        <View style={styles.headerActions}>
+          
+          {/* Light / Dark Mode Toggle */}
+          <TouchableOpacity 
+            style={[styles.actionIconBtn, { borderColor: themeColors.border }]} 
+            onPress={() => setTheme(!isDarkMode)}
+          >
+            {isDarkMode ? <Sun size={16} color="#FFCC00" /> : <Moon size={16} color="#1E2022" />}
+          </TouchableOpacity>
+
+          {/* Help Support */}
+          <TouchableOpacity 
+            style={[styles.actionIconBtn, { borderColor: themeColors.border, minWidth: 55 }]} 
+            onPress={triggerHelp}
+          >
+            <HelpCircle size={14} color={isDarkMode ? '#AAA' : '#555'} />
+            <Text style={[styles.actionIconLabel, { color: themeColors.text }]}>HELP</Text>
+          </TouchableOpacity>
+
+          {/* SOS Emergency */}
+          <TouchableOpacity 
+            style={[styles.actionIconBtn, { borderColor: '#FF3B30', backgroundColor: 'rgba(255,59,48,0.1)' }]} 
+            onPress={triggerSOS}
+          >
+            <ShieldAlert size={14} color="#FF3B30" />
+            <Text style={[styles.actionIconLabel, { color: '#FF3B30', fontWeight: 'bold' }]}>SOS</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
-      {/* Available Orders Pool */}
-      <Text style={styles.sectionTitle}>Available Job Pool ({availableOrders.length})</Text>
-      <View style={styles.deliveriesList}>
-        {availableOrders.map((order) => (
-          <View key={order.id} style={[styles.deliveryCard, { borderColor: theme.colors.primary, borderWidth: 1.5 }]}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.orderId}>{order.id}</Text>
-              <View style={[styles.statusBadge, { backgroundColor: 'rgba(255,107,0,0.15)' }]}>
-                <Text style={styles.statusText}>PENDING ACCEPTANCE</Text>
-              </View>
-            </View>
+      {/* Main Scrollable Body */}
+      <ScrollView 
+        style={{ flex: 1 }} 
+        contentContainerStyle={{ paddingBottom: 40 }} 
+        showsVerticalScrollIndicator={false}
+      >
+        
+        {/* IF OFFLINE (OFF DUTY VIEW) */}
+        {!isOnline ? (
+          <View style={styles.offlineWrapper}>
             
-            <View style={styles.pathContainer}>
-              <View style={styles.pathNode}>
-                <MapPin size={16} color={theme.colors.veg} />
-                <View style={styles.nodeDetails}>
-                  <Text style={styles.nodeTitle}>Pickup Kitchen</Text>
-                  <Text style={styles.nodeName}>{order.kitchenName}</Text>
+            {/* Shift Booking Card */}
+            <View style={[styles.shiftCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+              <View style={styles.shiftHeader}>
+                <View>
+                  <Text style={[styles.shiftTitle, { color: themeColors.text }]}>High earning shift Live!</Text>
+                  <Text style={styles.shiftTimings}>2:00 pm - 4:00 pm  <Text style={{ color: '#E23744', fontWeight: 'bold' }}>● LIVE</Text></Text>
                 </View>
+                <View style={styles.shiftAvatarContainer}>
+                  <Award size={36} color="#FF9500" />
+                </View>
+              </View>
+              
+              <TouchableOpacity 
+                style={styles.greenOnlineBtn}
+                onPress={() => setDutyStatus(true)}
+              >
+                <Text style={styles.greenOnlineText}>Let's book and go online</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Refer and Earn Row */}
+            <View style={[styles.referBanner, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Gift size={20} color="#E23744" style={{ marginRight: 8 }} />
+                <Text style={[styles.referTitle, { color: themeColors.text }]}>Refer Friend & Earn</Text>
+              </View>
+              <View style={styles.referAmtBadge}>
+                <Text style={styles.referAmtText}>upto ₹15,000 ❯</Text>
               </View>
             </View>
 
-            <TouchableOpacity 
-              style={[styles.actionBtn, { backgroundColor: theme.colors.primary }]}
-              onPress={() => handleAcceptOrder(order.id)}
-            >
-              <Text style={[styles.actionBtnText, { color: '#000' }]}>Accept Order (First Come)</Text>
-            </TouchableOpacity>
-          </View>
-        ))}
-        {availableOrders.length === 0 && (
-          <Text style={{ color: '#666', fontSize: 13, textAlign: 'center', marginBottom: 15 }}>No new orders pending acceptance.</Text>
-        )}
-      </View>
-
-      {/* Active Tasks */}
-      <Text style={styles.sectionTitle}>Active Delivery Tasks ({activeDeliveries.length})</Text>
-
-      <View style={styles.deliveriesList}>
-        {activeDeliveries.map((delivery) => {
-          // Live location tracking instructions
-          const isPickedUp = delivery.status === 'on_the_way';
-          return (
-            <View key={delivery.id} style={styles.deliveryCard}>
-              <View style={styles.cardHeader}>
-                <Text style={styles.orderId}>{delivery.id}</Text>
-                <View style={[styles.statusBadge, { backgroundColor: isPickedUp ? 'rgba(46,204,113,0.1)' : 'rgba(255,204,0,0.1)' }]}>
-                  <Text style={[styles.statusText, { color: isPickedUp ? '#2ecc71' : theme.colors.warning }]}>
-                    {delivery.status === 'preparing' ? 'SELLER PREPARING' : delivery.status.toUpperCase()}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Timeline containing both Step 1 (Pickup) and Step 2 (Dropoff) with Navigate, Call, and Chat actions */}
-              <View style={styles.pathContainer}>
-                {/* Step 1: Go to Pickup Shop */}
-                <View style={styles.pathNode}>
-                  <MapPin size={16} color={theme.colors.veg} />
-                  <View style={styles.nodeDetails}>
-                    <Text style={[styles.nodeTitle, !isPickedUp && { color: theme.colors.primary, fontWeight: 'bold' }]}>
-                      Step 1: Go to Pickup Shop {!isPickedUp && '★ (CURRENT)'}
-                    </Text>
-                    <Text style={styles.nodeName}>{delivery.kitchenName}</Text>
-                    <Text style={styles.nodeAddress}>
-                      Address: {kitchens.find(k => k.id === delivery.kitchenId)?.address || 'Collect from Vendor Counter'}
-                    </Text>
-                    
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 }}>
-                      <TouchableOpacity 
-                        style={styles.mapLinkBtn}
-                        onPress={() => handleOpenMaps(kitchens.find(k => k.id === delivery.kitchenId)?.address || delivery.kitchenName)}
-                      >
-                        <Text style={styles.mapLinkText}>🗺 Navigate Shop</Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity 
-                        style={[styles.mapLinkBtn, { marginLeft: 8, borderColor: 'rgba(52,199,89,0.2)', backgroundColor: 'rgba(52,199,89,0.1)' }]}
-                        onPress={() => Linking.openURL(`tel:${kitchens.find(k => k.id === delivery.kitchenId)?.ownerPhone || '+91 9876543210'}`)}
-                      >
-                        <Text style={[styles.mapLinkText, { color: theme.colors.success }]}>📞 Call Seller</Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity 
-                        style={[styles.mapLinkBtn, { marginLeft: 8, borderColor: 'rgba(0,122,255,0.2)', backgroundColor: 'rgba(0,122,255,0.1)' }]}
-                        onPress={() => {
-                          setChatRecipientType('seller');
-                          setChatOrder(delivery);
-                        }}
-                      >
-                        <Text style={[styles.mapLinkText, { color: '#007AFF' }]}>💬 Chat Seller</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </View>
-
-                {/* Dotted separator line */}
-                <View style={styles.verticalDottedLine} />
-
-                {/* Step 2: Deliver to Customer */}
-                <View style={styles.pathNode}>
-                  <MapPin size={16} color={theme.colors.primary} />
-                  <View style={styles.nodeDetails}>
-                    <Text style={[styles.nodeTitle, isPickedUp && { color: theme.colors.primary, fontWeight: 'bold' }]}>
-                      Step 2: Deliver to Customer {isPickedUp && '★ (CURRENT)'}
-                    </Text>
-                    <Text style={styles.nodeName}>{delivery.customerName}</Text>
-                    <Text style={styles.nodeAddress}>Address: {delivery.deliveryAddress || 'Royal Residency, Pune'}</Text>
-
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 }}>
-                      <TouchableOpacity 
-                        style={styles.mapLinkBtn}
-                        onPress={() => handleOpenMaps(delivery.deliveryAddress || 'Royal Residency, Pune')}
-                      >
-                        <Text style={styles.mapLinkText}>🗺 Navigate Customer</Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity 
-                        style={[styles.mapLinkBtn, { marginLeft: 8, borderColor: 'rgba(52,199,89,0.2)', backgroundColor: 'rgba(52,199,89,0.1)' }]}
-                        onPress={() => Linking.openURL(`tel:${delivery.customerPhone || '+91 9876543210'}`)}
-                      >
-                        <Text style={[styles.mapLinkText, { color: theme.colors.success }]}>📞 Call Customer</Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity 
-                        style={[styles.mapLinkBtn, { marginLeft: 8, borderColor: 'rgba(0,122,255,0.2)', backgroundColor: 'rgba(0,122,255,0.1)' }]}
-                        onPress={() => {
-                          setChatRecipientType('customer');
-                          setChatOrder(delivery);
-                        }}
-                      >
-                        <Text style={[styles.mapLinkText, { color: '#007AFF' }]}>💬 Chat Customer</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </View>
-              </View>
-
-              {/* Order Placement, Start, End Timestamps */}
-              <View style={styles.timestampsContainer}>
-                <Text style={styles.timestampText}>🕒 Ordered At: {delivery.createdAt || delivery.date}</Text>
-                {delivery.acceptedByRiderAt && (
-                  <Text style={styles.timestampText}>🏍 Accepted At: {delivery.acceptedByRiderAt}</Text>
-                )}
-                {delivery.pickedUpAt && (
-                  <Text style={styles.timestampText}>📦 Picked Up At: {delivery.pickedUpAt}</Text>
-                )}
-                {delivery.deliveredAt && (
-                  <Text style={styles.timestampText}>✅ Delivered At: {delivery.deliveredAt}</Text>
-                )}
-              </View>
-
-              {/* Footer and Primary Actions */}
-              <View style={styles.cardFooter}>
-                <TouchableOpacity 
-                  style={[styles.actionBtn, { flex: 1, backgroundColor: delivery.status === 'preparing' ? '#333' : theme.colors.primary }]}
-                  disabled={delivery.status === 'preparing'}
-                  onPress={() => handleUpdateStatus(delivery.id, delivery.status)}
-                >
-                  <Text style={[styles.actionBtnText, { color: delivery.status === 'preparing' ? '#888' : '#000', textAlign: 'center' }]}>
-                    {delivery.status === 'preparing' 
-                      ? 'Waiting for Vendor...' 
-                      : delivery.status === 'ready' 
-                        ? '📸 Pick Up Order' 
-                        : '📸 Mark Delivered'}
-                  </Text>
+            {/* Promotional Carousels */}
+            <View style={[styles.promoCard, { backgroundColor: '#2ecc71', borderColor: '#27ae60' }]}>
+              <View style={styles.promoContent}>
+                <Text style={styles.promoLabel}>Low-Interest, Fast Personal Loans!</Text>
+                <TouchableOpacity style={styles.promoActionBtn}>
+                  <Text style={styles.promoActionText}>KNOW MORE</Text>
                 </TouchableOpacity>
               </View>
             </View>
-          );
-        })}
 
-        {activeDeliveries.length === 0 && (
-          <View style={styles.emptyContainer}>
-            <CheckCircle size={40} color={theme.colors.success} />
-            <Text style={styles.emptyText}>No active tasks. Accept from pool above!</Text>
+            {/* Warning deposit alert bar */}
+            <View style={[styles.warningBox, { backgroundColor: '#FFCC00' }]}>
+              <AlertTriangle size={18} color="#000" style={{ marginRight: 8 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.warningTitle}>You may not get new orders!</Text>
+                <Text style={styles.warningSubtitle}>Cash collected is HIGH! Deposit now.</Text>
+              </View>
+              <TouchableOpacity style={styles.warningBtn}>
+                <Text style={styles.warningBtnText}>Deposit Now</Text>
+              </TouchableOpacity>
+            </View>
+
+          </View>
+        ) : (
+          
+          /* IF ONLINE (ACTIVE DUTY VIEW) */
+          <View style={styles.onlineWrapper}>
+            
+            {/* Status Info */}
+            <View style={styles.onlineStatusHeader}>
+              <Text style={[styles.sectionTitle, { color: themeColors.text }]}>🟢 Online & Ready for Orders</Text>
+              <Text style={[styles.sectionDesc, { color: themeColors.textSecondary }]}>Keep app open. New incoming delivery requests will appear below.</Text>
+            </View>
+
+            {/* Active Deliveries (Accepted Tasks) */}
+            {activeDeliveries.length > 0 && (
+              <View style={styles.sectionContainer}>
+                <Text style={[styles.subSectionTitle, { color: themeColors.text }]}>Active Delivery Tasks ({activeDeliveries.length})</Text>
+                {activeDeliveries.map((delivery) => {
+                  const isPickedUp = delivery.status === 'on_the_way';
+                  return (
+                    <View key={delivery.id} style={[styles.deliveryCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+                      
+                      <View style={styles.cardHeader}>
+                        <Text style={[styles.orderId, { color: themeColors.text }]}>{delivery.id}</Text>
+                        <View style={[styles.statusBadge, { backgroundColor: isPickedUp ? 'rgba(46,204,113,0.1)' : 'rgba(255,204,0,0.1)' }]}>
+                          <Text style={[styles.statusText, { color: isPickedUp ? '#2ecc71' : theme.colors.warning }]}>
+                            {delivery.status === 'preparing' ? 'SELLER PREPARING' : delivery.status.toUpperCase()}
+                          </Text>
+                        </View>
+                      </View>
+
+                      {/* Map Pins Timeline for both nodes */}
+                      <View style={styles.pathContainer}>
+                        {/* Shop Node */}
+                        <View style={styles.pathNode}>
+                          <MapPin size={16} color={theme.colors.veg} />
+                          <View style={styles.nodeDetails}>
+                            <Text style={[styles.nodeTitle, !isPickedUp && { color: theme.colors.primary, fontWeight: 'bold' }]}>
+                              Step 1: Go to Pickup Shop {!isPickedUp && '★ (CURRENT)'}
+                            </Text>
+                            <Text style={[styles.nodeName, { color: themeColors.text }]}>{delivery.kitchenName}</Text>
+                            <Text style={[styles.nodeAddress, { color: themeColors.textSecondary }]}>
+                              Address: {kitchens.find(k => k.id === delivery.kitchenId)?.address || 'Collect from Vendor Counter'}
+                            </Text>
+                            
+                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 }}>
+                              <TouchableOpacity 
+                                style={[styles.mapLinkBtn, { borderColor: themeColors.border }]}
+                                onPress={() => handleOpenMaps(kitchens.find(k => k.id === delivery.kitchenId)?.address || delivery.kitchenName)}
+                              >
+                                <Text style={[styles.mapLinkText, { color: themeColors.text }]}>🗺 Navigate Shop</Text>
+                              </TouchableOpacity>
+
+                              <TouchableOpacity 
+                                style={[styles.mapLinkBtn, { marginLeft: 8, borderColor: 'rgba(52,199,89,0.2)', backgroundColor: 'rgba(52,199,89,0.1)' }]}
+                                onPress={() => Linking.openURL(`tel:${kitchens.find(k => k.id === delivery.kitchenId)?.ownerPhone || '+91 9876543210'}`)}
+                              >
+                                <Text style={[styles.mapLinkText, { color: theme.colors.success }]}>📞 Call Seller</Text>
+                              </TouchableOpacity>
+
+                              <TouchableOpacity 
+                                style={[styles.mapLinkBtn, { marginLeft: 8, borderColor: 'rgba(0,122,255,0.2)', backgroundColor: 'rgba(0,122,255,0.1)' }]}
+                                onPress={() => {
+                                  setChatRecipientType('seller');
+                                  setChatOrder(delivery);
+                                }}
+                              >
+                                <Text style={[styles.mapLinkText, { color: '#007AFF' }]}>💬 Chat Seller</Text>
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                        </View>
+
+                        {/* Connection Line */}
+                        <View style={styles.verticalDottedLine} />
+
+                        {/* Customer Node */}
+                        <View style={styles.pathNode}>
+                          <MapPin size={16} color={theme.colors.primary} />
+                          <View style={styles.nodeDetails}>
+                            <Text style={[styles.nodeTitle, isPickedUp && { color: theme.colors.primary, fontWeight: 'bold' }]}>
+                              Step 2: Deliver to Customer {isPickedUp && '★ (CURRENT)'}
+                            </Text>
+                            <Text style={[styles.nodeName, { color: themeColors.text }]}>{delivery.customerName}</Text>
+                            <Text style={[styles.nodeAddress, { color: themeColors.textSecondary }]}>Address: {delivery.deliveryAddress || 'Royal Residency, Pune'}</Text>
+
+                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 }}>
+                              <TouchableOpacity 
+                                style={[styles.mapLinkBtn, { borderColor: themeColors.border }]}
+                                onPress={() => handleOpenMaps(delivery.deliveryAddress || 'Royal Residency, Pune')}
+                              >
+                                <Text style={[styles.mapLinkText, { color: themeColors.text }]}>🗺 Navigate Customer</Text>
+                              </TouchableOpacity>
+
+                              <TouchableOpacity 
+                                style={[styles.mapLinkBtn, { marginLeft: 8, borderColor: 'rgba(52,199,89,0.2)', backgroundColor: 'rgba(52,199,89,0.1)' }]}
+                                onPress={() => Linking.openURL(`tel:${delivery.customerPhone || '+91 9876543210'}`)}
+                              >
+                                <Text style={[styles.mapLinkText, { color: theme.colors.success }]}>📞 Call Customer</Text>
+                              </TouchableOpacity>
+
+                              <TouchableOpacity 
+                                style={[styles.mapLinkBtn, { marginLeft: 8, borderColor: 'rgba(0,122,255,0.2)', backgroundColor: 'rgba(0,122,255,0.1)' }]}
+                                onPress={() => {
+                                  setChatRecipientType('customer');
+                                  setChatOrder(delivery);
+                                }}
+                              >
+                                <Text style={[styles.mapLinkText, { color: '#007AFF' }]}>💬 Chat Customer</Text>
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                        </View>
+                      </View>
+
+                      {/* Timestamps */}
+                      <View style={[styles.timestampsContainer, { borderTopColor: themeColors.border }]}>
+                        <Text style={styles.timestampText}>🕒 Ordered At: {delivery.createdAt || delivery.date}</Text>
+                        {delivery.acceptedByRiderAt && (
+                          <Text style={styles.timestampText}>🏍 Accepted At: {delivery.acceptedByRiderAt}</Text>
+                        )}
+                        {delivery.pickedUpAt && (
+                          <Text style={styles.timestampText}>📦 Picked Up At: {delivery.pickedUpAt}</Text>
+                        )}
+                      </View>
+
+                      {/* Complete Buttons */}
+                      <View style={styles.cardFooter}>
+                        <TouchableOpacity 
+                          style={[styles.actionBtn, { flex: 1, backgroundColor: delivery.status === 'preparing' ? '#333' : theme.colors.primary }]}
+                          disabled={delivery.status === 'preparing'}
+                          onPress={() => handleUpdateStatus(delivery.id, delivery.status)}
+                        >
+                          <Text style={[styles.actionBtnText, { color: delivery.status === 'preparing' ? '#888' : '#000', textAlign: 'center' }]}>
+                            {delivery.status === 'preparing' 
+                              ? 'Waiting for Vendor...' 
+                              : delivery.status === 'ready' 
+                                ? '📸 Pick Up Order' 
+                                : '📸 Mark Delivered'}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+
+            {/* Available Orders Pool */}
+            <View style={styles.sectionContainer}>
+              <Text style={[styles.subSectionTitle, { color: themeColors.text }]}>Available Nearby Jobs ({availableOrdersPool.length})</Text>
+              {availableOrdersPool.map((order) => (
+                <View key={order.id} style={[styles.poolCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+                  <View style={styles.poolHeader}>
+                    <View>
+                      <Text style={[styles.poolTitle, { color: themeColors.text }]}>{order.kitchenName}</Text>
+                      <Text style={[styles.poolDistance, { color: themeColors.textSecondary }]}>📍 {order.deliveryAddress || 'Customer Location'}</Text>
+                    </View>
+                    <View style={styles.poolPayout}>
+                      <Text style={styles.payoutVal}>₹{order.deliveryCharge || 40}</Text>
+                      <Text style={styles.payoutLabel}>Est. Payout</Text>
+                    </View>
+                  </View>
+
+                  <View style={[styles.poolFooter, { borderTopColor: themeColors.border }]}>
+                    <Text style={[styles.poolTotal, { color: themeColors.text }]}>Total Bill: ₹{order.total} • COD</Text>
+                    <TouchableOpacity 
+                      style={styles.acceptJobBtn}
+                      onPress={() => handleAcceptOrder(order.id)}
+                    >
+                      <Text style={styles.acceptJobText}>Accept Order</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+
+              {availableOrdersPool.length === 0 && (
+                <View style={styles.emptyContainer}>
+                  <Sparkles size={32} color="#888" style={{ marginBottom: 8 }} />
+                  <Text style={styles.emptyText}>All quiet! We will notify you when a new order is ready for pickup.</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Metric Earnings Summary at Bottom */}
+            <View style={[styles.bottomStatsCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+              <Text style={[styles.statsHeader, { color: themeColors.text }]}>Rider Delivery Metrics</Text>
+              <View style={styles.statsRow}>
+                <View style={styles.statsItem}>
+                  <Text style={[styles.statsVal, { color: themeColors.text }]}>{orders.filter(o => o.riderId === riderId && o.status === 'delivered').length}</Text>
+                  <Text style={styles.statsLabel}>Completed Jobs</Text>
+                </View>
+                <View style={styles.statsItem}>
+                  <Text style={[styles.statsVal, { color: themeColors.text }]}>
+                    ₹{orders.filter(o => o.riderId === riderId && o.status === 'delivered').reduce((sum, o) => sum + Number(o.deliveryCharge || 40), 0)}
+                  </Text>
+                  <Text style={styles.statsLabel}>Delivery Earnings</Text>
+                </View>
+              </View>
+            </View>
+
           </View>
         )}
-      </View>
-      <View style={{ height: 40 }} />
+
+      </ScrollView>
 
       {/* Chat Modal */}
       {chatOrder && (
@@ -416,7 +551,7 @@ export default function RiderDashboard() {
                         isMe ? styles.msgBubbleMe : styles.msgBubbleOther
                       ]}
                     >
-                      <Text style={styles.msgSender}>{isMe ? 'You' : msg.senderName}</Text>
+                      <Text style={styles.msgSender}>{isMe ? 'Me' : msg.senderName}</Text>
                       <Text style={styles.msgText}>{msg.message}</Text>
                     </View>
                   );
@@ -442,381 +577,473 @@ export default function RiderDashboard() {
           </View>
         </Modal>
       )}
-      {/* Earnings & Stats Card */}
-      <View style={styles.statsCard}>
-        <Text style={styles.statsHeader}>Rider Delivery Metrics</Text>
-        <View style={styles.statsRow}>
-          <View style={styles.statsItem}>
-            <Text style={styles.statsVal}>{orders.filter(o => o.riderId === riderId && o.status === 'delivered').length}</Text>
-            <Text style={styles.statsLabel}>Completed Jobs</Text>
-          </View>
-          <View style={styles.statsItem}>
-            <Text style={styles.statsVal}>
-              ₹{orders.filter(o => o.riderId === riderId && o.status === 'delivered').reduce((sum, o) => sum + Number(o.deliveryCharge || 40), 0)}
-            </Text>
-            <Text style={styles.statsLabel}>Delivery Earnings</Text>
-          </View>
-        </View>
-      </View>
 
-
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
-    paddingTop: 50,
   },
-  riderHeader: {
+  header: {
+    paddingTop: 50,
+    paddingBottom: 15,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+  },
+  toggleDutyBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    marginBottom: 24,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    minWidth: 90,
+    justifyContent: 'space-between',
   },
-  headerMeta: {
-    marginLeft: 12,
+  toggleDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#FFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1,
   },
-  roleText: {
+  toggleText: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: theme.colors.primary,
-    textTransform: 'uppercase',
+    marginLeft: 6,
   },
-  riderName: {
-    fontSize: 18,
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  actionIconBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    marginLeft: 8,
+    height: 32,
+  },
+  actionIconLabel: {
+    fontSize: 9,
     fontWeight: 'bold',
-    color: '#FFF',
-    marginTop: 2,
+    marginLeft: 4,
   },
-  sectionTitle: {
+  offlineWrapper: {
+    padding: 16,
+  },
+  onlineWrapper: {
+    padding: 16,
+  },
+  shiftCard: {
+    borderWidth: 1,
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 16,
+  },
+  shiftHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  shiftTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  shiftTimings: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 4,
+  },
+  shiftAvatarContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,149,0,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  greenOnlineBtn: {
+    backgroundColor: '#2ecc71',
+    paddingVertical: 14,
+    borderRadius: 14,
+    alignItems: 'center',
+  },
+  greenOnlineText: {
     fontSize: 14,
     fontWeight: 'bold',
     color: '#FFF',
-    paddingHorizontal: 16,
+  },
+  referBanner: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 14,
     marginBottom: 16,
   },
-  deliveriesList: {
-    paddingHorizontal: 16,
+  referTitle: {
+    fontSize: 13,
+    fontWeight: 'bold',
+  },
+  referAmtBadge: {
+    backgroundColor: 'rgba(226,55,68,0.1)',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+  },
+  referAmtText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#E23744',
+  },
+  promoCard: {
+    borderWidth: 1,
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 16,
+  },
+  promoContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  promoLabel: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#FFF',
+    flex: 1,
+    marginRight: 10,
+  },
+  promoActionBtn: {
+    backgroundColor: '#FFF',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+  },
+  promoActionText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#27ae60',
+  },
+  warningBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 16,
+  },
+  warningTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#000',
+  },
+  warningSubtitle: {
+    fontSize: 10,
+    color: '#333',
+    marginTop: 2,
+  },
+  warningBtn: {
+    backgroundColor: '#000',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+  },
+  warningBtnText: {
+    fontSize: 9,
+    fontWeight: 'bold',
+    color: '#FFF',
+  },
+  onlineStatusHeader: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  sectionDesc: {
+    fontSize: 11,
+    marginTop: 4,
+  },
+  subSectionTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  sectionContainer: {
+    marginBottom: 20,
   },
   deliveryCard: {
-    backgroundColor: '#121212',
     borderWidth: 1,
-    borderColor: '#1F1F1F',
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 20,
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 16,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#1F1F1F',
-    paddingBottom: 12,
+    marginBottom: 14,
   },
   orderId: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: 'bold',
-    color: '#FFF',
   },
   statusBadge: {
-    backgroundColor: 'rgba(255,107,0,0.1)',
-    paddingVertical: 4,
+    paddingVertical: 3,
     paddingHorizontal: 8,
-    borderRadius: 6,
+    borderRadius: 8,
   },
   statusText: {
     fontSize: 9,
     fontWeight: 'bold',
-    color: theme.colors.primary,
   },
   pathContainer: {
-    marginVertical: 16,
+    marginBottom: 14,
   },
   pathNode: {
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
   nodeDetails: {
-    marginLeft: 12,
+    marginLeft: 10,
     flex: 1,
   },
   nodeTitle: {
-    fontSize: 9,
-    fontWeight: 'bold',
-    color: theme.colors.textSecondary,
+    fontSize: 10,
+    color: '#888',
     textTransform: 'uppercase',
   },
   nodeName: {
     fontSize: 13,
     fontWeight: 'bold',
-    color: '#FFF',
     marginTop: 2,
   },
   nodeAddress: {
-    fontSize: 11,
-    color: theme.colors.textSecondary,
-    marginTop: 1,
+    fontSize: 10,
+    marginTop: 2,
+  },
+  mapLinkBtn: {
+    borderWidth: 1,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    marginTop: 6,
+  },
+  mapLinkText: {
+    fontSize: 9,
+    fontWeight: 'bold',
   },
   verticalDottedLine: {
-    width: 2,
-    height: 30,
+    width: 1.5,
+    height: 35,
     backgroundColor: '#333',
     marginLeft: 7,
     marginVertical: 4,
   },
+  timestampsContainer: {
+    borderTopWidth: 1,
+    paddingTop: 8,
+    marginBottom: 12,
+  },
+  timestampText: {
+    fontSize: 9,
+    color: '#888',
+    marginBottom: 3,
+  },
   cardFooter: {
+    flexDirection: 'row',
+  },
+  actionBtn: {
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionBtnText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  poolCard: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 12,
+  },
+  poolHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#1F1F1F',
-    paddingTop: 12,
-    marginTop: 4,
+    marginBottom: 12,
   },
-  earningContainer: {
-    flex: 1,
-  },
-  earningLabel: {
-    fontSize: 10,
-    color: theme.colors.textSecondary,
-  },
-  earningVal: {
+  poolTitle: {
     fontSize: 13,
     fontWeight: 'bold',
-    color: theme.colors.success,
+  },
+  poolDistance: {
+    fontSize: 10,
     marginTop: 2,
   },
-  actionBtn: {
-    backgroundColor: theme.colors.primary,
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+  poolPayout: {
+    alignItems: 'flex-end',
   },
-  actionBtnText: {
-    fontSize: 11,
+  payoutVal: {
+    fontSize: 15,
     fontWeight: 'bold',
-    color: '#000',
+    color: '#2ecc71',
+  },
+  payoutLabel: {
+    fontSize: 8,
+    color: '#888',
+  },
+  poolFooter: {
+    borderTopWidth: 1,
+    paddingTop: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  poolTotal: {
+    fontSize: 11,
+  },
+  acceptJobBtn: {
+    backgroundColor: '#2ecc71',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  acceptJobText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#FFF',
   },
   emptyContainer: {
     alignItems: 'center',
-    paddingVertical: 40,
+    paddingVertical: 30,
   },
   emptyText: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
+    fontSize: 11,
+    color: '#777',
     textAlign: 'center',
-    marginTop: 16,
-    paddingHorizontal: 20,
-    lineHeight: 18,
+    lineHeight: 16,
+    paddingHorizontal: 30,
+  },
+  bottomStatsCard: {
+    borderWidth: 1,
+    borderRadius: 18,
+    padding: 14,
+  },
+  statsHeader: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  statsRow: {
+    flexDirection: 'row',
+  },
+  statsItem: {
+    flex: 1,
+  },
+  statsVal: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  statsLabel: {
+    fontSize: 9,
+    color: '#888',
+    marginTop: 2,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.85)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#0F0F0F',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    borderWidth: 1,
-    borderColor: '#222',
-    height: '75%',
-    paddingBottom: 20,
+    backgroundColor: '#1E1E1E',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    height: '70%',
+    padding: 16,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#222',
+    borderBottomColor: '#333',
+    paddingBottom: 12,
   },
   modalTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: 'bold',
-    color: theme.colors.primary,
+    color: '#FFF',
   },
   closeBtn: {
-    backgroundColor: '#1E1E1E',
-    borderRadius: 16,
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
+    padding: 4,
   },
   chatScroller: {
     flex: 1,
   },
   msgBubble: {
-    maxWidth: '80%',
-    borderRadius: 12,
     padding: 10,
-    marginBottom: 10,
+    borderRadius: 12,
+    marginBottom: 8,
+    maxWidth: '80%',
   },
   msgBubbleMe: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: '#007AFF',
     alignSelf: 'flex-end',
   },
   msgBubbleOther: {
-    backgroundColor: '#222',
+    backgroundColor: '#333',
     alignSelf: 'flex-start',
   },
   msgSender: {
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: 'bold',
-    color: '#888',
-    marginBottom: 4,
+    color: '#FFF',
+    marginBottom: 2,
+    opacity: 0.8,
   },
   msgText: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#FFF',
   },
   chatInputRow: {
     flexDirection: 'row',
-    padding: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#222',
     alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#333',
+    paddingTop: 10,
   },
   chatInput: {
     flex: 1,
-    backgroundColor: '#1E1E1E',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    backgroundColor: '#2A2A2A',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    height: 40,
     color: '#FFF',
-    fontSize: 13,
-    marginRight: 10,
+    fontSize: 12,
   },
   sendBtn: {
     backgroundColor: theme.colors.primary,
+    width: 40,
+    height: 40,
     borderRadius: 20,
-    width: 38,
-    height: 38,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  mapLinkBtn: {
-    marginTop: 8,
-    backgroundColor: 'rgba(255,107,0,0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,107,0,0.2)',
-    borderRadius: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    alignSelf: 'flex-start',
-  },
-  mapLinkText: {
-    fontSize: 11,
-    fontWeight: 'bold',
-    color: theme.colors.primary,
-  },
-  statsCard: {
-    backgroundColor: '#121212',
-    borderWidth: 1,
-    borderColor: '#1F1F1F',
-    borderRadius: 20,
-    padding: 16,
-    marginHorizontal: 16,
-    marginBottom: 20,
-  },
-  statsHeader: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#FFF',
-    textTransform: 'uppercase',
-    marginBottom: 12,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  statsItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statsVal: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: theme.colors.primary,
-  },
-  statsLabel: {
-    fontSize: 10,
-    color: theme.colors.textSecondary,
-    marginTop: 4,
-  },
-  completedCard: {
-    backgroundColor: '#121212',
-    borderWidth: 1,
-    borderColor: '#1F1F1F',
-    borderRadius: 16,
-    padding: 12,
-    marginBottom: 12,
-  },
-  completedHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    borderBottomColor: '#222',
-    paddingBottom: 6,
-    marginBottom: 8,
-  },
-  completedId: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#FFF',
-  },
-  completedDate: {
-    fontSize: 10,
-    color: theme.colors.textSecondary,
-  },
-  completedDetails: {
-    fontSize: 11,
-    color: '#CCC',
-    marginVertical: 1,
-  },
-  completedAddress: {
-    fontSize: 10,
-    color: '#888',
-    marginTop: 2,
-    marginBottom: 8,
-  },
-  completedFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#222',
-    paddingTop: 8,
-  },
-  earningAmt: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: theme.colors.success,
-  },
-  deliveredLabel: {
-    fontSize: 9,
-    fontWeight: 'bold',
-    color: theme.colors.success,
-    backgroundColor: 'rgba(46,204,113,0.1)',
-    paddingVertical: 2,
-    paddingHorizontal: 6,
-    borderRadius: 4,
-  },
-  timestampsContainer: {
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#1F1F1F',
-    marginBottom: 8,
-  },
-  timestampText: {
-    fontSize: 10,
-    color: '#888',
-    marginBottom: 4,
+    marginLeft: 10,
   }
 });

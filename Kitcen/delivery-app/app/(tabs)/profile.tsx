@@ -19,7 +19,6 @@ import {
   Clock, 
   ShieldCheck,
   Camera,
-  Phone,
   User,
   CreditCard,
   ArrowLeft,
@@ -46,6 +45,9 @@ export default function RiderProfile() {
   const orders = useKitchenStore(state => state.orders);
   const fetchOrders = useKitchenStore(state => state.fetchOrders);
 
+  // Theme support
+  const isDarkMode = useAuthStore(state => state.isDarkMode);
+
   // Sub tab navigation state
   const [activeTab, setActiveTab] = useState<SubTab>('main');
 
@@ -70,6 +72,15 @@ export default function RiderProfile() {
   // Loaded DB state details
   const [dbRating, setDbRating] = useState(4.8);
   const [isLoading, setIsLoading] = useState(false);
+
+  const themeColors = {
+    background: isDarkMode ? '#0B0B0C' : '#F5F6F8',
+    card: isDarkMode ? '#121214' : '#FFFFFF',
+    border: isDarkMode ? '#1F1F22' : '#EAEAEA',
+    text: isDarkMode ? '#FFFFFF' : '#1E2022',
+    textSecondary: isDarkMode ? '#8E8E93' : '#686E73',
+    inputBg: isDarkMode ? '#0F0F0F' : '#F0F2F4'
+  };
 
   const fetchRiderData = async () => {
     try {
@@ -154,7 +165,6 @@ export default function RiderProfile() {
 
     setIsLoading(true);
     try {
-      // 1. Update rider profile details
       const resRider = await fetch(`${API_BASE_URL}/api/riders/${user.id}/profile`, {
         method: 'PUT',
         headers: { 
@@ -175,7 +185,6 @@ export default function RiderProfile() {
       });
       const jsonRider = await resRider.json();
 
-      // 2. Update user name/details
       const res = await fetch(`${API_BASE_URL}/api/auth/profile/${user.id}`, {
         method: 'PUT',
         headers: { 
@@ -218,20 +227,20 @@ export default function RiderProfile() {
   const dynamicEarnings = riderCompletedOrders.reduce((sum, o) => sum + Number(o.deliveryCharge || 40), 0);
 
   const renderHeader = (title: string) => (
-    <View style={styles.tabHeader}>
-      <TouchableOpacity onPress={() => setActiveTab('main')} style={styles.backBtn}>
-        <ArrowLeft size={18} color="#FFF" />
+    <View style={[styles.tabHeader, { borderBottomColor: themeColors.border }]}>
+      <TouchableOpacity onPress={() => setActiveTab('main')} style={[styles.backBtn, { backgroundColor: isDarkMode ? '#1C1C1E' : '#E4E4E6' }]}>
+        <ArrowLeft size={18} color={themeColors.text} />
       </TouchableOpacity>
-      <Text style={styles.tabHeaderTitle}>{title}</Text>
+      <Text style={[styles.tabHeaderTitle, { color: themeColors.text }]}>{title}</Text>
     </View>
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: themeColors.background }]}>
       {activeTab === 'main' && (
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
           {/* Header Card */}
-          <View style={styles.profileHeader}>
+          <View style={[styles.profileHeader, { borderBottomColor: themeColors.border }]}>
             <View style={styles.avatarContainer}>
               <Image source={{ uri: avatar }} style={styles.avatar} />
               <TouchableOpacity style={styles.camIcon} onPress={() => {
@@ -245,90 +254,90 @@ export default function RiderProfile() {
               </TouchableOpacity>
             </View>
             <View style={styles.meta}>
-              <Text style={styles.name}>{firstName} {lastName}</Text>
-              <Text style={styles.email}>{user?.email || 'rider@cludekitchen.com'}</Text>
+              <Text style={[styles.name, { color: themeColors.text }]}>{firstName} {lastName}</Text>
+              <Text style={[styles.email, { color: themeColors.textSecondary }]}>{user?.email || 'rider@cludekitchen.com'}</Text>
               <Text style={styles.roleTag}>Rider Partner Account</Text>
             </View>
           </View>
 
           {/* Earnings & Rating Cards */}
           <View style={styles.loyaltyCards}>
-            <View style={styles.loyaltyCard}>
+            <View style={[styles.loyaltyCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
               <Wallet size={20} color={theme.colors.primary} />
               <Text style={styles.loyaltyVal}>₹{dynamicEarnings.toFixed(2)}</Text>
-              <Text style={styles.loyaltyLabel}>Completed Earnings</Text>
+              <Text style={[styles.loyaltyLabel, { color: themeColors.textSecondary }]}>Completed Earnings</Text>
             </View>
             
-            <View style={styles.loyaltyCard}>
+            <View style={[styles.loyaltyCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
               <Star size={20} color={theme.colors.gold} />
               <Text style={[styles.loyaltyVal, { color: theme.colors.gold }]}>{Number(dbRating).toFixed(1)}</Text>
-              <Text style={styles.loyaltyLabel}>Rider Rating</Text>
+              <Text style={[styles.loyaltyLabel, { color: themeColors.textSecondary }]}>Rider Rating</Text>
             </View>
           </View>
 
           {/* Sub menu tabs */}
           <View style={styles.zomatoList}>
-            <Text style={styles.listTitle}>Rider Workspace Options</Text>
+            <Text style={[styles.listTitle, { color: themeColors.textSecondary }]}>Rider Workspace Options</Text>
 
-            <TouchableOpacity style={styles.zomatoRow} onPress={() => setActiveTab('profile')}>
+            <TouchableOpacity style={[styles.zomatoRow, { backgroundColor: themeColors.card, borderColor: themeColors.border }]} onPress={() => setActiveTab('profile')}>
               <View style={styles.rowLeft}>
                 <View style={[styles.iconBg, { backgroundColor: 'rgba(255,107,0,0.1)' }]}>
                   <User size={18} color={theme.colors.primary} />
                 </View>
                 <View>
-                  <Text style={styles.rowTitle}>Edit Profile Info</Text>
+                  <Text style={[styles.rowTitle, { color: themeColors.text }]}>Edit Profile Info</Text>
                   <Text style={styles.rowDesc}>Change phone number and gender</Text>
                 </View>
               </View>
               <ChevronRight size={16} color="#555" />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.zomatoRow} onPress={() => setActiveTab('vehicle')}>
+            <TouchableOpacity style={[styles.zomatoRow, { backgroundColor: themeColors.card, borderColor: themeColors.border }]} onPress={() => setActiveTab('vehicle')}>
               <View style={styles.rowLeft}>
                 <View style={[styles.iconBg, { backgroundColor: 'rgba(52,199,89,0.1)' }]}>
                   <Navigation size={18} color={theme.colors.success} />
                 </View>
                 <View>
-                  <Text style={styles.rowTitle}>Vehicle & Zone details</Text>
+                  <Text style={[styles.rowTitle, { color: themeColors.text }]}>Vehicle & Zone details</Text>
                   <Text style={styles.rowDesc}>Plate number, RC book and delivery zone</Text>
                 </View>
               </View>
               <ChevronRight size={16} color="#555" />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.zomatoRow} onPress={() => setActiveTab('bank')}>
+            <TouchableOpacity style={[styles.zomatoRow, { backgroundColor: themeColors.card, borderColor: themeColors.border }]} onPress={() => setActiveTab('bank')}>
               <View style={styles.rowLeft}>
                 <View style={[styles.iconBg, { backgroundColor: 'rgba(0,122,255,0.1)' }]}>
                   <CreditCard size={18} color="#007AFF" />
                 </View>
                 <View>
-                  <Text style={styles.rowTitle}>Payout Bank Account</Text>
+                  <Text style={[styles.rowTitle, { color: themeColors.text }]}>Payout Bank Account</Text>
                   <Text style={styles.rowDesc}>Routing code and bank account numbers</Text>
                 </View>
               </View>
               <ChevronRight size={16} color="#555" />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.zomatoRow} onPress={() => setActiveTab('help')}>
+            <TouchableOpacity style={[styles.zomatoRow, { backgroundColor: themeColors.card, borderColor: themeColors.border }]} onPress={() => setActiveTab('help')}>
               <View style={styles.rowLeft}>
                 <View style={[styles.iconBg, { backgroundColor: 'rgba(255,45,85,0.1)' }]}>
                   <ShieldCheck size={18} color="#FF2D55" />
                 </View>
                 <View>
-                  <Text style={styles.rowTitle}>Contactless Delivery Rules</Text>
+                  <Text style={[styles.rowTitle, { color: themeColors.text }]}>Contactless Delivery Rules</Text>
                   <Text style={styles.rowDesc}>Safety policies and zero-contact guides</Text>
                 </View>
               </View>
               <ChevronRight size={16} color="#555" />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.zomatoRow} onPress={() => setActiveTab('settings')}>
+            <TouchableOpacity style={[styles.zomatoRow, { backgroundColor: themeColors.card, borderColor: themeColors.border }]} onPress={() => setActiveTab('settings')}>
               <View style={styles.rowLeft}>
                 <View style={[styles.iconBg, { backgroundColor: 'rgba(142,142,147,0.1)' }]}>
                   <Settings size={18} color="#8E8E93" />
                 </View>
                 <View>
-                  <Text style={styles.rowTitle}>App Settings</Text>
+                  <Text style={[styles.rowTitle, { color: themeColors.text }]}>App Settings</Text>
                   <Text style={styles.rowDesc}>Security logs and logout button</Text>
                 </View>
               </View>
@@ -343,28 +352,28 @@ export default function RiderProfile() {
       {activeTab === 'profile' && (
         <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
           {renderHeader("Personal Details")}
-          <View style={styles.inputCard}>
-            <Text style={styles.inputLabel}>First Name</Text>
+          <View style={[styles.inputCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+            <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>First Name</Text>
             <TextInput
-              style={styles.textInput}
+              style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
               value={firstName}
               onChangeText={setFirstName}
               placeholder="First Name"
               placeholderTextColor="#888"
             />
 
-            <Text style={styles.inputLabel}>Last Name</Text>
+            <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Last Name</Text>
             <TextInput
-              style={styles.textInput}
+              style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
               value={lastName}
               onChangeText={setLastName}
               placeholder="Last Name"
               placeholderTextColor="#888"
             />
 
-            <Text style={styles.inputLabel}>Phone Number</Text>
+            <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Phone Number</Text>
             <TextInput
-              style={styles.textInput}
+              style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
               value={phone}
               onChangeText={setPhone}
               placeholder="e.g. +91 98765 43210"
@@ -372,9 +381,9 @@ export default function RiderProfile() {
               keyboardType="phone-pad"
             />
 
-            <Text style={styles.inputLabel}>Gender</Text>
+            <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Gender</Text>
             <TextInput
-              style={styles.textInput}
+              style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
               value={gender}
               onChangeText={setGender}
               placeholder="e.g. Male, Female"
@@ -392,37 +401,37 @@ export default function RiderProfile() {
       {activeTab === 'vehicle' && (
         <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
           {renderHeader("Vehicle Details")}
-          <View style={styles.inputCard}>
-            <Text style={styles.inputLabel}>Vehicle Plate Number</Text>
+          <View style={[styles.inputCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+            <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Vehicle Plate Number</Text>
             <TextInput
-              style={styles.textInput}
+              style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
               value={vehicleNumber}
               onChangeText={setVehicleNumber}
               placeholder="e.g. DL 3C AY 4321"
               placeholderTextColor="#888"
             />
 
-            <Text style={styles.inputLabel}>Driver License Number</Text>
+            <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Driver License Number</Text>
             <TextInput
-              style={styles.textInput}
+              style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
               value={licenseNumber}
               onChangeText={setLicenseNumber}
               placeholder="e.g. DL-1420180000000"
               placeholderTextColor="#888"
             />
 
-            <Text style={styles.inputLabel}>RC Book / Registration Number</Text>
+            <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>RC Book / Registration Number</Text>
             <TextInput
-              style={styles.textInput}
+              style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
               value={rcNumber}
               onChangeText={setRcNumber}
               placeholder="e.g. RC/9874563/2026"
               placeholderTextColor="#888"
             />
 
-            <Text style={styles.inputLabel}>Delivery Zone</Text>
+            <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Delivery Zone</Text>
             <TextInput
-              style={styles.textInput}
+              style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
               value={deliveryZone}
               onChangeText={setDeliveryZone}
               placeholder="e.g. Noida Sector 62"
@@ -440,19 +449,19 @@ export default function RiderProfile() {
       {activeTab === 'bank' && (
         <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
           {renderHeader("Payout Bank Details")}
-          <View style={styles.inputCard}>
-            <Text style={styles.inputLabel}>Bank Name</Text>
+          <View style={[styles.inputCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+            <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Bank Name</Text>
             <TextInput
-              style={styles.textInput}
+              style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
               value={bankName}
               onChangeText={setBankName}
               placeholder="e.g. State Bank of India"
               placeholderTextColor="#888"
             />
 
-            <Text style={styles.inputLabel}>Account Number</Text>
+            <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Account Number</Text>
             <TextInput
-              style={styles.textInput}
+              style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
               value={accountNumber}
               onChangeText={setAccountNumber}
               placeholder="e.g. 30948576291"
@@ -460,9 +469,9 @@ export default function RiderProfile() {
               keyboardType="number-pad"
             />
 
-            <Text style={styles.inputLabel}>IFSC Code</Text>
+            <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>IFSC Code</Text>
             <TextInput
-              style={styles.textInput}
+              style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
               value={ifscCode}
               onChangeText={setIfscCode}
               placeholder="e.g. SBIN0001234"
@@ -481,10 +490,10 @@ export default function RiderProfile() {
       {activeTab === 'help' && (
         <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
           {renderHeader("Rider Safety Guideline")}
-          <View style={styles.infoTextCard}>
+          <View style={[styles.infoTextCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
             <CheckCircle size={32} color={theme.colors.success} style={{ marginBottom: 12 }} />
-            <Text style={styles.infoTitle}>Safety Rules for Delivery Partner</Text>
-            <Text style={styles.infoDesc}>
+            <Text style={[styles.infoTitle, { color: themeColors.text }]}>Safety Rules for Delivery Partner</Text>
+            <Text style={[styles.infoDesc, { color: themeColors.textSecondary }]}>
               1. Helmet: Wear your helmet at all times when riding.{"\n\n"}
               2. Navigation: Never use phone while driving. Pull over to check maps.{"\n\n"}
               3. Zero Contact: Place packages on a clean surface at the customer's gate when requested.{"\n\n"}
@@ -498,17 +507,17 @@ export default function RiderProfile() {
       {activeTab === 'settings' && (
         <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
           {renderHeader("Security & Settings")}
-          <View style={styles.inputCard}>
-            <Text style={styles.inputLabel}>Role Credentials</Text>
+          <View style={[styles.inputCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+            <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Role Credentials</Text>
             <TextInput
-              style={[styles.textInput, { backgroundColor: '#181818', color: '#666' }]}
+              style={[styles.textInput, { backgroundColor: isDarkMode ? '#181818' : '#EAEAEA', color: '#666', borderColor: themeColors.border }]}
               value="ROLE_DELIVERY_PARTNER"
               editable={false}
             />
 
-            <Text style={styles.inputLabel}>Authorization Token Scope</Text>
+            <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Authorization Token Scope</Text>
             <TextInput
-              style={[styles.textInput, { backgroundColor: '#181818', color: '#666' }]}
+              style={[styles.textInput, { backgroundColor: isDarkMode ? '#181818' : '#EAEAEA', color: '#666', borderColor: themeColors.border }]}
               value="JWT Bearer Token Signature verified"
               editable={false}
             />
@@ -527,8 +536,6 @@ export default function RiderProfile() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
-    paddingTop: 50,
   },
   profileHeader: {
     flexDirection: 'row',
@@ -536,7 +543,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 24,
     borderBottomWidth: 1,
-    borderBottomColor: '#1F1F1F',
   },
   avatarContainer: {
     position: 'relative',
@@ -567,17 +573,15 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#FFF',
   },
   email: {
     fontSize: 12,
-    color: theme.colors.textSecondary,
     marginTop: 2,
   },
   roleTag: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: theme.colors.primary,
+    color: '#E23744',
     marginTop: 4,
     textTransform: 'uppercase',
   },
@@ -588,9 +592,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   loyaltyCard: {
-    backgroundColor: '#121212',
     borderWidth: 1,
-    borderColor: '#1F1F1F',
     borderRadius: 16,
     padding: 14,
     width: '48%',
@@ -599,12 +601,11 @@ const styles = StyleSheet.create({
   loyaltyVal: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: theme.colors.success,
+    color: '#2ecc71',
     marginTop: 6,
   },
   loyaltyLabel: {
     fontSize: 9,
-    color: theme.colors.textSecondary,
     marginTop: 2,
   },
   zomatoList: {
@@ -614,7 +615,6 @@ const styles = StyleSheet.create({
   listTitle: {
     fontSize: 11,
     fontWeight: 'bold',
-    color: theme.colors.textSecondary,
     textTransform: 'uppercase',
     marginBottom: 10,
   },
@@ -622,12 +622,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#121212',
     borderRadius: 14,
     padding: 14,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#1F1F1F',
   },
   rowLeft: {
     flexDirection: 'row',
@@ -645,7 +643,6 @@ const styles = StyleSheet.create({
   rowTitle: {
     fontSize: 13,
     fontWeight: 'bold',
-    color: '#FFF',
   },
   rowDesc: {
     fontSize: 10,
@@ -654,7 +651,6 @@ const styles = StyleSheet.create({
   },
   tabContent: {
     flex: 1,
-    paddingHorizontal: 16,
   },
   tabHeader: {
     flexDirection: 'row',
@@ -663,7 +659,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   backBtn: {
-    backgroundColor: '#1C1C1E',
     borderRadius: 16,
     width: 32,
     height: 32,
@@ -674,12 +669,9 @@ const styles = StyleSheet.create({
   tabHeaderTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#FFF',
   },
   inputCard: {
-    backgroundColor: '#121212',
     borderWidth: 1,
-    borderColor: '#1F1F1F',
     borderRadius: 18,
     padding: 16,
     marginBottom: 30,
@@ -687,23 +679,18 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 11,
     fontWeight: 'bold',
-    color: theme.colors.textSecondary,
     marginBottom: 8,
-    textTransform: 'uppercase',
   },
   textInput: {
-    backgroundColor: '#0F0F0F',
     borderWidth: 1,
-    borderColor: '#222',
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    color: '#FFF',
     fontSize: 13,
     marginBottom: 16,
   },
   primaryBtn: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: '#E23744',
     borderRadius: 10,
     paddingVertical: 12,
     alignItems: 'center',
@@ -711,12 +698,12 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   primaryBtnText: {
-    color: '#000',
+    color: '#FFF',
     fontSize: 13,
     fontWeight: 'bold',
   },
   logoutBtn: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: '#E23744',
     borderRadius: 10,
     paddingVertical: 12,
     flexDirection: 'row',
@@ -725,14 +712,12 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   logoutBtnText: {
-    color: '#000',
+    color: '#FFF',
     fontSize: 13,
     fontWeight: 'bold',
   },
   infoTextCard: {
-    backgroundColor: '#121212',
     borderWidth: 1,
-    borderColor: '#1F1F1F',
     borderRadius: 18,
     padding: 20,
     alignItems: 'center',
@@ -740,12 +725,10 @@ const styles = StyleSheet.create({
   infoTitle: {
     fontSize: 15,
     fontWeight: 'bold',
-    color: '#FFF',
     marginBottom: 10,
   },
   infoDesc: {
     fontSize: 12,
-    color: '#CCC',
     lineHeight: 20,
   }
 });
