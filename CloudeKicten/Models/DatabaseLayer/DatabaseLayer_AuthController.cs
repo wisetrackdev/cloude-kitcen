@@ -133,6 +133,107 @@ namespace CloudeKicten.Models.DatabaseLayer
             {
                 Console.WriteLine($"[DB MIGRATION WARNING] Failed to alter shops table: {ex.Message}");
             }
+
+            try
+            {
+                await SeedMockStoresAsync(cmd);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[DB SEED ERROR] Failed to seed mock stores: {ex.Message}");
+            }
+        }
+
+        private async Task SeedMockStoresAsync(NpgsqlCommand cmd)
+        {
+            for (int i = 1; i <= 10; i++)
+            {
+                string userId = $"usr-seller-seed-{i}";
+                string email = $"store{i}@gmail.com";
+                string shopId = $"shp-seed-{i}";
+                string shopName = i switch {
+                    1 => "Burger King",
+                    2 => "Pizza Hut",
+                    3 => "KFC Express",
+                    4 => "Starbucks Coffee",
+                    5 => "McDonald's Homestyle",
+                    6 => "Subway Fresh",
+                    7 => "Haldiram Sweets",
+                    8 => "Wendy's Burgers",
+                    9 => "Chaayos Chai",
+                    _ => "Rumali By Enoki"
+                };
+                string cuisines = i switch {
+                    1 => "Burgers, Fast Food",
+                    2 => "Pizzas, Italian",
+                    3 => "Fried Chicken, Fast Food",
+                    4 => "Coffee, Desserts",
+                    5 => "Burgers, Fast Food",
+                    6 => "Sandwiches, Salads",
+                    7 => "Sweets, Indian",
+                    8 => "Burgers, Fast Food",
+                    9 => "Chai, Snacks",
+                    _ => "Rolls, High Protein"
+                };
+                string logoUrl = i switch {
+                    1 => "https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=150",
+                    2 => "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=150",
+                    3 => "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=150",
+                    4 => "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=150",
+                    5 => "https://images.unsplash.com/photo-1606755962773-d324e0a13086?w=150",
+                    6 => "https://images.unsplash.com/photo-1598182126876-04cbe4859a2a?w=150",
+                    7 => "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=150",
+                    8 => "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=150",
+                    9 => "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=150",
+                    _ => "https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?w=150"
+                };
+
+                cmd.CommandText = "SELECT COUNT(*) FROM user_register WHERE email = @Email;";
+                cmd.Parameters.Clear();
+                cmd.Parameters.AddWithValue("@Email", email);
+                long count = (long)(await cmd.ExecuteScalarAsync() ?? 0L);
+                if (count == 0)
+                {
+                    cmd.CommandText = @"
+                        INSERT INTO user_register (id, email, first_name, last_name, phone_number, role, is_verified, created_at)
+                        VALUES (@Id, @Email, @First, @Last, @Phone, 'seller', TRUE, CURRENT_TIMESTAMP);";
+                    cmd.Parameters.Clear();
+                    cmd.Parameters.AddWithValue("@Id", userId);
+                    cmd.Parameters.AddWithValue("@Email", email);
+                    cmd.Parameters.AddWithValue("@First", shopName.Split(' ')[0]);
+                    cmd.Parameters.AddWithValue("@Last", "Partner");
+                    cmd.Parameters.AddWithValue("@Phone", $"+91 99999000" + i.ToString("D2"));
+                    await cmd.ExecuteNonQueryAsync();
+
+                    cmd.CommandText = @"
+                        INSERT INTO shops (id, vendor_id, name, type, cuisines, rating, rating_count, prep_time, distance, offer, image_url, is_live, is_approved, address, cover_image_url)
+                        VALUES (@ShpId, @Id, @Name, 'restaurant', @Cuisines, 4.2, 12, '30-40 mins', '2.5 km', 'Flat 50% OFF', @Logo, TRUE, 'approved', @Address, @Logo);";
+                    cmd.Parameters.Clear();
+                    cmd.Parameters.AddWithValue("@ShpId", shopId);
+                    cmd.Parameters.AddWithValue("@Id", userId);
+                    cmd.Parameters.AddWithValue("@Name", shopName);
+                    cmd.Parameters.AddWithValue("@Cuisines", cuisines);
+                    cmd.Parameters.AddWithValue("@Logo", logoUrl);
+                    cmd.Parameters.AddWithValue("@Address", $"Sector " + (10 + i).ToString() + ", Noida, Uttar Pradesh");
+                    await cmd.ExecuteNonQueryAsync();
+
+                    for (int p = 1; p <= 3; p++)
+                    {
+                        cmd.CommandText = @"
+                            INSERT INTO products (id, kitchen_id, name, price, description, category_name, is_veg, image_url)
+                            VALUES (@ProdId, @ShpId, @ProdName, @Price, @Desc, @CatName, TRUE, @Logo);";
+                        cmd.Parameters.Clear();
+                        cmd.Parameters.AddWithValue("@ProdId", $"prd-seed-{i}-{p}");
+                        cmd.Parameters.AddWithValue("@ShpId", shopId);
+                        cmd.Parameters.AddWithValue("@ProdName", $"{shopName} Special Dish {p}");
+                        cmd.Parameters.AddWithValue("@Price", 99m + (p * 50m));
+                        cmd.Parameters.AddWithValue("@Desc", $"Delicious freshly prepared signature dish {p} from {shopName}");
+                        cmd.Parameters.AddWithValue("@CatName", p == 1 ? "Meals" : (p == 2 ? "Biryani" : "Burgers"));
+                        cmd.Parameters.AddWithValue("@Logo", logoUrl);
+                        await cmd.ExecuteNonQueryAsync();
+                    }
+                }
+            }
         }
 
         public async Task<UserDb?> GetUserByEmailAsync(string email)

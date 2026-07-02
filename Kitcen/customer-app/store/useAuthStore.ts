@@ -22,6 +22,7 @@ interface AuthState {
   refreshToken: string | null;
   user: UserProfile | null;
   location: LocationCoords | null;
+  isDarkMode: boolean;
   
   // Actions
   setAuth: (token: string, refreshToken: string, user: UserProfile) => void;
@@ -29,6 +30,8 @@ interface AuthState {
   setLocation: (location: LocationCoords) => void;
   detectLocation: () => Promise<void>;
   logout: () => void;
+  setTheme: (isDarkMode: boolean) => void;
+  setAddressName: (addressName: string) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -40,6 +43,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     longitude: 72.8777,
     addressName: 'Bandra West, Mumbai, Maharashtra'
   },
+  isDarkMode: false, // light mode by default on starting
 
   setAuth: (token, refreshToken, user) => set({ token, refreshToken, user }),
   
@@ -88,5 +92,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  logout: () => set({ token: null, refreshToken: null, user: null })
+  logout: () => set({ token: null, refreshToken: null, user: null }),
+  setTheme: (isDarkMode) => set({ isDarkMode }),
+  setAddressName: (addressName) => set((state) => ({
+    location: state.location ? { ...state.location, addressName } : { latitude: 19.0760, longitude: 72.8777, addressName }
+  }))
 }));

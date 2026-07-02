@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tabs, Redirect } from 'expo-router';
-import { Home, Search, ShoppingBag, User } from 'lucide-react-native';
+import { Home, Search, ShoppingBag, User, Store } from 'lucide-react-native';
 import { theme } from '../../styles/theme';
 import { useAuthStore } from '../../store/useAuthStore';
 
@@ -41,8 +41,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="search"
         options={{
-          title: 'Search',
-          tabBarIcon: ({ color }) => <Search size={20} color={color} />,
+          title: 'Stores',
+          tabBarIcon: ({ color }) => <Store size={20} color={color} />,
         }}
       />
       <Tabs.Screen

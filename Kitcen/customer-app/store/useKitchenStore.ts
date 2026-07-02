@@ -11,6 +11,8 @@ export interface ProductItem {
   isVeg: boolean;
   image: string;
   customizable?: boolean;
+  kitchenId?: string;
+  kitchenName?: string;
 }
 
 export interface Kitchen {
@@ -72,6 +74,7 @@ interface KitchenState {
   role: 'customer' | 'seller' | 'superadmin';
   kitchens: Kitchen[];
   products: Record<string, ProductItem[]>; // Keyed by kitchenId
+  allProducts: ProductItem[];
   orders: OrderRecord[];
   isLoading: boolean;
   error: string | null;
@@ -82,6 +85,7 @@ interface KitchenState {
   // API Syncing actions
   fetchKitchens: () => Promise<void>;
   fetchProducts: (kitchenId: string) => Promise<void>;
+  fetchAllProducts: () => Promise<void>;
   fetchOrders: (customerId?: string, kitchenId?: string) => Promise<void>;
   
   // Kitchen actions
@@ -231,6 +235,43 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
     } catch (err: any) {
       console.warn('API Error, falling back to mock products:', err.message);
       set({ isLoading: false, error: err.message });
+    }
+  fetchAllProducts: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/products`);
+      if (!res.ok) throw new Error('Failed to fetch products');
+      const json = await res.json();
+      if (json.success) {
+        const mappedProducts = json.data.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          price: Number(p.price),
+          desc: p.description || '',
+          category: p.categoryName || p.category || 'Meals',
+          isVeg: p.isVeg,
+          image: p.imageUrl || p.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=150',
+          customizable: p.customizable,
+          kitchenId: p.kitchenId,
+          kitchenName: p.kitchenName || 'Kitchen Partner'
+        }));
+        set({ allProducts: mappedProducts, isLoading: false });
+      } else {
+        throw new Error(json.message);
+      }
+    } catch (err: any) {
+      console.warn('API Error, falling back to mock products:', err.message);
+      const fallbacks = [
+        { id: 'p1', name: 'Spicy Chicken Tikka Roll', price: 299, desc: '22g protein • 377 kcal', category: 'Rolls', isVeg: false, image: 'https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?w=300', customizable: false, kitchenId: 'shp-seed-10', kitchenName: 'Rumali By Enoki' },
+        { id: 'p2', name: 'Butter Chicken Roll', price: 299, desc: '20g protein • 325 kcal', category: 'Rolls', isVeg: false, image: 'https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?w=300', customizable: false, kitchenId: 'shp-seed-10', kitchenName: 'Rumali By Enoki' },
+        { id: 'p3', name: 'Margherita Pizza', price: 99, desc: 'Classic cheese pizza', category: 'Pizza', isVeg: true, image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300', customizable: true, kitchenId: 'shp-seed-2', kitchenName: 'Pizza Hut' },
+        { id: 'p4', name: 'Classic Corn Pizza', price: 79, desc: 'Loaded with sweet corn', category: 'Pizza', isVeg: true, image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300', customizable: true, kitchenId: 'shp-seed-2', kitchenName: 'Pizza Hut' },
+        { id: 'p5', name: 'Crispy Chicken Burger', price: 79, desc: 'Crunchy chicken patty burger', category: 'Burger', isVeg: false, image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=300', customizable: false, kitchenId: 'shp-seed-1', kitchenName: 'Burger King' },
+        { id: 'p6', name: 'Swiss Fine Chocolate', price: 169, desc: '5(1) rating • 15 MIN SCOOPS', category: 'Rolls', isVeg: true, image: 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=300', customizable: false, kitchenId: 'shp-seed-10', kitchenName: 'GLOBO Ice Cream' },
+        { id: 'p7', name: 'London Almond Butter', price: 169, desc: '2.5(3) rating • 15 MIN SCOOPS', category: 'Rolls', isVeg: true, image: 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=300', customizable: false, kitchenId: 'shp-seed-10', kitchenName: 'GLOBO Ice Cream' },
+        { id: 'p8', name: 'Colombian Coffee Mocha', price: 169, desc: '3.1(3) rating • 15 MIN SCOOPS', category: 'Rolls', isVeg: true, image: 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=300', customizable: false, kitchenId: 'shp-seed-10', kitchenName: 'GLOBO Ice Cream' }
+      ];
+      set({ allProducts: fallbacks, isLoading: false });
     }
   },
 
