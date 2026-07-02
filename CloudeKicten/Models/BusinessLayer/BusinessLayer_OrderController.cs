@@ -263,7 +263,11 @@ namespace CloudeKicten.Models.BusinessLayer
                 RiderName = rider != null ? $"{rider.FirstName} {rider.LastName}".Trim() : "Vikram Singh",
                 RiderPhone = rider != null && !string.IsNullOrEmpty(rider.Phone) ? rider.Phone : "+91 9876543210",
                 CustomerPhone = customer != null && !string.IsNullOrEmpty(customer.Phone) ? customer.Phone : "+91 9876543210",
-                DeliveryAddress = dbOrder.DeliveryAddress
+                DeliveryAddress = dbOrder.DeliveryAddress,
+                PickedUpAt = dbOrder.PickedUpAt?.ToString("yyyy-MM-dd HH:mm:ss"),
+                DeliveredAt = dbOrder.DeliveredAt?.ToString("yyyy-MM-dd HH:mm:ss"),
+                AcceptedByRiderAt = dbOrder.AcceptedByRiderAt?.ToString("yyyy-MM-dd HH:mm:ss"),
+                CreatedAt = dbOrder.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")
             };
         }
     }

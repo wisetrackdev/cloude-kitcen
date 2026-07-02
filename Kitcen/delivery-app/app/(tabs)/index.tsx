@@ -318,6 +318,20 @@ export default function RiderDashboard() {
                 )}
               </View>
 
+              {/* Order Placement, Start, End Timestamps */}
+              <View style={styles.timestampsContainer}>
+                <Text style={styles.timestampText}>🕒 Ordered At: {delivery.createdAt || delivery.date}</Text>
+                {delivery.acceptedByRiderAt && (
+                  <Text style={styles.timestampText}>🏍 Accepted At: {delivery.acceptedByRiderAt}</Text>
+                )}
+                {delivery.pickedUpAt && (
+                  <Text style={styles.timestampText}>📦 Picked Up At: {delivery.pickedUpAt}</Text>
+                )}
+                {delivery.deliveredAt && (
+                  <Text style={styles.timestampText}>✅ Delivered At: {delivery.deliveredAt}</Text>
+                )}
+              </View>
+
               {/* Footer and Buttons */}
               <View style={styles.cardFooter}>
                 <TouchableOpacity 
@@ -440,6 +454,18 @@ export default function RiderDashboard() {
             <Text style={styles.completedDetails}>From: {order.kitchenName}</Text>
             <Text style={styles.completedDetails}>To: {order.customerName}</Text>
             <Text style={styles.completedAddress}>Address: {order.deliveryAddress || 'Customer Location'}</Text>
+            <View style={styles.timestampsContainer}>
+              <Text style={styles.timestampText}>🕒 Ordered At: {order.createdAt || order.date}</Text>
+              {order.acceptedByRiderAt && (
+                <Text style={styles.timestampText}>🏍 Accepted At: {order.acceptedByRiderAt}</Text>
+              )}
+              {order.pickedUpAt && (
+                <Text style={styles.timestampText}>📦 Picked Up At: {order.pickedUpAt}</Text>
+              )}
+              {order.deliveredAt && (
+                <Text style={styles.timestampText}>✅ Delivered At: {order.deliveredAt}</Text>
+              )}
+            </View>
             <View style={styles.completedFooter}>
               <Text style={styles.earningAmt}>Earnings: ₹{order.deliveryCharge || 40}</Text>
               <Text style={styles.deliveredLabel}>✓ DELIVERED</Text>
@@ -796,5 +822,17 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     paddingHorizontal: 6,
     borderRadius: 4,
+  },
+  timestampsContainer: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#1F1F1F',
+    marginBottom: 8,
+  },
+  timestampText: {
+    fontSize: 10,
+    color: '#888',
+    marginBottom: 4,
   }
 });

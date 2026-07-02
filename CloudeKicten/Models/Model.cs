@@ -87,6 +87,9 @@ namespace CloudeKicten.Models
         public string? RiderId { get; set; }
         public string? DeliveryAddress { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime? PickedUpAt { get; set; }
+        public DateTime? DeliveredAt { get; set; }
+        public DateTime? AcceptedByRiderAt { get; set; }
     }
 
     public class SubscriptionDb
@@ -324,6 +327,10 @@ namespace CloudeKicten.Models
         public string? RiderPhone { get; set; }
         public string? CustomerPhone { get; set; }
         public string? DeliveryAddress { get; set; }
+        public string? PickedUpAt { get; set; }
+        public string? DeliveredAt { get; set; }
+        public string? AcceptedByRiderAt { get; set; }
+        public string? CreatedAt { get; set; }
     }
 
     public class RateRiderDto

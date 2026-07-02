@@ -272,7 +272,10 @@ namespace CloudeKicten.Models.DatabaseLayer
                 OrderDate = r.GetString(r.GetOrdinal("order_date")),
                 RiderId = r.IsDBNull(r.GetOrdinal("rider_id")) ? null : r.GetString(r.GetOrdinal("rider_id")),
                 DeliveryAddress = r.IsDBNull(r.GetOrdinal("delivery_address")) ? null : r.GetString(r.GetOrdinal("delivery_address")),
-                CreatedAt = r.GetDateTime(r.GetOrdinal("created_at"))
+                CreatedAt = r.GetDateTime(r.GetOrdinal("created_at")),
+                PickedUpAt = r.IsDBNull(r.GetOrdinal("picked_up_at")) ? null : r.GetDateTime(r.GetOrdinal("picked_up_at")),
+                DeliveredAt = r.IsDBNull(r.GetOrdinal("delivered_at")) ? null : r.GetDateTime(r.GetOrdinal("delivered_at")),
+                AcceptedByRiderAt = r.IsDBNull(r.GetOrdinal("accepted_by_rider_at")) ? null : r.GetDateTime(r.GetOrdinal("accepted_by_rider_at"))
             };
         }
     }

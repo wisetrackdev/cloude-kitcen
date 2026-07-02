@@ -26,6 +26,13 @@ export interface Kitchen {
   offer: string;
   revenue: number;
   ordersCount: number;
+  address?: string;
+  floor?: string;
+  officeGaliNumber?: string;
+  latitude?: number;
+  longitude?: number;
+  logoUrl?: string;
+  coverImageUrl?: string;
 }
 
 export interface OrderItem {
@@ -55,6 +62,12 @@ export interface OrderRecord {
   date: string;
   paymentMethod: string;
   riderId?: string;
+  customerPhone?: string | null;
+  deliveryAddress?: string | null;
+  pickedUpAt?: string | null;
+  deliveredAt?: string | null;
+  acceptedByRiderAt?: string | null;
+  createdAt?: string | null;
 }
 
 interface KitchenState {
@@ -173,7 +186,14 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
           offer: k.offer,
           image: k.image,
           revenue: Number(k.revenue),
-          ordersCount: k.ordersCount
+          ordersCount: k.ordersCount,
+          address: k.address,
+          floor: k.floor,
+          officeGaliNumber: k.officeGaliNumber,
+          latitude: k.latitude ? Number(k.latitude) : undefined,
+          longitude: k.longitude ? Number(k.longitude) : undefined,
+          logoUrl: k.logoUrl,
+          coverImageUrl: k.coverImageUrl
         }));
         set({ kitchens: mappedKitchens, isLoading: false });
       } else {
@@ -248,7 +268,13 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
           status: o.status,
           date: o.date,
           paymentMethod: o.paymentMethod,
-          riderId: o.riderId || null
+          riderId: o.riderId || null,
+          customerPhone: o.customerPhone || null,
+          deliveryAddress: o.deliveryAddress || null,
+          pickedUpAt: o.pickedUpAt || null,
+          deliveredAt: o.deliveredAt || null,
+          acceptedByRiderAt: o.acceptedByRiderAt || null,
+          createdAt: o.createdAt || null
         }));
         set({ orders: mappedOrders, isLoading: false });
       } else {

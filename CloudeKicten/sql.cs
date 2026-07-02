@@ -641,33 +641,33 @@ namespace CloudeKicten
         ";
 
         public const string GetAllOrders = @"
-            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at
+            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at, picked_up_at, delivered_at, accepted_by_rider_at
             FROM orders
             ORDER BY created_at DESC;
         ";
 
         public const string GetOrderById = @"
-            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at
+            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at, picked_up_at, delivered_at, accepted_by_rider_at
             FROM orders
             WHERE id = @Id;
         ";
 
         public const string GetOrdersByCustomerId = @"
-            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at
+            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at, picked_up_at, delivered_at, accepted_by_rider_at
             FROM orders
             WHERE customer_id = @CustomerId
             ORDER BY created_at DESC;
         ";
 
         public const string GetOrdersByKitchenId = @"
-            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at
+            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at, picked_up_at, delivered_at, accepted_by_rider_at
             FROM orders
             WHERE kitchen_id = @KitchenId
             ORDER BY created_at DESC;
         ";
 
         public const string GetOrdersByRiderId = @"
-            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at
+            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at, picked_up_at, delivered_at, accepted_by_rider_at
             FROM orders
             WHERE rider_id = @RiderId
             ORDER BY created_at DESC;
@@ -675,13 +675,16 @@ namespace CloudeKicten
 
         public const string UpdateOrderStatus = @"
             UPDATE orders
-            SET status = @Status
+            SET status = @Status,
+                picked_up_at = CASE WHEN @Status = 'on_the_way' THEN CURRENT_TIMESTAMP ELSE picked_up_at END,
+                delivered_at = CASE WHEN @Status = 'delivered' THEN CURRENT_TIMESTAMP ELSE delivered_at END
             WHERE id = @Id;
         ";
 
         public const string AssignRiderToOrder = @"
             UPDATE orders
-            SET rider_id = @RiderId
+            SET rider_id = @RiderId,
+                accepted_by_rider_at = CURRENT_TIMESTAMP
             WHERE id = @Id;
         ";
 
