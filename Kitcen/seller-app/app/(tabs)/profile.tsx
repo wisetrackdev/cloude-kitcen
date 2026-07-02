@@ -34,6 +34,7 @@ import { theme } from '../../styles/theme';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useKitchenStore } from '../../store/useKitchenStore';
 import { API_BASE_URL } from '../../store/apiConfig';
+import { uploadImageToServer } from '../../store/uploadHelper';
 
 type SubTab = 'main' | 'profile' | 'bank' | 'shop' | 'settings' | 'help';
 
@@ -47,7 +48,7 @@ export default function SellerProfile() {
 
   const kitchens = useKitchenStore(state => state.kitchens);
   const fetchKitchens = useKitchenStore(state => state.fetchKitchens);
-  const myKitchen = kitchens.find(k => k.owner === user?.id) || kitchens[0];
+  const myKitchen = kitchens.find(k => k.owner === user?.id);
 
   // Navigation tab state
   const [activeTab, setActiveTab] = useState<SubTab>('main');
@@ -149,6 +150,26 @@ export default function SellerProfile() {
 
     setIsLoading(true);
     try {
+      let uploadedAvatar = avatar;
+      let uploadedLogo = logoUrl;
+      let uploadedCover = coverImageUrl;
+
+      // Upload local images to Cloudinary if they are local URIs
+      try {
+        if (avatar && !avatar.startsWith('http')) {
+          uploadedAvatar = await uploadImageToServer(avatar);
+        }
+        if (logoUrl && !logoUrl.startsWith('http')) {
+          uploadedLogo = await uploadImageToServer(logoUrl);
+        }
+        if (coverImageUrl && !coverImageUrl.startsWith('http')) {
+          uploadedCover = await uploadImageToServer(coverImageUrl);
+        }
+      } catch (uploadErr: any) {
+        console.warn('Image upload failed during profile save:', uploadErr);
+        Alert.alert('Upload Warning', 'Failed to upload logo/banner image. Saving text details.');
+      }
+
       // 1. Update user auth profile
       const resProfile = await fetch(`${API_BASE_URL}/api/auth/profile/${user.id}`, {
         method: 'PUT',
@@ -164,7 +185,7 @@ export default function SellerProfile() {
           name: `${firstName.trim()} ${lastName.trim()}`,
           phone: phone.trim(),
           gender: gender.trim(),
-          avatar: avatar,
+          avatar: uploadedAvatar,
           role: user.role
         })
       });
@@ -186,9 +207,9 @@ export default function SellerProfile() {
             time: myKitchen.time,
             distance: myKitchen.distance,
             offer: myKitchen.offer,
-            image: coverImageUrl.trim() !== '' ? coverImageUrl.trim() : myKitchen.image,
-            logoUrl: logoUrl.trim(),
-            coverImageUrl: coverImageUrl.trim(),
+            image: uploadedCover.trim() !== '' ? uploadedCover.trim() : myKitchen.image,
+            logoUrl: uploadedLogo.trim(),
+            coverImageUrl: uploadedCover.trim(),
             bankName: bankName.trim(),
             accountNumber: accountNumber.trim(),
             ifscCode: ifscCode.trim(),

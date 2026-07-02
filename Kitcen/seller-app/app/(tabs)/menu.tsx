@@ -7,19 +7,23 @@ import {
   TextInput, 
   TouchableOpacity, 
   Modal, 
-  Alert 
+  Alert,
+  Image,
+  ActivityIndicator 
 } from 'react-native';
 import { Plus, Trash2, ChefHat, Tag, Camera, Image as ImageIcon } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { theme } from '../../styles/theme';
 import { useKitchenStore } from '../../store/useKitchenStore';
 import { useAuthStore } from '../../store/useAuthStore';
+import { uploadImageToServer } from '../../store/uploadHelper';
 
 export default function SellerMenuScreen() {
   const user = useAuthStore(state => state.user);
   const kitchens = useKitchenStore(state => state.kitchens);
   const products = useKitchenStore(state => state.products);
   const categories = useKitchenStore(state => state.categories);
+  const isLoading = useKitchenStore(state => state.isLoading);
   
   const fetchKitchens = useKitchenStore(state => state.fetchKitchens);
   const fetchProducts = useKitchenStore(state => state.fetchProducts);
@@ -29,11 +33,11 @@ export default function SellerMenuScreen() {
   const deleteProduct = useKitchenStore(state => state.deleteProduct);
 
   // Find user's kitchen by ownerId
-  const myKitchen = kitchens.find(k => k.owner === user?.id) || kitchens[0];
-  const selectedKitchenId = myKitchen?.id || 'k3';
+  const myKitchen = kitchens.find(k => k.owner === user?.id);
+  const selectedKitchenId = myKitchen?.id || '';
 
-  const kitchenInfo = myKitchen || kitchens[0] || { name: 'My Kitchen', isApproved: 'pending' };
-  const kitchenProducts = products[selectedKitchenId] || [];
+  const kitchenInfo = myKitchen || { name: 'My Kitchen', isApproved: 'pending' };
+  const kitchenProducts = selectedKitchenId ? (products[selectedKitchenId] || []) : [];
 
   // Fetch kitchens, categories and products on mount
   useEffect(() => {
@@ -110,17 +114,31 @@ export default function SellerMenuScreen() {
       await createCategory(finalCategory);
     }
 
+    // Upload local image URI to Cloudinary if set, otherwise fallback to placeholder
+    let finalImageUrl = '';
+    if (newDishImage.trim() !== '') {
+      try {
+        finalImageUrl = await uploadImageToServer(newDishImage);
+      } catch (err: any) {
+        console.warn('Image upload failed:', err.message);
+        Alert.alert('Upload Failed', 'Could not upload food image. Using default placeholder image.');
+        finalImageUrl = newDishVeg 
+          ? 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&auto=format&fit=crop&q=80'
+          : 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=300&auto=format&fit=crop&q=80';
+      }
+    } else {
+      finalImageUrl = newDishVeg 
+        ? 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&auto=format&fit=crop&q=80'
+        : 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=300&auto=format&fit=crop&q=80';
+    }
+
     await addProduct(selectedKitchenId, {
       name: newDishName,
       price: parseFloat(newDishPrice),
       desc: newDishDesc,
       category: finalCategory,
       isVeg: newDishVeg,
-      image: newDishImage.trim() !== '' 
-        ? newDishImage.trim() 
-        : (newDishVeg 
-          ? 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&auto=format&fit=crop&q=80'
-          : 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=300&auto=format&fit=crop&q=80')
+      image: finalImageUrl
     });
 
     setNewDishName('');
@@ -133,6 +151,14 @@ export default function SellerMenuScreen() {
   };
 
   const isApproved = myKitchen?.isApproved === 'approved';
+
+  if (isLoading && !myKitchen) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+      </View>
+    );
+  }
 
   if (!isApproved) {
     return (
