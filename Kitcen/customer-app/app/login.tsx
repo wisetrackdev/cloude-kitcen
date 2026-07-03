@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#FF6B00', // Primary orange theme
+    color: '#FFB300', // Primary orange theme
     textAlign: 'center',
   },
   subtitle: {
@@ -518,12 +518,12 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   primaryBtn: {
-    backgroundColor: '#FF6B00', // Primary orange theme button
+    backgroundColor: '#FFB300', // Primary orange theme button
     borderRadius: 14,
     paddingVertical: 14,
     alignItems: 'center',
     marginVertical: 12,
-    shadowColor: '#FF6B00',
+    shadowColor: '#FFB300',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.15,
     shadowRadius: 5,
@@ -536,7 +536,7 @@ const styles = StyleSheet.create({
   },
   toggleText: {
     fontSize: 12,
-    color: '#FF6B00',
+    color: '#FFB300',
     fontWeight: 'bold',
     textAlign: 'center',
     marginTop: 10,

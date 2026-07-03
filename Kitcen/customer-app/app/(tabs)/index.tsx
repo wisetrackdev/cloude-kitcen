@@ -207,10 +207,10 @@ export default function HomeScreen() {
           {/* Quick Header Actions */}
           <View style={styles.actionRow}>
             <TouchableOpacity style={styles.actionCircle} onPress={() => router.push('/cart')}>
-              <ShoppingBag size={16} color="#FF6B00" />
+              <ShoppingBag size={16} color="#FFB300" />
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionCircle} onPress={() => setShowNotifications(true)}>
-              <Bell size={16} color="#FF6B00" />
+              <Bell size={16} color="#FFB300" />
               {unreadCount > 0 && (
                 <View style={styles.badgeWrapper}>
                   <Text style={styles.badgeText}>{unreadCount}</Text>
@@ -218,7 +218,7 @@ export default function HomeScreen() {
               )}
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionCircle} onPress={() => router.push('/profile')}>
-              <User size={16} color="#FF6B00" />
+              <User size={16} color="#FFB300" />
             </TouchableOpacity>
           </View>
         </View>
@@ -257,7 +257,7 @@ export default function HomeScreen() {
                     onPress={() => setSelectedCategory(isSelected ? null : cat.name)}
                   >
                     <View style={[styles.categoryCircle, isSelected && styles.categoryCircleSelected]}>
-                      <IconComponent size={22} color={isSelected ? "#FFF" : "#FF6B00"} strokeWidth={1.8} />
+                      <IconComponent size={22} color={isSelected ? "#FFF" : "#FFB300"} strokeWidth={1.8} />
                     </View>
                     <Text style={[styles.categoryLabel, isSelected && styles.categoryLabelSelected]}>{cat.name}</Text>
                   </TouchableOpacity>
@@ -409,7 +409,7 @@ export default function HomeScreen() {
                   onPress={() => setShowNotifications(false)} 
                   style={styles.closeBtn}
                 >
-                  <X size={18} color="#FF6B00" />
+                  <X size={18} color="#FFB300" />
                 </TouchableOpacity>
               </View>
 
@@ -512,7 +512,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#FFB300',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -592,8 +592,8 @@ const styles = StyleSheet.create({
     borderColor: '#FFE0CC',
   },
   categoryCircleSelected: {
-    backgroundColor: '#FF6B00',
-    borderColor: '#FF6B00',
+    backgroundColor: '#FFB300',
+    borderColor: '#FFB300',
   },
   categoryLabel: {
     fontSize: 11,
@@ -602,7 +602,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   categoryLabelSelected: {
-    color: '#FF6B00',
+    color: '#FFB300',
     fontWeight: 'bold',
   },
   sectionHeader: {
@@ -619,7 +619,7 @@ const styles = StyleSheet.create({
   },
   viewAllText: {
     fontSize: 11,
-    color: '#FF6B00',
+    color: '#FFB300',
     fontWeight: 'bold',
   },
   bestSellerScroll: {
@@ -648,7 +648,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 8,
     right: 8,
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#FFB300',
     borderRadius: 10,
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -662,13 +662,13 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     height: 130,
     borderRadius: 24,
-    backgroundColor: '#FF6B00', // Orange-red background banner
+    backgroundColor: '#FFB300', // Orange-red background banner
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 22,
     position: 'relative',
-    shadowColor: '#FF6B00',
+    shadowColor: '#FFB300',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 10,
@@ -708,7 +708,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
   },
   dotActive: {
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#FFB300',
     width: 12,
   },
   recommendGrid: {
@@ -773,7 +773,7 @@ const styles = StyleSheet.create({
   },
   recommendPricePill: {
     alignSelf: 'flex-start',
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#FFB300',
     borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -789,7 +789,7 @@ const styles = StyleSheet.create({
     bottom: 20,
     left: 16,
     right: 16,
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#FFB300',
     borderRadius: 16,
     height: 52,
     flexDirection: 'row',
@@ -866,7 +866,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#FF6B00',
+    color: '#FFB300',
   },
   closeBtn: {
     width: 32,
@@ -927,7 +927,7 @@ const styles = StyleSheet.create({
   },
   markReadBtn: {
     flex: 1,
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#FFB300',
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',
@@ -941,13 +941,13 @@ const styles = StyleSheet.create({
   clearAllBtn: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#FF6B00',
+    borderColor: '#FFB300',
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',
   },
   clearAllText: {
-    color: '#FF6B00',
+    color: '#FFB300',
     fontSize: 12,
     fontWeight: 'bold',
   }

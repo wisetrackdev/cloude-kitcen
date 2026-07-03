@@ -21,7 +21,7 @@ export default function RefundScreen() {
       <View style={styles.bodyCard}>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
           <View style={styles.iconWrapper}>
-            <RefreshCw size={36} color="#FF6B00" />
+            <RefreshCw size={36} color="#FFB300" />
           </View>
           
           <Text style={styles.sectionTitle}>1. Order Cancellation Policy</Text>

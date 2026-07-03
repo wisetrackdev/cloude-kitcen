@@ -23,7 +23,7 @@ import { theme } from '../../styles/theme';
 import { useKitchenStore } from '../../store/useKitchenStore';
 import { useAuthStore } from '../../store/useAuthStore';
 
-const ZOMATO_RED = '#FF6B00';
+const ZOMATO_RED = '#FFB300';
 
 type OrderTabFilter = 'live' | 'history';
 

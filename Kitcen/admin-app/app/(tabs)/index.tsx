@@ -142,7 +142,7 @@ export default function AdminDashboard() {
     <ScrollView style={[styles.container, { backgroundColor: themeColors.background }]} showsVerticalScrollIndicator={false}>
       <View style={[styles.sellerHeader, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Users size={28} color="#FF5252" />
+          <Users size={28} color="#FFB300" />
           <View style={styles.sellerHeaderMeta}>
             <Text style={styles.sellerRoleText}>Super Admin Panel</Text>
             <Text style={[styles.sellerKitchenName, { color: themeColors.text }]}>Global Analytics</Text>
@@ -164,7 +164,7 @@ export default function AdminDashboard() {
           <Text style={[styles.kpiLabel, { color: themeColors.textSecondary }]}>Platform Sales</Text>
         </View>
         <View style={[styles.kpiCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
-          <ShoppingBag size={16} color="#FF5252" />
+          <ShoppingBag size={16} color="#FFB300" />
           <Text style={[styles.kpiValue, { color: themeColors.text }]}>{totalOrdersCount}</Text>
           <Text style={[styles.kpiLabel, { color: themeColors.textSecondary }]}>Orders Handled</Text>
         </View>
@@ -265,7 +265,7 @@ export default function AdminDashboard() {
               <Text style={{ 
                 fontSize: 9, 
                 fontWeight: 'bold', 
-                color: order.status === 'delivered' ? '#2ecc71' : '#FF5252' 
+                color: order.status === 'delivered' ? '#2ecc71' : '#FFB300' 
               }}>
                 {order.status.toUpperCase()}
               </Text>
@@ -339,7 +339,7 @@ export default function AdminDashboard() {
                     ]
                   );
                 }}>
-                  <Trash2 size={14} color="#FF5252" />
+                  <Trash2 size={14} color="#FFB300" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -458,13 +458,13 @@ export default function AdminDashboard() {
                       style={{ 
                         marginVertical: 6,
                         alignSelf: msg.senderId === 'usr-admin-support' ? 'flex-end' : 'flex-start',
-                        backgroundColor: msg.senderId === 'usr-admin-support' ? '#FF5252' : themeColors.background,
+                        backgroundColor: msg.senderId === 'usr-admin-support' ? '#FFB300' : themeColors.background,
                         padding: 12,
                         borderRadius: 12,
                         maxWidth: '80%'
                       }}
                     >
-                      <Text style={{ fontSize: 9, fontWeight: 'bold', color: msg.senderId === 'usr-admin-support' ? '#FFF' : '#FF5252', marginBottom: 2 }}>
+                      <Text style={{ fontSize: 9, fontWeight: 'bold', color: msg.senderId === 'usr-admin-support' ? '#FFF' : '#FFB300', marginBottom: 2 }}>
                         {msg.senderName}
                       </Text>
                       <Text style={{ fontSize: 13, color: msg.senderId === 'usr-admin-support' ? '#FFF' : themeColors.text }}>
@@ -485,7 +485,7 @@ export default function AdminDashboard() {
                   style={[styles.adminInput, { flex: 1, marginBottom: 0, marginRight: 10, backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
                 />
                 <TouchableOpacity 
-                  style={{ backgroundColor: '#FF5252', width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }}
+                  style={{ backgroundColor: '#FFB300', width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }}
                   onPress={handleSendSupportReply}
                   disabled={sendingSupport}
                 >
@@ -517,7 +517,7 @@ const styles = StyleSheet.create({
   sellerRoleText: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: '#FF5252',
+    color: '#FFB300',
     textTransform: 'uppercase',
   },
   sellerKitchenName: {
@@ -580,7 +580,7 @@ const styles = StyleSheet.create({
   },
   kitchenAdminType: {
     fontSize: 9,
-    color: '#FF5252',
+    color: '#FFB300',
     fontWeight: '600',
     marginTop: 4,
   },
@@ -601,7 +601,7 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 10,
     borderLeftWidth: 3,
-    borderLeftColor: '#FF5252',
+    borderLeftColor: '#FFB300',
     borderWidth: 1,
   },
   logHeader: {
@@ -670,7 +670,7 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   approveActionBtn: {
-    backgroundColor: '#FF5252',
+    backgroundColor: '#FFB300',
     borderRadius: 6,
     paddingVertical: 4,
     paddingHorizontal: 8,
@@ -703,7 +703,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#FF5252',
+    color: '#FFB300',
   },
   closeBtn: {
     borderRadius: 16,
@@ -777,7 +777,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   addCatBtn: {
-    backgroundColor: '#FF5252',
+    backgroundColor: '#FFB300',
     borderRadius: 10,
     paddingVertical: 12,
     alignItems: 'center',
@@ -823,7 +823,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   adminSupportBtn: {
-    backgroundColor: '#FF5252',
+    backgroundColor: '#FFB300',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,

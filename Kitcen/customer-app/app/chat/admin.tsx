@@ -155,7 +155,7 @@ export default function AdminSupportChatScreen() {
       <View style={styles.bodyCard}>
         {loading ? (
           <View style={styles.loadingWrapper}>
-            <ActivityIndicator size="large" color="#FF6B00" />
+            <ActivityIndicator size="large" color="#FFB300" />
             <Text style={styles.loadingText}>Connecting to Support Agent...</Text>
           </View>
         ) : (
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   myMessageBubble: {
-    backgroundColor: '#FF6B00', // Customer message bubble orange
+    backgroundColor: '#FFB300', // Customer message bubble orange
     borderBottomRightRadius: 4,
   },
   otherMessageBubble: {
@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
   senderLabel: {
     fontSize: 9,
     fontWeight: 'bold',
-    color: '#FF6B00',
+    color: '#FFB300',
     marginBottom: 4,
   },
   messageText: {
@@ -369,13 +369,13 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   sendButton: {
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#FFB300',
     width: 44,
     height: 44,
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#FF6B00',
+    shadowColor: '#FFB300',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 4,

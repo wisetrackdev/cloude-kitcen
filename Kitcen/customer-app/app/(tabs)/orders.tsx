@@ -189,7 +189,7 @@ export default function OrdersScreen() {
 
                   {/* Dynamic Action Buttons */}
                   {order.id === loadingOrderId ? (
-                    <ActivityIndicator size="small" color="#FF6B00" style={{ marginTop: 12 }} />
+                    <ActivityIndicator size="small" color="#FFB300" style={{ marginTop: 12 }} />
                   ) : activeTab === 'active' ? (
                     <View style={styles.btnRow}>
                       <TouchableOpacity 
@@ -297,12 +297,12 @@ const styles = StyleSheet.create({
     borderRadius: 21,
   },
   tabButtonActive: {
-    backgroundColor: '#FF6B00', // Primary orange-red tab indicator
+    backgroundColor: '#FFB300', // Primary orange-red tab indicator
   },
   tabButtonText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#FF6B00',
+    color: '#FFB300',
   },
   tabButtonTextActive: {
     color: '#FFF',
@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
   priceText: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#FF6B00', // Bold orange price tags
+    color: '#FFB300', // Bold orange price tags
   },
   orderDate: {
     fontSize: 11,
@@ -377,13 +377,13 @@ const styles = StyleSheet.create({
   cancelBtnText: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#FF6B00', // Orange text
+    color: '#FFB300', // Orange text
   },
   trackBtn: {
     flex: 1,
     height: 38,
     borderRadius: 19,
-    backgroundColor: '#FF6B00', // Bold orange-red primary background
+    backgroundColor: '#FFB300', // Bold orange-red primary background
     alignItems: 'center',
     justifyContent: 'center',
   },

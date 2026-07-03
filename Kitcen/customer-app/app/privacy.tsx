@@ -21,7 +21,7 @@ export default function PrivacyScreen() {
       <View style={styles.bodyCard}>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
           <View style={styles.iconWrapper}>
-            <Shield size={36} color="#FF6B00" />
+            <Shield size={36} color="#FFB300" />
           </View>
           
           <Text style={styles.sectionTitle}>1. Data We Collect</Text>

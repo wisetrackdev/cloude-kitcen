@@ -117,7 +117,7 @@ export default function LockScreen() {
           {isAuthenticating ? (
             <ActivityIndicator size="large" color="#FFCC00" />
           ) : (
-            <Fingerprint size={80} color="#FF6B00" strokeWidth={1.5} />
+            <Fingerprint size={80} color="#FFB300" strokeWidth={1.5} />
           )}
         </TouchableOpacity>
 
@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
     borderColor: '#1F1F1F',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#FF6B00',
+    shadowColor: '#FFB300',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.1,
     shadowRadius: 15,

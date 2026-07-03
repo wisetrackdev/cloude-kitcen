@@ -691,7 +691,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   catDeleteBtnText: {
-    color: '#FF6B00',
+    color: '#FFB300',
     fontSize: 11,
     fontWeight: 'bold',
     lineHeight: 12,

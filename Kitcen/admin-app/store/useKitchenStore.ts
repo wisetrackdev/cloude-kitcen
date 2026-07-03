@@ -538,7 +538,13 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
       const res = await fetch(`${API_BASE_URL}/api/categories`);
       if (res.ok) {
         const json = await res.json();
-        set({ categories: json });
+        if (json && json.success && Array.isArray(json.data)) {
+          set({ categories: json.data });
+        } else if (Array.isArray(json)) {
+          set({ categories: json });
+        } else {
+          set({ categories: [] });
+        }
       }
     } catch (err) {
       console.warn('API Error fetching categories in admin:', err);

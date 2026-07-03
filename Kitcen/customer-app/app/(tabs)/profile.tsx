@@ -239,7 +239,7 @@ export default function ProfileScreen() {
                 <Text style={styles.loyaltyLabel}>Wallet Cash</Text>
               </View>
               <View style={styles.loyaltyCard}>
-                <Clock size={20} color="#FF6B00" />
+                <Clock size={20} color="#FFB300" />
                 <Text style={styles.loyaltyVal}>{user?.rewardPoints ? user.rewardPoints * 10 : 120}</Text>
                 <Text style={styles.loyaltyLabel}>Reward Points</Text>
               </View>
@@ -253,84 +253,84 @@ export default function ProfileScreen() {
               <TouchableOpacity style={styles.zomatoRow} onPress={() => setActiveTab('profile')}>
                 <View style={styles.rowLeft}>
                   <View style={[styles.iconBg, { backgroundColor: '#FFEFEB' }]}>
-                    <User size={18} color="#FF6B00" />
+                    <User size={18} color="#FFB300" />
                   </View>
                   <View>
                     <Text style={styles.rowTitle}>Edit Profile Info</Text>
                     <Text style={styles.rowDesc}>Name, phone, gender, avatar details</Text>
                   </View>
                 </View>
-                <ChevronRight size={16} color="#FF6B00" />
+                <ChevronRight size={16} color="#FFB300" />
               </TouchableOpacity>
 
               {/* Option 2: Settings */}
               <TouchableOpacity style={styles.zomatoRow} onPress={() => setActiveTab('settings')}>
                 <View style={styles.rowLeft}>
                   <View style={[styles.iconBg, { backgroundColor: '#FFEFEB' }]}>
-                    <Settings size={18} color="#FF6B00" />
+                    <Settings size={18} color="#FFB300" />
                   </View>
                   <View>
                     <Text style={styles.rowTitle}>Theme & Security</Text>
                     <Text style={styles.rowDesc}>Biometric setup, dark mode toggle</Text>
                   </View>
                 </View>
-                <ChevronRight size={16} color="#FF6B00" />
+                <ChevronRight size={16} color="#FFB300" />
               </TouchableOpacity>
 
               {/* Option 3: Support Center */}
               <TouchableOpacity style={styles.zomatoRow} onPress={() => setActiveTab('help')}>
                 <View style={styles.rowLeft}>
                   <View style={[styles.iconBg, { backgroundColor: '#FFEFEB' }]}>
-                    <Phone size={18} color="#FF6B00" />
+                    <Phone size={18} color="#FFB300" />
                   </View>
                   <View>
                     <Text style={styles.rowTitle}>Support Center</Text>
                     <Text style={styles.rowDesc}>Direct assistance & admin chat support</Text>
                   </View>
                 </View>
-                <ChevronRight size={16} color="#FF6B00" />
+                <ChevronRight size={16} color="#FFB300" />
               </TouchableOpacity>
 
               {/* Option 4: Terms & Conditions */}
               <TouchableOpacity style={styles.zomatoRow} onPress={() => router.push('/terms')}>
                 <View style={styles.rowLeft}>
                   <View style={[styles.iconBg, { backgroundColor: '#FFEFEB' }]}>
-                    <FileText size={18} color="#FF6B00" />
+                    <FileText size={18} color="#FFB300" />
                   </View>
                   <View>
                     <Text style={styles.rowTitle}>Terms & Conditions</Text>
                     <Text style={styles.rowDesc}>Read platform policies and tiffin delivery rules</Text>
                   </View>
                 </View>
-                <ChevronRight size={16} color="#FF6B00" />
+                <ChevronRight size={16} color="#FFB300" />
               </TouchableOpacity>
 
               {/* Option 5: Privacy Policy */}
               <TouchableOpacity style={styles.zomatoRow} onPress={() => router.push('/privacy')}>
                 <View style={styles.rowLeft}>
                   <View style={[styles.iconBg, { backgroundColor: '#FFEFEB' }]}>
-                    <ShieldCheck size={18} color="#FF6B00" />
+                    <ShieldCheck size={18} color="#FFB300" />
                   </View>
                   <View>
                     <Text style={styles.rowTitle}>Privacy Policy</Text>
                     <Text style={styles.rowDesc}>Learn how we protect your biometric & personal data</Text>
                   </View>
                 </View>
-                <ChevronRight size={16} color="#FF6B00" />
+                <ChevronRight size={16} color="#FFB300" />
               </TouchableOpacity>
 
               {/* Option 6: Return & Refund */}
               <TouchableOpacity style={styles.zomatoRow} onPress={() => router.push('/refund')}>
                 <View style={styles.rowLeft}>
                   <View style={[styles.iconBg, { backgroundColor: '#FFEFEB' }]}>
-                    <RefreshCw size={18} color="#FF6B00" />
+                    <RefreshCw size={18} color="#FFB300" />
                   </View>
                   <View>
                     <Text style={styles.rowTitle}>Return & Refund</Text>
                     <Text style={styles.rowDesc}>Read cancellation policies and refund terms</Text>
                   </View>
                 </View>
-                <ChevronRight size={16} color="#FF6B00" />
+                <ChevronRight size={16} color="#FFB300" />
               </TouchableOpacity>
 
             </View>
@@ -417,7 +417,7 @@ export default function ProfileScreen() {
                 onPress={() => setTheme(!isDarkMode)}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  {isDarkMode ? <Sun size={18} color="#FFCC00" style={{ marginRight: 8 }} /> : <Moon size={18} color="#FF6B00" style={{ marginRight: 8 }} />}
+                  {isDarkMode ? <Sun size={18} color="#FFCC00" style={{ marginRight: 8 }} /> : <Moon size={18} color="#FFB300" style={{ marginRight: 8 }} />}
                   <Text style={styles.themeToggleText}>
                     {isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
                   </Text>
@@ -557,7 +557,7 @@ const styles = StyleSheet.create({
   loyaltyVal: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#FF6B00',
+    color: '#FFB300',
     marginTop: 8,
   },
   loyaltyLabel: {
@@ -644,7 +644,7 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   primaryBtn: {
-    backgroundColor: '#FF6B00',
+    backgroundColor: '#FFB300',
     borderRadius: 14,
     paddingVertical: 14,
     alignItems: 'center',
@@ -680,7 +680,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   logoutBtnText: {
-    color: '#FF6B00', // Orange text
+    color: '#FFB300', // Orange text
     fontSize: 13,
     fontWeight: 'bold',
   },

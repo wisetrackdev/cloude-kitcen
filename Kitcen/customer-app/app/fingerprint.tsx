@@ -130,11 +130,11 @@ export default function FingerprintScreen() {
             ]}
           >
             {isScanning ? (
-              <ActivityIndicator size="large" color="#FF6B00" />
+              <ActivityIndicator size="large" color="#FFB300" />
             ) : (
               <Fingerprint 
                 size={140} 
-                color={isRegistered ? "#FF6B00" : "#FCD5C5"} 
+                color={isRegistered ? "#FFB300" : "#FCD5C5"} 
                 strokeWidth={1.5}
               />
             )}
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#FF6B00',
+    shadowColor: '#FFB300',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 15,
@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
   skipButtonText: {
     fontSize: 15,
     fontWeight: 'bold',
-    color: '#FF6B00', // Orange text
+    color: '#FFB300', // Orange text
   },
   continueButton: {
     flex: 1.2,
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   continueButtonActive: {
-    backgroundColor: '#FF6B00', // Active bold orange/red
+    backgroundColor: '#FFB300', // Active bold orange/red
     opacity: 1,
   },
   continueButtonText: {
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
   },
   bottomTabBar: {
     height: 75,
-    backgroundColor: '#FF6B00', // Bottom tab bar background matching mockup scheme
+    backgroundColor: '#FFB300', // Bottom tab bar background matching mockup scheme
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
