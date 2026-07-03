@@ -13,6 +13,7 @@ import {
 import { Bike, Shield, Phone, CreditCard, ChevronRight, X, Clock, MapPin, Search } from 'lucide-react-native';
 import { theme } from '../../styles/theme';
 import { API_BASE_URL } from '../../store/apiConfig';
+import { useAuthStore } from '../../store/useAuthStore';
 
 interface Rider {
   id: string;
@@ -37,6 +38,19 @@ export default function AdminRidersScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRider, setSelectedRider] = useState<Rider | null>(null);
+
+  const isDarkMode = useAuthStore(state => state.isDarkMode);
+
+  const themeColors = {
+    background: isDarkMode ? '#0A0A0A' : '#F5F6F8',
+    card: isDarkMode ? '#121212' : '#FFFFFF',
+    border: isDarkMode ? '#1F1F1F' : '#EAEAEA',
+    text: isDarkMode ? '#FFFFFF' : '#1E2022',
+    textSecondary: isDarkMode ? '#8E8E93' : '#686E73',
+    inputBg: isDarkMode ? '#0F0F0F' : '#F0F2F4',
+    primary: '#FFB300', // Gold/Yellow primary
+    success: '#34C759',
+  };
 
   const fetchRiderData = async () => {
     try {
@@ -93,31 +107,31 @@ export default function AdminRidersScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: themeColors.background }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Bike size={28} color={theme.colors.primary} />
+        <Bike size={28} color={themeColors.primary} />
         <View style={styles.headerMeta}>
-          <Text style={styles.roleText}>Super Admin Panel</Text>
-          <Text style={styles.kitchenName}>Rider Directory & Payouts</Text>
+          <Text style={[styles.roleText, { color: themeColors.primary }]}>Super Admin Panel</Text>
+          <Text style={[styles.kitchenName, { color: themeColors.text }]}>Rider Directory & Payouts</Text>
         </View>
       </View>
 
       {/* Search bar */}
-      <View style={styles.searchContainer}>
+      <View style={[styles.searchContainer, { backgroundColor: themeColors.inputBg, borderColor: themeColors.border }]}>
         <Search size={16} color="#888" style={{ marginRight: 8 }} />
         <TextInput
           placeholder="Search by name, phone or vehicle plate..."
           placeholderTextColor="#888"
           value={searchQuery}
           onChangeText={setSearchQuery}
-          style={styles.searchInput}
+          style={[styles.searchInput, { color: themeColors.text }]}
         />
       </View>
 
       {/* Riders Directory */}
       <ScrollView style={styles.scroller} showsVerticalScrollIndicator={false}>
-        <Text style={styles.sectionTitle}>Registered Partners ({filteredRiders.length})</Text>
+        <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Registered Partners ({filteredRiders.length})</Text>
         
         {filteredRiders.map((rider) => {
           const completedCount = getRiderCompletedOrders(rider.id).length;
@@ -127,13 +141,13 @@ export default function AdminRidersScreen() {
           return (
             <TouchableOpacity 
               key={rider.id} 
-              style={styles.riderCard}
+              style={[styles.riderCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}
               onPress={() => setSelectedRider(rider)}
             >
-              <View style={styles.cardHeader}>
+              <View style={[styles.cardHeader, { borderBottomColor: themeColors.border }]}>
                 <View>
-                  <Text style={styles.riderName}>{fullName}</Text>
-                  <Text style={styles.riderEmail}>{rider.email || 'partner@cludekitchen.com'}</Text>
+                  <Text style={[styles.riderName, { color: themeColors.text }]}>{fullName}</Text>
+                  <Text style={[styles.riderEmail, { color: themeColors.textSecondary }]}>{rider.email || 'partner@cludekitchen.com'}</Text>
                 </View>
                 <View style={styles.ratingBadge}>
                   <Text style={styles.ratingText}>⭐ {Number(rider.rating).toFixed(1)}</Text>
@@ -143,24 +157,24 @@ export default function AdminRidersScreen() {
               <View style={styles.metaRow}>
                 <View style={styles.metaItem}>
                   <Phone size={11} color="#888" />
-                  <Text style={styles.metaVal}>{rider.phone || 'No phone'}</Text>
+                  <Text style={[styles.metaVal, { color: themeColors.textSecondary }]}>{rider.phone || 'No phone'}</Text>
                 </View>
                 <View style={styles.metaItem}>
                   <Shield size={11} color="#888" />
-                  <Text style={styles.metaVal}>{rider.vehicleNumber || 'No plate'}</Text>
+                  <Text style={[styles.metaVal, { color: themeColors.textSecondary }]}>{rider.vehicleNumber || 'No plate'}</Text>
                 </View>
               </View>
 
-              <View style={styles.bankPreview}>
-                <CreditCard size={12} color={theme.colors.primary} style={{ marginRight: 6 }} />
-                <Text style={styles.bankText} numberOfLines={1}>
+              <View style={[styles.bankPreview, { backgroundColor: themeColors.background, borderColor: themeColors.border }]}>
+                <CreditCard size={12} color={themeColors.primary} style={{ marginRight: 6 }} />
+                <Text style={[styles.bankText, { color: themeColors.textSecondary }]} numberOfLines={1}>
                   Bank: {rider.bankName || 'SBI'} A/C {rider.accountNumber ? `••••${rider.accountNumber.slice(-4)}` : 'SBI-Static'}
                 </Text>
               </View>
 
               <View style={styles.cardFooter}>
-                <Text style={styles.completedCountText}>Jobs Done: <Text style={{ color: '#FFF', fontWeight: 'bold' }}>{completedCount}</Text></Text>
-                <Text style={styles.earningsText}>Earnings: <Text style={{ color: theme.colors.success, fontWeight: 'bold' }}>₹{earnings}</Text></Text>
+                <Text style={[styles.completedCountText, { color: themeColors.textSecondary }]}>Jobs Done: <Text style={{ color: themeColors.text, fontWeight: 'bold' }}>{completedCount}</Text></Text>
+                <Text style={[styles.earningsText, { color: themeColors.textSecondary }]}>Earnings: <Text style={{ color: themeColors.success, fontWeight: 'bold' }}>₹{earnings}</Text></Text>
                 <ChevronRight size={14} color="#888" />
               </View>
             </TouchableOpacity>
@@ -168,7 +182,7 @@ export default function AdminRidersScreen() {
         })}
 
         {filteredRiders.length === 0 && (
-          <Text style={styles.noResults}>No riders match your search query.</Text>
+          <Text style={[styles.noResults, { color: themeColors.textSecondary }]}>No riders match your search query.</Text>
         )}
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -182,66 +196,66 @@ export default function AdminRidersScreen() {
           onRequestClose={() => setSelectedRider(null)}
         >
           <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
+            <View style={[styles.modalContent, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+              <View style={[styles.modalHeader, { borderBottomColor: themeColors.border }]}>
                 <View>
-                  <Text style={styles.modalTitle}>
+                  <Text style={[styles.modalTitle, { color: themeColors.text }]}>
                     {selectedRider.firstName} {selectedRider.lastName}
                   </Text>
-                  <Text style={styles.modalSub}>{selectedRider.email}</Text>
+                  <Text style={[styles.modalSub, { color: themeColors.textSecondary }]}>{selectedRider.email}</Text>
                 </View>
-                <TouchableOpacity onPress={() => setSelectedRider(null)} style={styles.closeBtn}>
-                  <X size={18} color="#FFF" />
+                <TouchableOpacity onPress={() => setSelectedRider(null)} style={[styles.closeBtn, { backgroundColor: themeColors.border }]}>
+                  <X size={18} color={themeColors.text} />
                 </TouchableOpacity>
               </View>
 
               <ScrollView style={styles.modalScroller} contentContainerStyle={{ padding: 16 }}>
                 {/* Bank Account Section */}
-                <Text style={styles.modalSectionTitle}>Bank & Document Details</Text>
-                <View style={styles.detailsGroup}>
+                <Text style={[styles.modalSectionTitle, { color: themeColors.primary }]}>Bank & Document Details</Text>
+                <View style={[styles.detailsGroup, { backgroundColor: themeColors.background, borderColor: themeColors.border }]}>
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Bank Name</Text>
-                    <Text style={styles.detailVal}>{selectedRider.bankName || 'State Bank Of India'}</Text>
+                    <Text style={[styles.detailLabel, { color: themeColors.textSecondary }]}>Bank Name</Text>
+                    <Text style={[styles.detailVal, { color: themeColors.text }]}>{selectedRider.bankName || 'State Bank Of India'}</Text>
                   </View>
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Account Number</Text>
-                    <Text style={styles.detailVal}>{selectedRider.accountNumber || 'SBI A/C 98745612301'}</Text>
+                    <Text style={[styles.detailLabel, { color: themeColors.textSecondary }]}>Account Number</Text>
+                    <Text style={[styles.detailVal, { color: themeColors.text }]}>{selectedRider.accountNumber || 'SBI A/C 98745612301'}</Text>
                   </View>
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>IFSC Code</Text>
-                    <Text style={styles.detailVal}>{selectedRider.ifscCode || 'SBIN0001043'}</Text>
+                    <Text style={[styles.detailLabel, { color: themeColors.textSecondary }]}>IFSC Code</Text>
+                    <Text style={[styles.detailVal, { color: themeColors.text }]}>{selectedRider.ifscCode || 'SBIN0001043'}</Text>
                   </View>
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Vehicle License</Text>
-                    <Text style={styles.detailVal}>{selectedRider.licenseNumber || 'DL-14201800000'}</Text>
+                    <Text style={[styles.detailLabel, { color: themeColors.textSecondary }]}>Vehicle License</Text>
+                    <Text style={[styles.detailVal, { color: themeColors.text }]}>{selectedRider.licenseNumber || 'DL-14201800000'}</Text>
                   </View>
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>RC Book Code</Text>
-                    <Text style={styles.detailVal}>{selectedRider.rcNumber || 'RC/30948/2026'}</Text>
+                    <Text style={[styles.detailLabel, { color: themeColors.textSecondary }]}>RC Book Code</Text>
+                    <Text style={[styles.detailVal, { color: themeColors.text }]}>{selectedRider.rcNumber || 'RC/30948/2026'}</Text>
                   </View>
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Gender / Sex</Text>
-                    <Text style={styles.detailVal}>{selectedRider.gender || 'Male'}</Text>
+                    <Text style={[styles.detailLabel, { color: themeColors.textSecondary }]}>Gender / Sex</Text>
+                    <Text style={[styles.detailVal, { color: themeColors.text }]}>{selectedRider.gender || 'Male'}</Text>
                   </View>
                 </View>
 
                 {/* Job Logs */}
-                <Text style={styles.modalSectionTitle}>Completed Jobs History ({getRiderCompletedOrders(selectedRider.id).length})</Text>
+                <Text style={[styles.modalSectionTitle, { color: themeColors.primary }]}>Completed Jobs History ({getRiderCompletedOrders(selectedRider.id).length})</Text>
                 {getRiderCompletedOrders(selectedRider.id).map((order) => (
-                  <View key={order.id} style={styles.jobLogCard}>
-                    <View style={styles.jobLogHeader}>
-                      <Text style={styles.jobId}>{order.id}</Text>
-                      <Text style={styles.jobDate}>{order.date}</Text>
+                  <View key={order.id} style={[styles.jobLogCard, { backgroundColor: themeColors.background, borderColor: themeColors.border }]}>
+                    <View style={[styles.jobLogHeader, { borderBottomColor: themeColors.border }]}>
+                      <Text style={[styles.jobId, { color: themeColors.text }]}>{order.id}</Text>
+                      <Text style={[styles.jobDate, { color: themeColors.textSecondary }]}>{order.date}</Text>
                     </View>
                     <View style={styles.jobNode}>
-                      <MapPin size={10} color={theme.colors.success} style={{ marginRight: 6, marginTop: 2 }} />
-                      <Text style={styles.jobText}>From: {order.kitchenName}</Text>
+                      <MapPin size={10} color={themeColors.success} style={{ marginRight: 6, marginTop: 2 }} />
+                      <Text style={[styles.jobText, { color: themeColors.textSecondary }]}>From: {order.kitchenName}</Text>
                     </View>
                     <View style={styles.jobNode}>
-                      <MapPin size={10} color={theme.colors.primary} style={{ marginRight: 6, marginTop: 2 }} />
-                      <Text style={styles.jobText}>To: {order.deliveryAddress || 'Customer Location'}</Text>
+                      <MapPin size={10} color={themeColors.primary} style={{ marginRight: 6, marginTop: 2 }} />
+                      <Text style={[styles.jobText, { color: themeColors.textSecondary }]}>To: {order.deliveryAddress || 'Customer Location'}</Text>
                     </View>
-                    <View style={styles.jobFooter}>
+                    <View style={[styles.jobFooter, { borderTopColor: themeColors.border }]}>
                       <Text style={styles.jobCharge}>Payout: ₹{order.deliveryCharge || 40}</Text>
                       <Text style={styles.jobDelivered}>✓ DELIVERED</Text>
                     </View>
@@ -249,7 +263,7 @@ export default function AdminRidersScreen() {
                 ))}
 
                 {getRiderCompletedOrders(selectedRider.id).length === 0 && (
-                  <Text style={styles.noHistory}>This rider has not completed any delivery jobs yet.</Text>
+                  <Text style={[styles.noHistory, { color: themeColors.textSecondary }]}>This rider has not completed any delivery jobs yet.</Text>
                 )}
               </ScrollView>
             </View>

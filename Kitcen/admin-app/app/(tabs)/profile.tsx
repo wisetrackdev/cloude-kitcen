@@ -8,7 +8,8 @@ import {
   Image, 
   ScrollView, 
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  Modal
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { 
@@ -21,11 +22,15 @@ import {
   Moon,
   Image as ImageIcon,
   Plus,
-  Trash2
+  Trash2,
+  Camera,
+  X
 } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { theme } from '../../styles/theme';
 import { useAuthStore } from '../../store/useAuthStore';
 import { API_BASE_URL } from '../../store/apiConfig';
+import { uploadImage } from '../../store/uploadHelper';
 
 export default function AdminProfile() {
   const router = useRouter();
@@ -41,6 +46,7 @@ export default function AdminProfile() {
 
   const [firstName, setFirstName] = useState(user?.firstName || user?.name?.split(' ')[0] || '');
   const [lastName, setLastName] = useState(user?.lastName || user?.name?.split(' ').slice(1).join(' ') || '');
+  const [email, setEmail] = useState(user?.email || '');
   const [isLoading, setIsLoading] = useState(false);
 
   // Banners state
@@ -48,6 +54,172 @@ export default function AdminProfile() {
   const [bannerImageUrl, setBannerImageUrl] = useState('');
   const [bannerLinkUrl, setBannerLinkUrl] = useState('');
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const [isUploadingBannerLocal, setIsUploadingBannerLocal] = useState(false);
+
+  // Profile modal and avatar upload states
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [isUploadingProfilePic, setIsUploadingProfilePic] = useState(false);
+
+  // Camera & picker functions for profile picture
+  const requestProfileImageSource = () => {
+    Alert.alert(
+      'Profile Photo Source',
+      'Select image upload source:',
+      [
+        { text: 'Camera (Take Photo)', onPress: captureProfileImage },
+        { text: 'Gallery (Choose from Library)', onPress: pickProfileImageFromGallery },
+        { text: 'Cancel', style: 'cancel' }
+      ]
+    );
+  };
+
+  const captureProfileImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Camera permissions are required.');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        await handleUploadProfileImage(result.assets[0].uri);
+      }
+    } catch (e) {
+      Alert.alert('Camera Error', 'Could not open camera.');
+    }
+  };
+
+  const pickProfileImageFromGallery = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Gallery access is required.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        await handleUploadProfileImage(result.assets[0].uri);
+      }
+    } catch (e) {
+      Alert.alert('Gallery Error', 'Could not open photo library.');
+    }
+  };
+
+  const handleUploadProfileImage = async (localUri: string) => {
+    setIsUploadingProfilePic(true);
+    const uploadedUrl = await uploadImage(localUri);
+    setIsUploadingProfilePic(false);
+    
+    if (uploadedUrl) {
+      try {
+        const userId = user?.id || 'usr-admin-simulated';
+        const res = await fetch(`${API_BASE_URL}/api/auth/profile/${userId}`, {
+          method: 'PUT',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            id: userId,
+            email: email.trim() || user?.email,
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            name: `${firstName.trim()} ${lastName.trim()}`,
+            avatar: uploadedUrl,
+            role: user?.role || 'superadmin'
+          })
+        });
+        const json = await res.json();
+        if (json.success) {
+          setAuth(token, refreshToken, json.data);
+          Alert.alert('Success', 'Profile photo updated successfully!');
+        } else {
+          useAuthStore.getState().updateUser({ avatar: uploadedUrl });
+          Alert.alert('Success', 'Profile photo updated locally.');
+        }
+      } catch (err) {
+        useAuthStore.getState().updateUser({ avatar: uploadedUrl });
+        Alert.alert('Offline Mode', 'Profile photo updated locally.');
+      }
+    } else {
+      Alert.alert('Upload Failed', 'Could not upload profile picture to server.');
+    }
+  };
+
+  // Camera & picker functions for banner
+  const requestBannerImageSource = () => {
+    Alert.alert(
+      'Banner Image Source',
+      'Select image upload source:',
+      [
+        { text: 'Camera (Take Photo)', onPress: captureBannerImage },
+        { text: 'Gallery (Choose from Library)', onPress: pickBannerImageFromGallery },
+        { text: 'Cancel', style: 'cancel' }
+      ]
+    );
+  };
+
+  const captureBannerImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Camera permissions are required.');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setIsUploadingBannerLocal(true);
+        const uploadedUrl = await uploadImage(result.assets[0].uri);
+        setIsUploadingBannerLocal(false);
+        if (uploadedUrl) {
+          setBannerImageUrl(uploadedUrl);
+        } else {
+          setBannerImageUrl(result.assets[0].uri);
+        }
+      }
+    } catch (e) {
+      Alert.alert('Camera Error', 'Could not open camera.');
+    }
+  };
+
+  const pickBannerImageFromGallery = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Gallery access is required.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setIsUploadingBannerLocal(true);
+        const uploadedUrl = await uploadImage(result.assets[0].uri);
+        setIsUploadingBannerLocal(false);
+        if (uploadedUrl) {
+          setBannerImageUrl(uploadedUrl);
+        } else {
+          setBannerImageUrl(result.assets[0].uri);
+        }
+      }
+    } catch (e) {
+      Alert.alert('Gallery Error', 'Could not open photo library.');
+    }
+  };
 
   const themeColors = {
     background: isDarkMode ? '#0B0B0C' : '#F5F6F8',
@@ -55,7 +227,8 @@ export default function AdminProfile() {
     border: isDarkMode ? '#1F1F22' : '#EAEAEA',
     text: isDarkMode ? '#FFFFFF' : '#1E2022',
     textSecondary: isDarkMode ? '#8E8E93' : '#686E73',
-    inputBg: isDarkMode ? '#0F0F0F' : '#F0F2F4'
+    inputBg: isDarkMode ? '#0F0F0F' : '#F0F2F4',
+    primary: '#FFB300'
   };
 
   useEffect(() => {
@@ -146,7 +319,7 @@ export default function AdminProfile() {
         },
         body: JSON.stringify({
           id: user.id,
-          email: user.email,
+          email: email.trim() || user.email,
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           name: `${firstName.trim()} ${lastName.trim()}`,
@@ -161,13 +334,21 @@ export default function AdminProfile() {
       if (json.success) {
         setAuth(token, refreshToken, json.data);
         Alert.alert('Success', 'Profile updated successfully!');
+        setShowProfileModal(false);
       } else {
         Alert.alert('Error', json.message || 'Failed to update profile');
       }
     } catch (err: any) {
       console.warn('Profile update failed:', err);
       setIsLoading(false);
+      useAuthStore.getState().updateUser({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        name: `${firstName.trim()} ${lastName.trim()}`,
+        email: email.trim() || user.email
+      });
       Alert.alert('Offline Mode', 'Profile settings updated locally.');
+      setShowProfileModal(false);
     }
   };
 
@@ -175,101 +356,30 @@ export default function AdminProfile() {
     <ScrollView style={[styles.container, { backgroundColor: themeColors.background }]} showsVerticalScrollIndicator={false}>
       
       {/* Profile info */}
-      <View style={[styles.profileHeader, { backgroundColor: themeColors.card, borderBottomColor: themeColors.border }]}>
-        <Image 
-          source={{ uri: user?.avatar || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80' }} 
-          style={styles.avatar} 
-        />
+      <TouchableOpacity 
+        style={[styles.profileHeader, { backgroundColor: themeColors.card, borderBottomColor: themeColors.border }]}
+        onPress={() => setShowProfileModal(true)}
+      >
+        <View style={{ position: 'relative' }}>
+          <Image 
+            source={{ uri: user?.avatar || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80' }} 
+            style={styles.avatar} 
+          />
+          <TouchableOpacity 
+            style={styles.avatarCameraBadge} 
+            onPress={requestProfileImageSource}
+          >
+            <Camera size={12} color="#FFF" />
+          </TouchableOpacity>
+        </View>
         <View style={styles.meta}>
           <Text style={[styles.name, { color: themeColors.text }]}>{user?.name || 'Super Admin'}</Text>
           <Text style={[styles.email, { color: themeColors.textSecondary }]}>{user?.email || 'admin@cludekitchen.com'}</Text>
           <Text style={styles.roleTag}>Master Controller</Text>
         </View>
-      </View>
+      </TouchableOpacity>
 
-      {/* Dynamic Promotion Banners Panel */}
-      <View style={[styles.optionGroup, { backgroundColor: themeColors.card, borderColor: themeColors.border, padding: 16, borderRadius: 18, marginTop: 16 }]}>
-        <Text style={[styles.groupHeader, { color: themeColors.text }]}>Dynamic Live Banner Manager</Text>
-        <Text style={{ color: themeColors.textSecondary, fontSize: 10, marginBottom: 12 }}>
-          Publish promotional sliders/banners directly onto the customer home screen.
-        </Text>
 
-        <TextInput
-          style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
-          placeholder="Enter Banner Image URL..."
-          placeholderTextColor="#888"
-          value={bannerImageUrl}
-          onChangeText={setBannerImageUrl}
-        />
-
-        <TextInput
-          style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
-          placeholder="Enter Action link (e.g. discount_page)..."
-          placeholderTextColor="#888"
-          value={bannerLinkUrl}
-          onChangeText={setBannerLinkUrl}
-        />
-
-        <TouchableOpacity 
-          style={[styles.saveBtn, { backgroundColor: theme.colors.success }]} 
-          onPress={handleUploadBanner}
-          disabled={isUploadingBanner}
-        >
-          {isUploadingBanner ? <ActivityIndicator size="small" color="#FFF" /> : (
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Plus size={16} color="#FFF" style={{ marginRight: 6 }} />
-              <Text style={styles.saveBtnText}>Publish Live Banner</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-
-        {/* List of active uploaded banners */}
-        {banners.length > 0 && (
-          <View style={{ marginTop: 16 }}>
-            <Text style={{ fontSize: 11, fontWeight: 'bold', color: themeColors.text, marginBottom: 8 }}>Active Banners ({banners.length})</Text>
-            {banners.map((b) => (
-              <View key={b.id} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, padding: 6, borderWidth: 1, borderColor: themeColors.border, borderRadius: 10 }}>
-                <Image source={{ uri: b.imageUrl }} style={{ width: 40, height: 40, borderRadius: 6 }} />
-                <Text style={{ color: themeColors.text, marginLeft: 8, flex: 1, fontSize: 11 }} numberOfLines={1}>{b.linkUrl}</Text>
-                <TouchableOpacity onPress={() => Alert.alert('Delete', 'Banner deletion is simulated.')}>
-                  <Trash2 size={16} color="#FF3B30" />
-                </TouchableOpacity>
-              </View>
-            ))}
-          </View>
-        )}
-      </View>
-
-      {/* Edit Profile Details */}
-      <View style={[styles.optionGroup, { backgroundColor: themeColors.card, borderColor: themeColors.border, padding: 16, borderRadius: 18, marginTop: 16 }]}>
-        <Text style={[styles.groupHeader, { color: themeColors.text }]}>Edit Profile Details</Text>
-        
-        <View style={styles.inputWrapper}>
-          <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>First Name</Text>
-          <TextInput
-            style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
-            value={firstName}
-            onChangeText={setFirstName}
-            placeholder="First Name"
-            placeholderTextColor="#888"
-          />
-        </View>
-
-        <View style={styles.inputWrapper}>
-          <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Last Name</Text>
-          <TextInput
-            style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
-            value={lastName}
-            onChangeText={setLastName}
-            placeholder="Last Name"
-            placeholderTextColor="#888"
-          />
-        </View>
-
-        <TouchableOpacity style={styles.saveBtn} onPress={handleUpdateProfile} disabled={isLoading}>
-          <Text style={styles.saveBtnText}>{isLoading ? 'Saving...' : 'Save Changes'}</Text>
-        </TouchableOpacity>
-      </View>
 
       {/* Theme Settings switcher & Management */}
       <View style={[styles.optionGroup, { backgroundColor: themeColors.card, borderColor: themeColors.border, padding: 16, borderRadius: 18, marginTop: 16 }]}>
@@ -323,6 +433,87 @@ export default function AdminProfile() {
         <Text style={styles.logoutBtnText}>Logout System</Text>
       </TouchableOpacity>
       <View style={{ height: 40 }} />
+
+      {/* EDIT PROFILE DETAILS MODAL */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showProfileModal}
+        onRequestClose={() => setShowProfileModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: themeColors.border }]}>
+              <Text style={[styles.modalTitle, { color: themeColors.text }]}>Edit Superadmin Details</Text>
+              <TouchableOpacity onPress={() => setShowProfileModal(false)} style={[styles.closeBtn, { backgroundColor: themeColors.border }]}>
+                <X size={18} color={themeColors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView contentContainerStyle={{ padding: 20 }} showsVerticalScrollIndicator={false}>
+              
+              {/* Photo picking section inside Modal */}
+              <View style={{ alignItems: 'center', marginBottom: 20 }}>
+                <TouchableOpacity onPress={requestProfileImageSource} style={{ position: 'relative' }}>
+                  <Image 
+                    source={{ uri: user?.avatar || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80' }} 
+                    style={[styles.avatar, { width: 80, height: 80, borderRadius: 40 }]} 
+                  />
+                  {isUploadingProfilePic ? (
+                    <ActivityIndicator size="small" color={themeColors.primary} style={{ position: 'absolute', top: 30 }} />
+                  ) : (
+                    <View style={[styles.avatarCameraBadge, { bottom: 0, right: 0, width: 28, height: 28, borderRadius: 14 }]}>
+                      <Camera size={14} color="#FFF" />
+                    </View>
+                  )}
+                </TouchableOpacity>
+                <Text style={{ fontSize: 11, color: themeColors.textSecondary, marginTop: 8 }}>Tap to update photo</Text>
+              </View>
+
+              <View style={styles.inputWrapper}>
+                <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>First Name</Text>
+                <TextInput
+                  style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  placeholder="First Name"
+                  placeholderTextColor="#888"
+                />
+              </View>
+
+              <View style={styles.inputWrapper}>
+                <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Last Name</Text>
+                <TextInput
+                  style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
+                  value={lastName}
+                  onChangeText={setLastName}
+                  placeholder="Last Name"
+                  placeholderTextColor="#888"
+                />
+              </View>
+
+              <View style={styles.inputWrapper}>
+                <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Email Address</Text>
+                <TextInput
+                  style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="Email Address"
+                  placeholderTextColor="#888"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
+
+              <TouchableOpacity style={[styles.saveBtn, { backgroundColor: themeColors.primary }]} onPress={handleUpdateProfile} disabled={isLoading}>
+                {isLoading ? <ActivityIndicator size="small" color="#FFF" /> : (
+                  <Text style={styles.saveBtnText}>Save Changes</Text>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -440,5 +631,48 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 14,
     fontWeight: 'bold',
+  },
+  avatarCameraBadge: {
+    position: 'absolute',
+    bottom: -4,
+    right: -4,
+    backgroundColor: '#FFB300',
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFF',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    height: '70%',
+    paddingBottom: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  closeBtn: {
+    borderRadius: 16,
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   }
 });

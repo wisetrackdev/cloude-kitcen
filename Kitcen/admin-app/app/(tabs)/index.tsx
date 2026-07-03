@@ -9,7 +9,8 @@ import {
   Modal,
   TextInput,
   Image,
-  Linking
+  Linking,
+  ActivityIndicator
 } from 'react-native';
 import { 
   Users, 
@@ -28,17 +29,25 @@ import {
   Phone,
   CreditCard,
   MapPin,
-  Star
+  Star,
+  Menu,
+  Bike,
+  ShieldCheck,
+  Plus,
+  Image as ImageIcon
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { useRouter } from 'expo-router';
 import { theme } from '../../styles/theme';
 import { useKitchenStore } from '../../store/useKitchenStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { API_BASE_URL } from '../../store/apiConfig';
+import { uploadImage } from '../../store/uploadHelper';
 
 type SubTab = 'analytics' | 'categories' | 'sellers';
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const kitchens = useKitchenStore(state => state.kitchens);
   const orders = useKitchenStore(state => state.orders);
   const categories = useKitchenStore(state => state.categories);
@@ -67,6 +76,161 @@ export default function AdminDashboard() {
   const [supportMessages, setSupportMessages] = useState<any[]>([]);
   const [supportInput, setSupportInput] = useState('');
   const [sendingSupport, setSendingSupport] = useState(false);
+
+  // Hamburger Drawer & Live Banner Manager States
+  const [showDrawer, setShowDrawer] = useState(false);
+  const [banners, setBanners] = useState<any[]>([]);
+  const [bannerImageUrl, setBannerImageUrl] = useState('');
+  const [bannerLinkUrl, setBannerLinkUrl] = useState('');
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const [isUploadingBannerLocal, setIsUploadingBannerLocal] = useState(false);
+
+  const fetchActiveBanners = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/banners`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          setBanners(json.data);
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to load dynamic banners:', err);
+    }
+  };
+
+  const handleUploadBannerFromDrawer = async () => {
+    if (!bannerImageUrl.trim()) {
+      Alert.alert('Error', 'Please enter or upload a banner image URL');
+      return;
+    }
+    setIsUploadingBanner(true);
+    try {
+      const adminId = 'usr-admin-simulated';
+      const res = await fetch(`${API_BASE_URL}/api/admin/banners?adminUserId=${adminId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageUrl: bannerImageUrl.trim(),
+          linkUrl: bannerLinkUrl.trim() || 'default_promo',
+          isActive: true
+        })
+      });
+      const json = await res.json();
+      setIsUploadingBanner(false);
+
+      if (json.success) {
+        Alert.alert('Success', 'Dynamic Banner uploaded successfully!');
+        setBannerImageUrl('');
+        setBannerLinkUrl('');
+        fetchActiveBanners();
+      } else {
+        Alert.alert('Error', json.message || 'Failed to upload banner');
+      }
+    } catch (err) {
+      setIsUploadingBanner(false);
+      Alert.alert('Offline Mode', 'Banner saved locally.');
+      const newMock = {
+        id: 'mock-' + Math.random().toString(36).substring(2, 6),
+        imageUrl: bannerImageUrl.trim(),
+        linkUrl: bannerLinkUrl.trim()
+      };
+      setBanners([newMock, ...banners]);
+      setBannerImageUrl('');
+      setBannerLinkUrl('');
+    }
+  };
+
+  const handleDeleteBanner = async (bannerId: string) => {
+    try {
+      // Simulate delete
+      Alert.alert('Delete', 'Banner deletion is simulated.');
+      setBanners(banners.filter(b => b.id !== bannerId));
+    } catch (err) {
+      console.warn(err);
+    }
+  };
+
+  const handleUploadImageUri = async (localUri: string, target: 'category' | 'banner') => {
+    if (target === 'category') {
+      const uploadedUrl = await uploadImage(localUri);
+      if (uploadedUrl) {
+        setNewCatImage(uploadedUrl);
+      } else {
+        setNewCatImage(localUri);
+      }
+    } else if (target === 'banner') {
+      setIsUploadingBannerLocal(true);
+      const uploadedUrl = await uploadImage(localUri);
+      setIsUploadingBannerLocal(false);
+      if (uploadedUrl) {
+        setBannerImageUrl(uploadedUrl);
+      } else {
+        setBannerImageUrl(localUri);
+      }
+    }
+  };
+
+  const requestBannerImageSource = () => {
+    Alert.alert(
+      'Banner Image Source',
+      'Select image upload source:',
+      [
+        {
+          text: 'Camera (Take Photo)',
+          onPress: captureBannerImage
+        },
+        {
+          text: 'Gallery (Choose from Library)',
+          onPress: pickBannerImageFromGallery
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        }
+      ]
+    );
+  };
+
+  const captureBannerImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Camera permissions are required.');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        await handleUploadImageUri(result.assets[0].uri, 'banner');
+      }
+    } catch (e) {
+      Alert.alert('Camera Error', 'Could not open camera.');
+    }
+  };
+
+  const pickBannerImageFromGallery = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Gallery access is required.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        await handleUploadImageUri(result.assets[0].uri, 'banner');
+      }
+    } catch (e) {
+      Alert.alert('Gallery Error', 'Could not open photo library.');
+    }
+  };
 
   // Forced light-mode theme colors matching customer app theme
   const themeColors = {
@@ -209,7 +373,7 @@ export default function AdminDashboard() {
         quality: 0.8,
       });
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        setNewCatImage(result.assets[0].uri);
+        await handleUploadImageUri(result.assets[0].uri, 'category');
       }
     } catch (e) {
       Alert.alert('Camera Error', 'Could not open camera.');
@@ -229,7 +393,7 @@ export default function AdminDashboard() {
         quality: 0.8,
       });
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        setNewCatImage(result.assets[0].uri);
+        await handleUploadImageUri(result.assets[0].uri, 'category');
       }
     } catch (e) {
       Alert.alert('Gallery Error', 'Could not open photo library.');
@@ -242,11 +406,13 @@ export default function AdminDashboard() {
     fetchOrders();
     fetchCategories();
     fetchSystemUsers();
+    fetchActiveBanners();
     const interval = setInterval(() => {
       fetchKitchens();
       fetchOrders();
       fetchCategories();
       fetchSystemUsers();
+      fetchActiveBanners();
     }, 5000);
     return () => clearInterval(interval);
   }, []);
@@ -284,8 +450,11 @@ export default function AdminDashboard() {
       <View style={styles.goldHeader}>
         <View style={styles.headerTopRow}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Users size={26} color="#FFF" />
-            <View style={{ marginLeft: 12 }}>
+            <TouchableOpacity onPress={() => setShowDrawer(true)} style={{ marginRight: 12 }}>
+              <Menu size={24} color="#FFF" />
+            </TouchableOpacity>
+            <Users size={22} color="#FFF" />
+            <View style={{ marginLeft: 10 }}>
               <Text style={styles.roleText}>Super Admin Panel</Text>
               <Text style={styles.titleText}>Global Control</Text>
             </View>
@@ -341,9 +510,34 @@ export default function AdminDashboard() {
                 <Text style={[styles.kpiLabel, { color: themeColors.textSecondary }]}>Orders Handled</Text>
               </View>
               <View style={[styles.kpiCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
-                <Users size={16} color={themeColors.primary} />
+                <Store size={16} color={themeColors.primary} />
+                <Text style={[styles.kpiValue, { color: themeColors.text }]}>{totalShopsCount}</Text>
+                <Text style={[styles.kpiLabel, { color: themeColors.textSecondary }]}>Total Kitchens</Text>
+              </View>
+            </View>
+
+            {/* User Base Stats Breakdown Grid */}
+            <Text style={{ fontSize: 11, fontWeight: 'bold', color: themeColors.textSecondary, marginHorizontal: 20, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>User Base Stats</Text>
+            <View style={styles.userGrid}>
+              <View style={[styles.userCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+                <Users size={16} color="#FF9500" />
+                <Text style={[styles.kpiValue, { color: themeColors.text }]}>{systemUsers.filter(u => u.role === 'customer').length}</Text>
+                <Text style={[styles.kpiLabel, { color: themeColors.textSecondary }]}>Customers</Text>
+              </View>
+              <View style={[styles.userCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+                <Store size={16} color="#34C759" />
+                <Text style={[styles.kpiValue, { color: themeColors.text }]}>{systemUsers.filter(u => u.role === 'vendor' || u.role === 'seller').length}</Text>
+                <Text style={[styles.kpiLabel, { color: themeColors.textSecondary }]}>Vendors / Sellers</Text>
+              </View>
+              <View style={[styles.userCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+                <Bike size={16} color="#007AFF" />
+                <Text style={[styles.kpiValue, { color: themeColors.text }]}>{systemUsers.filter(u => u.role === 'rider').length}</Text>
+                <Text style={[styles.kpiLabel, { color: themeColors.textSecondary }]}>Riders</Text>
+              </View>
+              <View style={[styles.userCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+                <ShieldCheck size={16} color="#5856D6" />
                 <Text style={[styles.kpiValue, { color: themeColors.text }]}>{systemUsers.length}</Text>
-                <Text style={[styles.kpiLabel, { color: themeColors.textSecondary }]}>Total Users</Text>
+                <Text style={[styles.kpiLabel, { color: themeColors.textSecondary }]}>Total Registered</Text>
               </View>
             </View>
 
@@ -645,6 +839,13 @@ export default function AdminDashboard() {
                     </View>
 
                     <View style={[styles.statsRow, { borderBottomColor: themeColors.border }]}>
+                      <Text style={[styles.statsLabel, { color: themeColors.textSecondary }]}>Bank Name:</Text>
+                      <Text style={[styles.statsVal, { color: themeColors.text }]}>
+                        {selectedSellerForStats.bankName || 'State Bank of India'}
+                      </Text>
+                    </View>
+
+                    <View style={[styles.statsRow, { borderBottomColor: themeColors.border }]}>
                       <Text style={[styles.statsLabel, { color: themeColors.textSecondary }]}>Bank A/C Number:</Text>
                       <Text style={[styles.statsVal, { color: themeColors.text }]}>
                         {selectedSellerForStats.bankAccount || 'SBI A/C 90812376510'}
@@ -740,8 +941,16 @@ export default function AdminDashboard() {
                     <Text style={[styles.detailValue, { color: themeColors.text }]}>{selectedKitchen.ownerName || 'Housewife Partner'}</Text>
                   </View>
                   <View style={[styles.detailRow, { borderBottomColor: themeColors.border }]}>
+                    <Text style={[styles.detailLabel, { color: themeColors.textSecondary }]}>Bank Name:</Text>
+                    <Text style={[styles.detailValue, { color: themeColors.text }]}>{selectedKitchen.bankName || 'State Bank of India'}</Text>
+                  </View>
+                  <View style={[styles.detailRow, { borderBottomColor: themeColors.border }]}>
                     <Text style={[styles.detailLabel, { color: themeColors.textSecondary }]}>Bank Account:</Text>
-                    <Text style={[styles.detailValue, { color: themeColors.text }]}>{selectedKitchen.bankAccount || 'SBI A/C 30948576291'}</Text>
+                    <Text style={[styles.detailValue, { color: themeColors.text }]}>{selectedKitchen.bankAccount || '30948576291'}</Text>
+                  </View>
+                  <View style={[styles.detailRow, { borderBottomColor: themeColors.border }]}>
+                    <Text style={[styles.detailLabel, { color: themeColors.textSecondary }]}>IFSC Code:</Text>
+                    <Text style={[styles.detailValue, { color: themeColors.text }]}>{selectedKitchen.ifscCode || 'SBIN0001043'}</Text>
                   </View>
                   <View style={[styles.detailRow, { borderBottomColor: themeColors.border }]}>
                     <Text style={[styles.detailLabel, { color: themeColors.textSecondary }]}>Cuisines:</Text>
@@ -913,6 +1122,55 @@ export default function AdminDashboard() {
         </Modal>
       )}
 
+      {/* HAMBURGER SIDE DRAWER MODAL */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showDrawer}
+        onRequestClose={() => setShowDrawer(false)}
+      >
+        <View style={styles.drawerOverlay}>
+          <View style={[styles.drawerContent, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+            <View style={[styles.drawerHeader, { borderBottomColor: themeColors.border }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Store size={20} color={themeColors.primary} style={{ marginRight: 8 }} />
+                <Text style={[styles.drawerTitle, { color: themeColors.text }]}>Admin Services</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowDrawer(false)} style={[styles.closeBtn, { backgroundColor: themeColors.border }]}>
+                <X size={18} color={themeColors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView contentContainerStyle={styles.drawerScrollBody} showsVerticalScrollIndicator={false}>
+              <View style={styles.drawerSection}>
+                {/* Navigation Button 1: Add Banner */}
+                <TouchableOpacity 
+                  style={[styles.drawerNavBtn, { backgroundColor: themeColors.inputBg }]} 
+                  onPress={() => {
+                    setShowDrawer(false);
+                    router.push('/add-banner');
+                  }}
+                >
+                  <Plus size={20} color={themeColors.primary} style={{ marginRight: 12 }} />
+                  <Text style={[styles.drawerNavText, { color: themeColors.text }]}>Add Banner</Text>
+                </TouchableOpacity>
+
+                {/* Navigation Button 2: Show All Banners */}
+                <TouchableOpacity 
+                  style={[styles.drawerNavBtn, { backgroundColor: themeColors.inputBg }]} 
+                  onPress={() => {
+                    setShowDrawer(false);
+                    router.push('/all-banners');
+                  }}
+                >
+                  <ImageIcon size={20} color={themeColors.primary} style={{ marginRight: 12 }} />
+                  <Text style={[styles.drawerNavText, { color: themeColors.text }]}>Show All Banners</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1423,5 +1681,64 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 2,
+  },
+  userGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    marginBottom: 20,
+  },
+  userCard: {
+    width: '48%',
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.01,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  drawerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-start',
+  },
+  drawerContent: {
+    width: '80%',
+    height: '100%',
+    borderRightWidth: 1,
+    paddingTop: 50,
+  },
+  drawerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+  },
+  drawerTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  drawerScrollBody: {
+    padding: 16,
+  },
+  drawerSection: {
+    marginBottom: 20,
+  },
+  drawerNavBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  drawerNavText: {
+    fontSize: 14,
+    fontWeight: '600',
   }
 });

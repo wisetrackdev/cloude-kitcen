@@ -12,6 +12,7 @@ import {
 import { Search, ShoppingBag, DollarSign, Clock, CheckCircle2, ChevronRight } from 'lucide-react-native';
 import { theme } from '../../styles/theme';
 import { useKitchenStore } from '../../store/useKitchenStore';
+import { useAuthStore } from '../../store/useAuthStore';
 
 type StatusFilter = 'all' | 'active' | 'delivered' | 'cancelled';
 
@@ -20,6 +21,19 @@ export default function AdminOrdersScreen() {
   const isLoading = useKitchenStore(state => state.isLoading);
   const fetchOrders = useKitchenStore(state => state.fetchOrders);
   const updateOrderStatus = useKitchenStore(state => state.updateOrderStatus);
+
+  const isDarkMode = useAuthStore(state => state.isDarkMode);
+
+  const themeColors = {
+    background: isDarkMode ? '#0A0A0A' : '#F5F6F8',
+    card: isDarkMode ? '#121212' : '#FFFFFF',
+    border: isDarkMode ? '#1F1F1F' : '#EAEAEA',
+    text: isDarkMode ? '#FFFFFF' : '#1E2022',
+    textSecondary: isDarkMode ? '#8E8E93' : '#686E73',
+    inputBg: isDarkMode ? '#0F0F0F' : '#F0F2F4',
+    primary: '#FFB300', // Gold/Yellow primary
+    success: '#34C759',
+  };
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<StatusFilter>('all');
@@ -86,67 +100,67 @@ export default function AdminOrdersScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: themeColors.background }]}>
       {/* Title Header */}
       <View style={styles.header}>
-        <Text style={styles.subtitle}>Superadmin Dashboard</Text>
-        <Text style={styles.title}>All System Orders</Text>
+        <Text style={[styles.subtitle, { color: themeColors.primary }]}>Superadmin Dashboard</Text>
+        <Text style={[styles.title, { color: themeColors.text }]}>All System Orders</Text>
       </View>
 
       {/* Metrics Row */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.metricsContainer}>
-        <View style={[styles.metricCard, { borderColor: theme.colors.primary }]}>
-          <ShoppingBag size={18} color={theme.colors.primary} />
-          <Text style={styles.metricVal}>{orders.length}</Text>
-          <Text style={styles.metricLabel}>Total Orders</Text>
+        <View style={[styles.metricCard, { backgroundColor: themeColors.card, borderColor: themeColors.primary }]}>
+          <ShoppingBag size={18} color={themeColors.primary} />
+          <Text style={[styles.metricVal, { color: themeColors.text }]}>{orders.length}</Text>
+          <Text style={[styles.metricLabel, { color: themeColors.textSecondary }]}>Total Orders</Text>
         </View>
 
-        <View style={[styles.metricCard, { borderColor: '#FFCC00' }]}>
+        <View style={[styles.metricCard, { backgroundColor: themeColors.card, borderColor: '#FFCC00' }]}>
           <Clock size={18} color="#FFCC00" />
-          <Text style={styles.metricVal}>{activeOrdersCount}</Text>
-          <Text style={styles.metricLabel}>Active Jobs</Text>
+          <Text style={[styles.metricVal, { color: themeColors.text }]}>{activeOrdersCount}</Text>
+          <Text style={[styles.metricLabel, { color: themeColors.textSecondary }]}>Active Jobs</Text>
         </View>
 
-        <View style={[styles.metricCard, { borderColor: '#34C759' }]}>
+        <View style={[styles.metricCard, { backgroundColor: themeColors.card, borderColor: '#34C759' }]}>
           <CheckCircle2 size={18} color="#34C759" />
-          <Text style={styles.metricVal}>{completedOrdersCount}</Text>
-          <Text style={styles.metricLabel}>Completed</Text>
+          <Text style={[styles.metricVal, { color: themeColors.text }]}>{completedOrdersCount}</Text>
+          <Text style={[styles.metricLabel, { color: themeColors.textSecondary }]}>Completed</Text>
         </View>
 
-        <View style={[styles.metricCard, { borderColor: theme.colors.success }]}>
-          <DollarSign size={18} color={theme.colors.success} />
-          <Text style={styles.metricVal}>₹{totalRevenue.toFixed(0)}</Text>
-          <Text style={styles.metricLabel}>System GMV</Text>
+        <View style={[styles.metricCard, { backgroundColor: themeColors.card, borderColor: themeColors.success }]}>
+          <DollarSign size={18} color={themeColors.success} />
+          <Text style={[styles.metricVal, { color: themeColors.text }]}>₹{totalRevenue.toFixed(0)}</Text>
+          <Text style={[styles.metricLabel, { color: themeColors.textSecondary }]}>System GMV</Text>
         </View>
       </ScrollView>
 
       {/* Search Bar */}
-      <View style={styles.searchRow}>
+      <View style={[styles.searchRow, { backgroundColor: themeColors.inputBg, borderColor: themeColors.border }]}>
         <Search size={16} color="#666" style={{ marginRight: 8 }} />
         <TextInput
           placeholder="Search Order ID, Shop, or Customer..."
           placeholderTextColor="#666"
           value={searchQuery}
           onChangeText={setSearchQuery}
-          style={styles.searchInput}
+          style={[styles.searchInput, { color: themeColors.text }]}
         />
       </View>
 
       {/* Filter Tabs */}
-      <View style={styles.filterRow}>
+      <View style={[styles.filterRow, { backgroundColor: themeColors.inputBg, borderColor: themeColors.border }]}>
         {(['all', 'active', 'delivered', 'cancelled'] as StatusFilter[]).map((filter) => (
           <TouchableOpacity
             key={filter}
             style={[
               styles.filterTab,
-              activeFilter === filter && styles.filterTabActive
+              activeFilter === filter && { backgroundColor: themeColors.primary }
             ]}
             onPress={() => setActiveFilter(filter)}
           >
             <Text
               style={[
                 styles.filterText,
-                activeFilter === filter && styles.filterTextActive
+                activeFilter === filter ? { color: '#000' } : { color: themeColors.textSecondary }
               ]}
             >
               {filter.toUpperCase()}
@@ -158,13 +172,13 @@ export default function AdminOrdersScreen() {
       {/* Order List */}
       <ScrollView showsVerticalScrollIndicator={false} style={styles.listScroller}>
         {isLoading && orders.length === 0 ? (
-          <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginTop: 40 }} />
+          <ActivityIndicator size="large" color={themeColors.primary} style={{ marginTop: 40 }} />
         ) : filteredOrders.map((order) => (
-          <View key={order.id} style={styles.orderCard}>
-            <View style={styles.cardHeader}>
+          <View key={order.id} style={[styles.orderCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+            <View style={[styles.cardHeader, { borderBottomColor: themeColors.border }]}>
               <View>
-                <Text style={styles.orderId}>{order.id}</Text>
-                <Text style={styles.orderDate}>{order.date} • {order.paymentMethod.toUpperCase()}</Text>
+                <Text style={[styles.orderId, { color: themeColors.text }]}>{order.id}</Text>
+                <Text style={[styles.orderDate, { color: themeColors.textSecondary }]}>{order.date} • {order.paymentMethod.toUpperCase()}</Text>
               </View>
               <TouchableOpacity 
                 style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status) + '1A', borderColor: getStatusColor(order.status) }]}
@@ -179,49 +193,49 @@ export default function AdminOrdersScreen() {
             {/* Order Items Summary */}
             <View style={styles.itemsBlock}>
               {order.items.map((item, idx) => (
-                <Text key={idx} style={styles.itemRow}>
+                <Text key={idx} style={[styles.itemRow, { color: themeColors.textSecondary }]}>
                   {item.quantity}x {item.name} (₹{item.price})
                 </Text>
               ))}
-              <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>Total Payout Amount:</Text>
-                <Text style={styles.totalVal}>₹{order.total}</Text>
+              <View style={[styles.totalRow, { borderTopColor: themeColors.border }]}>
+                <Text style={[styles.totalLabel, { color: themeColors.textSecondary }]}>Total Payout Amount:</Text>
+                <Text style={[styles.totalVal, { color: themeColors.primary }]}>₹{order.total}</Text>
               </View>
             </View>
 
             {/* Addresses Box */}
-            <View style={styles.addressBox}>
-              <Text style={styles.addressText} numberOfLines={1}>
-                🏪 <Text style={{ fontWeight: 'bold', color: '#FFF' }}>{order.kitchenName}</Text>
+            <View style={[styles.addressBox, { backgroundColor: themeColors.background, borderColor: themeColors.border }]}>
+              <Text style={[styles.addressText, { color: themeColors.textSecondary }]} numberOfLines={1}>
+                🏪 <Text style={{ fontWeight: 'bold', color: themeColors.text }}>{order.kitchenName}</Text>
               </Text>
-              <Text style={styles.addressText} numberOfLines={2}>
-                📍 Deliver to: <Text style={{ color: '#DDD' }}>{order.deliveryAddress || 'Not Provided'}</Text>
+              <Text style={[styles.addressText, { color: themeColors.textSecondary }]} numberOfLines={2}>
+                📍 Deliver to: <Text style={{ color: themeColors.text }}>{order.deliveryAddress || 'Not Provided'}</Text>
               </Text>
               {order.customerPhone && (
-                <Text style={styles.phoneText}>📞 Customer Contact: {order.customerPhone}</Text>
+                <Text style={[styles.phoneText, { color: themeColors.textSecondary }]}>📞 Customer Contact: {order.customerPhone}</Text>
               )}
             </View>
 
             {/* Order Timeline Timestamps */}
-            <View style={styles.timelineBox}>
-              <Text style={styles.timelineRow}>🕒 Placed At: {order.createdAt || order.date}</Text>
+            <View style={[styles.timelineBox, { borderTopColor: themeColors.border }]}>
+              <Text style={[styles.timelineRow, { color: themeColors.textSecondary }]}>🕒 Placed At: {order.createdAt || order.date}</Text>
               {order.acceptedByRiderAt && (
-                <Text style={styles.timelineRow}>🏍 Accepted: {order.acceptedByRiderAt}</Text>
+                <Text style={[styles.timelineRow, { color: themeColors.textSecondary }]}>🏍 Accepted: {order.acceptedByRiderAt}</Text>
               )}
               {order.pickedUpAt && (
-                <Text style={styles.timelineRow}>📦 Picked Up: {order.pickedUpAt}</Text>
+                <Text style={[styles.timelineRow, { color: themeColors.textSecondary }]}>📦 Picked Up: {order.pickedUpAt}</Text>
               )}
               {order.deliveredAt && (
-                <Text style={styles.timelineRow}>✅ Delivered: {order.deliveredAt}</Text>
+                <Text style={[styles.timelineRow, { color: themeColors.textSecondary }]}>✅ Delivered: {order.deliveredAt}</Text>
               )}
             </View>
 
             <TouchableOpacity 
-              style={styles.actionRow}
+              style={[styles.actionRow, { borderTopColor: themeColors.border }]}
               onPress={() => handleAdminOverrideStatus(order.id, order.status)}
             >
-              <Text style={styles.actionLink}>Manage Order State</Text>
-              <ChevronRight size={14} color={theme.colors.primary} />
+              <Text style={[styles.actionLink, { color: themeColors.primary }]}>Manage Order State</Text>
+              <ChevronRight size={14} color={themeColors.primary} />
             </TouchableOpacity>
           </View>
         ))}
