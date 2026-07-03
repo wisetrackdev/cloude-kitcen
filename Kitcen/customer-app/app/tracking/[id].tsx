@@ -186,9 +186,9 @@ export default function OrderTrackingScreen() {
             </View>
           </View>
 
-          <MapPin size={24} color={theme.colors.veg} style={styles.restaurantPin} />
+          <MapPin size={24} color={theme.colors.veg} style={styles.restaurantPin as any} />
           <View style={styles.mapDottedPath} />
-          <MapPin size={24} color={theme.colors.primary} style={styles.homePin} />
+          <MapPin size={24} color={theme.colors.primary} style={styles.homePin as any} />
         </View>
       </View>
 

@@ -146,7 +146,7 @@ export default function StoresScreen() {
                   <Clock size={11} color={themeColors.textSecondary} />
                   <Text style={[styles.metaText, { color: themeColors.textSecondary }]}>{item.time || '20-30 mins'}</Text>
                 </View>
-                <Text style={{ color: themeColors.textSecondary, mx: 4 }}>•</Text>
+                <Text style={{ color: themeColors.textSecondary, marginHorizontal: 4 }}>•</Text>
                 <Text style={[styles.metaText, { color: themeColors.textSecondary }]}>{item.distance || '1.5 km'}</Text>
                 
                 <View style={[styles.typeBadge, { 

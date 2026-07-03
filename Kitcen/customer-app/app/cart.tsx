@@ -21,6 +21,7 @@ export default function CartScreen() {
   const router = useRouter();
   
   const isDarkMode = useAuthStore(state => state.isDarkMode);
+  const user = useAuthStore(state => state.user);
 
   const cartItems = useCartStore(state => state.items);
   const updateQuantity = useCartStore(state => state.updateQuantity);

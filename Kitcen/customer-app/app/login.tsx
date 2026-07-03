@@ -127,7 +127,7 @@ export default function LoginScreen() {
           role: updatedUser.role,
           rewardPoints: updatedUser.rewardPoints
         });
-        Alert.alert('Welcome', 'Profile completed successfully!', [{ text: 'OK', onPress: () => router.replace('/') }]);
+        Alert.alert('Welcome', 'Profile completed successfully!', [{ text: 'OK', onPress: () => router.replace('/fingerprint') }]);
       } else {
         Alert.alert('Error', json.message || 'Failed to complete profile');
       }
@@ -144,7 +144,7 @@ export default function LoginScreen() {
         role: tempUser.role,
         rewardPoints: 10
       });
-      Alert.alert('Welcome (Offline)', 'Profile Setup Completed offline!', [{ text: 'OK', onPress: () => router.replace('/') }]);
+      Alert.alert('Welcome (Offline)', 'Profile Setup Completed offline!', [{ text: 'OK', onPress: () => router.replace('/fingerprint') }]);
     }
   };
 
@@ -183,7 +183,7 @@ export default function LoginScreen() {
             role: user.role,
             rewardPoints: user.rewardPoints
           });
-          Alert.alert('Welcome', 'Login successful!', [{ text: 'OK', onPress: () => router.replace('/') }]);
+          Alert.alert('Welcome', 'Login successful!', [{ text: 'OK', onPress: () => router.replace('/fingerprint') }]);
         }
       } else {
         Alert.alert('Error', json.message || 'Verification failed');
@@ -220,7 +220,7 @@ export default function LoginScreen() {
             role: 'customer',
             rewardPoints: 10
           });
-          Alert.alert('Welcome (Offline)', 'Offline Login Successful!', [{ text: 'OK', onPress: () => router.replace('/') }]);
+          Alert.alert('Welcome (Offline)', 'Offline Login Successful!', [{ text: 'OK', onPress: () => router.replace('/fingerprint') }]);
         }
       } else {
         Alert.alert('Error', 'Invalid OTP code. Try "123456"');
@@ -243,7 +243,7 @@ export default function LoginScreen() {
       role: 'customer',
       rewardPoints: 120
     });
-    Alert.alert('Welcome', 'Login successful!', [{ text: 'OK', onPress: () => router.replace('/') }]);
+    Alert.alert('Welcome', 'Login successful!', [{ text: 'OK', onPress: () => router.replace('/fingerprint') }]);
   };
 
   const handleSocialLogin = (provider: string) => {
@@ -254,7 +254,7 @@ export default function LoginScreen() {
       role: 'customer',
       rewardPoints: 0
     });
-    Alert.alert('Welcome', `${provider} login successful!`, [{ text: 'OK', onPress: () => router.replace('/') }]);
+    Alert.alert('Welcome', `${provider} login successful!`, [{ text: 'OK', onPress: () => router.replace('/fingerprint') }]);
   };
 
   return (
@@ -493,7 +493,6 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   fieldSection: {
-    spaceY: 16,
   },
   inputWrapper: {
     flexDirection: 'row',

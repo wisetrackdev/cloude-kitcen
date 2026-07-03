@@ -37,6 +37,8 @@ interface UserProfile {
   avatar?: string;
   role: string;
   rewardPoints: number;
+  firstName?: string;
+  lastName?: string;
 }
 
 interface LocationCoords {

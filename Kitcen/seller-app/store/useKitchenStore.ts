@@ -65,6 +65,7 @@ export interface OrderRecord {
   status: 'placed' | 'preparing' | 'ready' | 'on_the_way' | 'delivered' | 'cancelled';
   date: string;
   paymentMethod: string;
+  deliveryAddress?: string | null;
 }
 
 interface KitchenState {

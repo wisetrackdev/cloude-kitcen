@@ -8,6 +8,15 @@
     "scheme": "cludekitchen-customer",
     "plugins": [
       "expo-router"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ba4666c8-e8ab-4d0d-9102-45bafe499fe7"
+      }
+    },
+    "android": {
+      "package": "com.devkumar8527.cludekitchencustomer"
+    }
   }
 }

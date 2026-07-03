@@ -35,6 +35,11 @@ export interface Kitchen {
   bankName?: string | null;
   accountNumber?: string | null;
   ifscCode?: string | null;
+  address?: string;
+  floor?: string;
+  officeGaliNumber?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface OrderItem {

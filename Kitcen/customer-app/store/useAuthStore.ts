@@ -9,6 +9,10 @@ interface UserProfile {
   avatar?: string;
   role: string;
   rewardPoints: number;
+  firstName?: string;
+  lastName?: string;
+  gender?: string;
+  referralCode?: string;
 }
 
 interface LocationCoords {

@@ -27,7 +27,8 @@ import {
   ChevronRight,
   Sun,
   Moon,
-  Plus
+  Plus,
+  Camera
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { theme } from '../../styles/theme';
