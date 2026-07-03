@@ -16,6 +16,8 @@ export default function RootLayout() {
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="login" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="chat-customer" options={{ headerShown: false }} />
+        <Stack.Screen name="chat-admin" options={{ headerShown: false }} />
       </Stack>
     </SafeAreaProvider>
   );

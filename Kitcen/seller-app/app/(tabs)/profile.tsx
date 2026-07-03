@@ -28,6 +28,7 @@ import {
   Sun,
   Moon,
   Plus,
+  MessageSquare,
   Camera
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -368,6 +369,19 @@ export default function SellerProfile() {
                 <View>
                   <Text style={[styles.rowTitle, { color: themeColors.text }]}>FSSAI Food Safety Rules</Text>
                   <Text style={styles.rowDesc}>Vendor cleanliness and packaging guides</Text>
+                </View>
+              </View>
+              <ChevronRight size={16} color="#555" />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.zomatoRow, { backgroundColor: themeColors.card, borderColor: themeColors.border }]} onPress={() => router.push('/chat-admin')}>
+              <View style={styles.rowLeft}>
+                <View style={[styles.iconBg, { backgroundColor: 'rgba(0,122,255,0.1)' }]}>
+                  <MessageSquare size={18} color="#007AFF" />
+                </View>
+                <View>
+                  <Text style={[styles.rowTitle, { color: themeColors.text }]}>Chat with Admin Support</Text>
+                  <Text style={styles.rowDesc}>Direct support from platform administrators</Text>
                 </View>
               </View>
               <ChevronRight size={16} color="#555" />

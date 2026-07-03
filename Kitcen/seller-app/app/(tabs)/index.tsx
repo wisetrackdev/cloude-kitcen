@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Linking
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { 
   ChefHat,
   TrendingUp,
@@ -17,7 +18,8 @@ import {
   XCircle,
   UtensilsCrossed,
   MapPin,
-  MessageSquare
+  MessageSquare,
+  Phone
 } from 'lucide-react-native';
 import { theme } from '../../styles/theme';
 import { useKitchenStore } from '../../store/useKitchenStore';
@@ -28,6 +30,7 @@ const ZOMATO_RED = '#FFB300';
 type OrderTabFilter = 'live' | 'history';
 
 export default function SellerDashboard() {
+  const router = useRouter();
   const user = useAuthStore(state => state.user);
   const kitchens = useKitchenStore(state => state.kitchens);
   const products = useKitchenStore(state => state.products);
@@ -205,20 +208,42 @@ export default function SellerDashboard() {
                 </View>
               </View>
 
-              {/* Items List */}
-              <View style={styles.itemsBox}>
-                <Text style={styles.itemsSectionTitle}>FOOD ITEMS</Text>
-                {order.items.map((item, idx) => (
-                  <View key={idx} style={styles.itemRow}>
-                    <UtensilsCrossed size={12} color="#888" style={{ marginRight: 8 }} />
-                    <Text style={[styles.itemText, { color: themeColors.text }]}>{item.quantity}x {item.name}</Text>
-                  </View>
-                ))}
+              {/* Items List & Customer Contact Actions */}
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 10 }}>
+                {/* Items List */}
+                <View style={{ flex: 1, paddingRight: 10 }}>
+                  <Text style={styles.itemsSectionTitle}>FOOD ITEMS</Text>
+                  {order.items.map((item, idx) => (
+                    <View key={idx} style={styles.itemRow}>
+                      <UtensilsCrossed size={12} color="#888" style={{ marginRight: 8 }} />
+                      <Text style={[styles.itemText, { color: themeColors.text }]} numberOfLines={1}>
+                        {item.quantity}x {item.name}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+
+                {/* Right Aligned Chat & Call buttons */}
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <TouchableOpacity 
+                    style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,179,0,0.1)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: ZOMATO_RED, marginRight: 8 }}
+                    onPress={() => router.push({ pathname: '/chat-customer', params: { orderId: order.id, customerName: order.customerName } })}
+                  >
+                    <MessageSquare size={14} color={ZOMATO_RED} />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity 
+                    style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(46,204,113,0.1)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#2ecc71' }}
+                    onPress={() => Linking.openURL(`tel:${(order as any).customerPhone || '9876543210'}`)}
+                  >
+                    <Phone size={14} color="#2ecc71" />
+                  </TouchableOpacity>
+                </View>
               </View>
 
               {/* Delivery Address */}
               {order.deliveryAddress && (
-                <View style={[styles.addressBox, { backgroundColor: themeColors.inputBg, borderColor: themeColors.border }]}>
+                <View style={[styles.addressBox, { backgroundColor: themeColors.inputBg, borderColor: themeColors.border, marginHorizontal: 16 }]}>
                   <Text style={[styles.addressText, { color: themeColors.textSecondary }]} numberOfLines={1}>
                     📍 Deliver to: {order.deliveryAddress}
                   </Text>
@@ -267,13 +292,33 @@ export default function SellerDashboard() {
                 </View>
               </View>
 
-              {/* Items List */}
-              <View style={styles.itemsBox}>
-                {order.items.map((item, idx) => (
-                  <Text key={idx} style={[styles.pastItemText, { color: themeColors.textSecondary }]}>
-                    • {item.quantity}x {item.name}
-                  </Text>
-                ))}
+              {/* Items List & Customer Contact Actions */}
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 6 }}>
+                {/* Items List */}
+                <View style={{ flex: 1, paddingRight: 10 }}>
+                  {order.items.map((item, idx) => (
+                    <Text key={idx} style={[styles.pastItemText, { color: themeColors.textSecondary }]} numberOfLines={1}>
+                      • {item.quantity}x {item.name}
+                    </Text>
+                  ))}
+                </View>
+
+                {/* Right Aligned Chat & Call buttons */}
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <TouchableOpacity 
+                    style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,179,0,0.05)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: ZOMATO_RED + '50', marginRight: 6 }}
+                    onPress={() => router.push({ pathname: '/chat-customer', params: { orderId: order.id, customerName: order.customerName } })}
+                  >
+                    <MessageSquare size={12} color={ZOMATO_RED} />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity 
+                    style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(46,204,113,0.05)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(46,204,113,0.3)' }}
+                    onPress={() => Linking.openURL(`tel:${(order as any).customerPhone || '9876543210'}`)}
+                  >
+                    <Phone size={12} color="#2ecc71" />
+                  </TouchableOpacity>
+                </View>
               </View>
 
               <View style={[styles.cardFooter, { borderTopColor: 'transparent', paddingTop: 4 }]}>

@@ -13,7 +13,7 @@ import {
   Linking
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Phone, MessageSquare, ShieldCheck, MapPin, Navigation, Send, X } from 'lucide-react-native';
+import { ArrowLeft, Phone, MessageSquare, ShieldCheck, MapPin, Navigation, Send, X, ChefHat, Store } from 'lucide-react-native';
 import { theme } from '../../styles/theme';
 import { useKitchenStore } from '../../store/useKitchenStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -193,6 +193,33 @@ export default function OrderTrackingScreen() {
       </View>
 
       <ScrollView style={styles.statusSection} showsVerticalScrollIndicator={false}>
+        {/* Kitchen Partner Details Card */}
+        <View style={[styles.riderCard, { marginBottom: 12 }]}>
+          <View style={styles.riderMeta}>
+            <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,179,0,0.1)', alignItems: 'center', justifyContent: 'center' }}>
+              <ChefHat size={20} color={theme.colors.primary} />
+            </View>
+            <View style={{ marginLeft: 10 }}>
+              <Text style={styles.riderName}>{activeKitchen?.name || 'Kitchen Partner'}</Text>
+              <Text style={styles.riderVehicle}>Home Chef Partner • Healthy Meals</Text>
+            </View>
+          </View>
+          <View style={styles.riderActions}>
+            <TouchableOpacity 
+              style={styles.actionBtn}
+              onPress={() => Linking.openURL(`tel:${(activeKitchen as any)?.phone || (activeOrder as any)?.kitchenPhone || '9876543210'}`)}
+            >
+              <Phone size={16} color={theme.colors.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.actionBtn}
+              onPress={() => setChatActive(true)}
+            >
+              <MessageSquare size={16} color={theme.colors.primary} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* Rider profile card */}
         {activeOrder?.riderId ? (
           <View>

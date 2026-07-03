@@ -671,7 +671,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: '#0A0A0A',
+    backgroundColor: '#F5F6F8', // Premium Light background
     justifyContent: 'center',
     padding: 24,
     paddingTop: 50,
@@ -686,12 +686,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: '#1E2022', // Dark text
     marginTop: 16,
   },
   subtitle: {
     fontSize: 12,
-    color: theme.colors.textSecondary,
+    color: '#686E73', // Secondary text
     marginTop: 4,
     textAlign: 'center',
   },
@@ -701,16 +701,16 @@ const styles = StyleSheet.create({
   stepTitle: {
     fontSize: 15,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: '#1E2022',
     marginBottom: 16,
     textAlign: 'center',
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#121212',
+    backgroundColor: '#FFFFFF', // White card style
     borderWidth: 1,
-    borderColor: '#1F1F1F',
+    borderColor: '#EAEAEA',
     borderRadius: 12,
     paddingHorizontal: 16,
     marginBottom: 16,
@@ -725,15 +725,15 @@ const styles = StyleSheet.create({
   inputField: {
     flex: 1,
     paddingVertical: 16,
-    color: '#FFF',
+    color: '#1E2022',
     fontSize: 13,
   },
   locationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,107,0,0.05)',
+    backgroundColor: 'rgba(255,179,0,0.05)',
     borderWidth: 1,
-    borderColor: 'rgba(255,107,0,0.1)',
+    borderColor: 'rgba(255,179,0,0.1)',
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -746,7 +746,7 @@ const styles = StyleSheet.create({
   },
   locationValue: {
     fontSize: 12,
-    color: '#FFF',
+    color: '#1E2022',
     marginTop: 2,
   },
   refreshLocText: {
@@ -781,19 +781,19 @@ const styles = StyleSheet.create({
   approvalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: theme.colors.warning,
+    color: '#FF9500',
     marginBottom: 12,
   },
   approvalText: {
     fontSize: 13,
-    color: '#FFF',
+    color: '#1E2022',
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 10,
   },
   approvalSubtext: {
     fontSize: 11,
-    color: theme.colors.textSecondary,
+    color: '#686E73',
     textAlign: 'center',
     lineHeight: 18,
     marginBottom: 30,
@@ -803,9 +803,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#121212',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#1F1F1F',
+    borderColor: '#EAEAEA',
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -816,17 +816,17 @@ const styles = StyleSheet.create({
   imagePlaceholderText: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: '#1E2022',
   },
   imagePlaceholderSubText: {
     fontSize: 10,
-    color: theme.colors.textSecondary,
+    color: '#686E73',
     marginTop: 2,
   },
   captureBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,107,0,0.1)',
+    backgroundColor: 'rgba(255,179,0,0.1)',
     borderWidth: 1,
     borderColor: theme.colors.primary,
     paddingVertical: 8,

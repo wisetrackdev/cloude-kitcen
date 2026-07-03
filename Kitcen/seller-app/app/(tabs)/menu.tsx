@@ -22,6 +22,18 @@ import { uploadImageToServer } from '../../store/uploadHelper';
 export default function SellerMenuScreen() {
   const user = useAuthStore(state => state.user);
   const kitchens = useKitchenStore(state => state.kitchens);
+
+  const isDarkMode = useAuthStore(state => state.isDarkMode);
+
+  const themeColors = {
+    background: isDarkMode ? '#0A0A0A' : '#F5F6F8',
+    card: isDarkMode ? '#121212' : '#FFFFFF',
+    border: isDarkMode ? '#1F1F1F' : '#EAEAEA',
+    text: isDarkMode ? '#FFFFFF' : '#1E2022',
+    textSecondary: isDarkMode ? '#8E8E93' : '#686E73',
+    inputBg: isDarkMode ? '#0F0F0F' : '#F0F2F4',
+    primary: '#FFB300', // Gold/Yellow primary
+  };
   const products = useKitchenStore(state => state.products);
   const categories = useKitchenStore(state => state.categories);
   const isLoading = useKitchenStore(state => state.isLoading);
@@ -207,15 +219,15 @@ export default function SellerMenuScreen() {
 
   if (!isApproved) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 24 }]}>
+      <View style={[styles.container, { backgroundColor: themeColors.background, justifyContent: 'center', alignItems: 'center', padding: 24 }]}>
         <ChefHat size={64} color={theme.colors.warning} style={{ marginBottom: 20 }} />
         <Text style={{ color: theme.colors.warning, fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 12 }}>
           Approval Pending
         </Text>
-        <Text style={{ color: '#FFF', fontSize: 13, textAlign: 'center', lineHeight: 20, paddingHorizontal: 10 }}>
+        <Text style={{ color: themeColors.text, fontSize: 13, textAlign: 'center', lineHeight: 20, paddingHorizontal: 10 }}>
           Your kitchen "{kitchenInfo.name}" is pending approval from the SuperAdmin.
         </Text>
-        <Text style={{ color: theme.colors.textSecondary, fontSize: 11, textAlign: 'center', marginTop: 8, lineHeight: 18, paddingHorizontal: 20 }}>
+        <Text style={{ color: themeColors.textSecondary, fontSize: 11, textAlign: 'center', marginTop: 8, lineHeight: 18, paddingHorizontal: 20 }}>
           Once approved, you will be able to manage orders, setup categories, and add items to your menu.
         </Text>
       </View>
@@ -223,9 +235,9 @@ export default function SellerMenuScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={[styles.container, { backgroundColor: themeColors.background }]} showsVerticalScrollIndicator={false}>
       <View style={styles.headerRow}>
-        <Text style={styles.title}>Menu Catalog</Text>
+        <Text style={[styles.title, { color: themeColors.text }]}>Menu Catalog</Text>
         <TouchableOpacity 
           style={styles.addDishBtn}
           onPress={() => setShowAddDishModal(true)}
@@ -235,11 +247,11 @@ export default function SellerMenuScreen() {
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.subtitle}>Manage available items for {kitchenInfo.name}</Text>
+      <Text style={[styles.subtitle, { color: themeColors.textSecondary }]}>Manage available items for {kitchenInfo.name}</Text>
 
       {/* Shop Categories Section with Delete option */}
       <View style={styles.shopCategoriesSection}>
-        <Text style={styles.sectionTitle}>Shop Categories</Text>
+        <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Shop Categories</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesScroll}>
           {Array.from(new Set(kitchenProducts.map(p => p.category)))
             .filter(catName => catName && catName.trim() !== '')
@@ -247,8 +259,8 @@ export default function SellerMenuScreen() {
               const isHidden = hiddenCategories.includes(catName.toLowerCase());
               if (isHidden) return null;
               return (
-                <View key={idx} style={styles.catChip}>
-                  <Text style={styles.catChipText}>{catName}</Text>
+                <View key={idx} style={[styles.catChip, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+                  <Text style={[styles.catChipText, { color: themeColors.text }]}>{catName}</Text>
                   <TouchableOpacity onPress={() => handleHideCategory(catName)} style={styles.catDeleteBtn}>
                     <Text style={styles.catDeleteBtnText}>×</Text>
                   </TouchableOpacity>
@@ -264,16 +276,25 @@ export default function SellerMenuScreen() {
         </ScrollView>
       </View>
 
-      <View style={styles.dishList}>
+      <View style={[styles.dishList, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
         {visibleProducts.map((item) => (
-          <View key={item.id} style={styles.dishCard}>
+          <View key={item.id} style={[styles.dishCard, { borderBottomColor: themeColors.border }]}>
             <View style={styles.dishCardMeta}>
               <View style={[styles.vegBadge, { borderColor: item.isVeg ? theme.colors.veg : theme.colors.nonVeg }]}>
                 <View style={[styles.vegDot, { backgroundColor: item.isVeg ? theme.colors.veg : theme.colors.nonVeg }]} />
               </View>
+              
+              {item.image ? (
+                <Image source={{ uri: item.image }} style={{ width: 44, height: 44, borderRadius: 8, marginLeft: 10 }} />
+              ) : (
+                <View style={{ width: 44, height: 44, borderRadius: 8, backgroundColor: themeColors.inputBg, alignItems: 'center', justifyContent: 'center', marginLeft: 10 }}>
+                  <ChefHat size={16} color={themeColors.textSecondary} />
+                </View>
+              )}
+
               <View style={{ marginLeft: 10 }}>
-                <Text style={styles.dishCardName}>{item.name}</Text>
-                <Text style={styles.dishCardPrice}>₹{item.price} • {item.category}</Text>
+                <Text style={[styles.dishCardName, { color: themeColors.text }]}>{item.name}</Text>
+                <Text style={[styles.dishCardPrice, { color: themeColors.textSecondary }]}>₹{item.price} • {item.category}</Text>
               </View>
             </View>
             <TouchableOpacity onPress={() => deleteProduct(selectedKitchenId, item.id)}>
@@ -282,7 +303,7 @@ export default function SellerMenuScreen() {
           </View>
         ))}
         {visibleProducts.length === 0 && (
-          <Text style={{ color: '#888', fontSize: 12, textAlign: 'center', marginVertical: 30 }}>
+          <Text style={{ color: themeColors.textSecondary, fontSize: 12, textAlign: 'center', marginVertical: 30 }}>
             No items visible. Add a dish or restore hidden categories.
           </Text>
         )}
@@ -297,15 +318,15 @@ export default function SellerMenuScreen() {
       >
         <View style={styles.modalOverlay}>
           <ScrollView contentContainerStyle={styles.modalScroll}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Add Dish or Tiffin Package</Text>
+            <View style={[styles.modalContent, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+              <Text style={[styles.modalTitle, { color: themeColors.text }]}>Add Dish or Tiffin Package</Text>
 
               <TextInput
                 placeholder="Dish Name (e.g. Kadhai Paneer Tiffin)"
                 placeholderTextColor="#888"
                 value={newDishName}
                 onChangeText={setNewDishName}
-                style={styles.inputField}
+                style={[styles.inputField, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
               />
 
               <TextInput
@@ -314,7 +335,7 @@ export default function SellerMenuScreen() {
                 keyboardType="numeric"
                 value={newDishPrice}
                 onChangeText={setNewDishPrice}
-                style={styles.inputField}
+                style={[styles.inputField, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
               />
 
               <TextInput
@@ -322,20 +343,20 @@ export default function SellerMenuScreen() {
                 placeholderTextColor="#888"
                 value={newDishDesc}
                 onChangeText={setNewDishDesc}
-                style={styles.inputField}
+                style={[styles.inputField, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
               />
 
-              <Text style={styles.sectionLabel}>Dish Photo Image</Text>
+              <Text style={[styles.sectionLabel, { color: themeColors.text }]}>Dish Photo Image</Text>
               <View style={styles.imagePickerRow}>
-                {newDishImage ? <Image source={{ uri: newDishImage }} style={styles.pickerThumb} /> : <View style={styles.noThumb}><ImageIcon size={20} color="#666" /></View>}
+                {newDishImage ? <Image source={{ uri: newDishImage }} style={styles.pickerThumb} /> : <View style={[styles.noThumb, { backgroundColor: themeColors.inputBg }]}><ImageIcon size={20} color="#666" /></View>}
                 <View style={styles.pickerButtons}>
-                  <TouchableOpacity style={styles.pickerActionBtn} onPress={pickFromCamera}>
-                    <Camera size={12} color="#FFF" style={{ marginRight: 4 }} />
-                    <Text style={styles.pickerActionText}>Camera</Text>
+                  <TouchableOpacity style={[styles.pickerActionBtn, { backgroundColor: themeColors.inputBg, borderColor: themeColors.border }]} onPress={pickFromCamera}>
+                    <Camera size={12} color={themeColors.text} style={{ marginRight: 4 }} />
+                    <Text style={[styles.pickerActionText, { color: themeColors.text }]}>Camera</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.pickerActionBtn} onPress={pickFromGallery}>
-                    <ImageIcon size={12} color="#FFF" style={{ marginRight: 4 }} />
-                    <Text style={styles.pickerActionText}>Gallery</Text>
+                  <TouchableOpacity style={[styles.pickerActionBtn, { backgroundColor: themeColors.inputBg, borderColor: themeColors.border }]} onPress={pickFromGallery}>
+                    <ImageIcon size={12} color={themeColors.text} style={{ marginRight: 4 }} />
+                    <Text style={[styles.pickerActionText, { color: themeColors.text }]}>Gallery</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -345,18 +366,18 @@ export default function SellerMenuScreen() {
                 placeholderTextColor="#888"
                 value={newDishImage}
                 onChangeText={setNewDishImage}
-                style={styles.inputField}
+                style={[styles.inputField, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
               />
 
               {/* Category Selection */}
-              <Text style={styles.sectionLabel}>Choose Category</Text>
+              <Text style={[styles.sectionLabel, { color: themeColors.text }]}>Choose Category</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
                 {categories.map((cat) => (
                   <TouchableOpacity
                     key={cat.id}
                     style={[
                       styles.categoryBubble,
-                      newDishCat === cat.name && styles.categoryBubbleActive
+                      newDishCat === cat.name ? { backgroundColor: themeColors.primary, borderColor: themeColors.primary } : { backgroundColor: themeColors.inputBg, borderColor: themeColors.border }
                     ]}
                     onPress={() => {
                       setNewDishCat(cat.name);
@@ -366,7 +387,7 @@ export default function SellerMenuScreen() {
                     <Tag size={10} color={newDishCat === cat.name ? '#000' : '#888'} style={{ marginRight: 4 }} />
                     <Text style={[
                       styles.categoryBubbleText,
-                      newDishCat === cat.name && styles.categoryBubbleTextActive
+                      newDishCat === cat.name ? { color: '#000', fontWeight: 'bold' } : { color: themeColors.textSecondary }
                     ]}>{cat.name}</Text>
                   </TouchableOpacity>
                 ))}
@@ -380,16 +401,16 @@ export default function SellerMenuScreen() {
                   setCustomCategory(text);
                   setNewDishCat(text);
                 }}
-                style={styles.inputField}
+                style={[styles.inputField, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
               />
 
               <View style={styles.switchRow}>
-                <Text style={styles.switchLabel}>Dietary Status: Veg Item</Text>
+                <Text style={[styles.switchLabel, { color: themeColors.textSecondary }]}>Dietary Status: Veg Item</Text>
                 <TouchableOpacity 
-                  style={[styles.toggleBtn, newDishVeg && styles.toggleBtnActive]}
+                  style={[styles.toggleBtn, newDishVeg ? { backgroundColor: theme.colors.veg } : { backgroundColor: themeColors.inputBg, borderWidth: 1, borderColor: themeColors.border }]}
                   onPress={() => setNewDishVeg(!newDishVeg)}
                 >
-                  <Text style={[styles.toggleBtnText, newDishVeg && styles.toggleBtnTextActive]}>
+                  <Text style={[styles.toggleBtnText, newDishVeg ? { color: '#FFF' } : { color: themeColors.textSecondary }]}>
                     {newDishVeg ? 'VEG' : 'NON-VEG'}
                   </Text>
                 </TouchableOpacity>
