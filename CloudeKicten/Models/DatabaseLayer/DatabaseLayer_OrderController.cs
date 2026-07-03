@@ -21,6 +21,7 @@ namespace CloudeKicten.Models.DatabaseLayer
         Task<bool> AssignRiderToOrderAsync(string id, string riderId);
         Task<List<string>> GetRiderIdsAsync();
         Task<bool> InsertNotificationAsync(string userId, string title, string body);
+        Task<List<SupportRoomDto>> GetSupportRoomsAsync();
     }
 
     public class DatabaseLayer_OrderController : IDatabaseLayer_OrderController
@@ -277,6 +278,42 @@ namespace CloudeKicten.Models.DatabaseLayer
                 DeliveredAt = r.IsDBNull(r.GetOrdinal("delivered_at")) ? null : r.GetDateTime(r.GetOrdinal("delivered_at")),
                 AcceptedByRiderAt = r.IsDBNull(r.GetOrdinal("accepted_by_rider_at")) ? null : r.GetDateTime(r.GetOrdinal("accepted_by_rider_at"))
             };
+        }
+
+        public async Task<List<SupportRoomDto>> GetSupportRoomsAsync()
+        {
+            var list = new List<SupportRoomDto>();
+            try
+            {
+                using var conn = GetConnection();
+                await conn.OpenAsync();
+                string sql = @"
+                    SELECT DISTINCT c.order_id, 
+                           COALESCE(u.id, k.owner) AS customer_id, 
+                           COALESCE(CONCAT(u.first_name, ' ', u.last_name), k.name) AS customer_name
+                    FROM order_chats c
+                    LEFT JOIN user_register u ON c.order_id = CONCAT('support-', u.id)
+                    LEFT JOIN kitchens k ON c.order_id = CONCAT('support-seller-', k.id)
+                    WHERE c.order_id LIKE 'support-%'
+                    ORDER BY c.order_id DESC;
+                ";
+                using var cmd = new NpgsqlCommand(sql, conn);
+                using var reader = await cmd.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    list.Add(new SupportRoomDto
+                    {
+                        OrderId = reader.GetString(0),
+                        CustomerId = reader.GetString(1),
+                        CustomerName = reader.GetString(2)
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error fetching support rooms: {ex.Message}");
+            }
+            return list;
         }
     }
 }

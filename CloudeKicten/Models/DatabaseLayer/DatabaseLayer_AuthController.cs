@@ -14,6 +14,7 @@ namespace CloudeKicten.Models.DatabaseLayer
         Task<bool> UpdateUserOtpAsync(string email, string otp, DateTime expiry);
         Task<bool> ClearUserOtpAsync(string email);
         Task<bool> UpdateUserProfileAsync(UserDb user);
+        Task<List<UserDb>> GetAllUsersAsync();
     }
 
     public class DatabaseLayer_AuthController : IDatabaseLayer_AuthController
@@ -468,6 +469,27 @@ namespace CloudeKicten.Models.DatabaseLayer
                 IsVerified = r.IsDBNull(r.GetOrdinal("is_verified")) ? false : r.GetBoolean(r.GetOrdinal("is_verified")),
                 CreatedAt = r.GetDateTime(r.GetOrdinal("created_at"))
             };
+        }
+
+        public async Task<List<UserDb>> GetAllUsersAsync()
+        {
+            var list = new List<UserDb>();
+            try
+            {
+                using var conn = GetConnection();
+                await conn.OpenAsync();
+                using var cmd = new NpgsqlCommand("SELECT * FROM user_register ORDER BY created_at DESC;", conn);
+                using var reader = await cmd.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    list.Add(MapUser(reader));
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error fetching all users: {ex.Message}");
+            }
+            return list;
         }
     }
 }

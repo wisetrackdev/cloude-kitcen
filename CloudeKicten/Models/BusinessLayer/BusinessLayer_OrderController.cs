@@ -19,6 +19,7 @@ namespace CloudeKicten.Models.BusinessLayer
         Task<ApiResponse<List<ChatDto>>> GetChatsByOrderIdAsync(string orderId);
         Task<ApiResponse<ChatDto>> SendChatMessageAsync(string orderId, ChatCreateDto dto);
         Task<ApiResponse<OrderResponseDto>> AcceptOrderAsync(string id, string riderId);
+        Task<ApiResponse<List<SupportRoomDto>>> GetSupportRoomsAsync();
     }
 
     public class BusinessLayer_OrderController : IBusinessLayer_OrderController
@@ -269,6 +270,12 @@ namespace CloudeKicten.Models.BusinessLayer
                 AcceptedByRiderAt = dbOrder.AcceptedByRiderAt?.ToString("yyyy-MM-dd HH:mm:ss"),
                 CreatedAt = dbOrder.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")
             };
+        }
+
+        public async Task<ApiResponse<List<SupportRoomDto>>> GetSupportRoomsAsync()
+        {
+            var rooms = await _databaseLayer.GetSupportRoomsAsync();
+            return ApiResponse<List<SupportRoomDto>>.Ok(rooms);
         }
     }
 }

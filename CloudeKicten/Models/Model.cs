@@ -479,7 +479,14 @@ namespace CloudeKicten.Models
 
     public class ChatCreateDto
     {
-        public string SenderId { get; set; } = string.Empty;
-        public string Message { get; set; } = string.Empty;
+      public string SenderId { get; set; } = string.Empty;
+      public string Message { get; set; } = string.Empty;
+    }
+
+    public class SupportRoomDto
+    {
+      public string OrderId { get; set; } = string.Empty;
+      public string CustomerId { get; set; } = string.Empty;
+      public string CustomerName { get; set; } = string.Empty;
     }
 }

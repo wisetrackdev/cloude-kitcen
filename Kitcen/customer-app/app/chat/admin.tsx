@@ -52,8 +52,9 @@ export default function AdminSupportChatScreen() {
 
   const fetchMessages = async (showLoading = true) => {
     if (showLoading) setLoading(true);
+    const customerId = user?.id || 'usr-9281';
     try {
-      const res = await fetch(`${API_BASE_URL}/api/orders/support-general/chats`);
+      const res = await fetch(`${API_BASE_URL}/api/orders/support-${customerId}/chats`);
       if (res.ok) {
         const json = await res.json();
         if (json.success && json.data) {
@@ -75,9 +76,10 @@ export default function AdminSupportChatScreen() {
     setInputText('');
     setSending(true);
 
+    const customerId = user?.id || 'usr-9281';
     try {
-      const senderId = user?.id || 'usr-9281';
-      const res = await fetch(`${API_BASE_URL}/api/orders/support-general/chats`, {
+      const senderId = customerId;
+      const res = await fetch(`${API_BASE_URL}/api/orders/support-${customerId}/chats`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -99,7 +101,7 @@ export default function AdminSupportChatScreen() {
       // Fallback local append for preview
       const localMsg: ChatMessage = {
         id: 'msg-' + Date.now(),
-        senderId: user?.id || 'usr-9281',
+        senderId: customerId,
         senderName: user?.name || 'Customer',
         message: messageText,
         createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })

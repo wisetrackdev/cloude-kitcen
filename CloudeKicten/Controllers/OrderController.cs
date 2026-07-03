@@ -112,5 +112,12 @@ namespace CloudeKicten.Controllers
             }
             return Ok(result);
         }
+
+        [HttpGet("support/rooms")]
+        public async Task<IActionResult> GetSupportRooms()
+        {
+            var result = await _businessLayer.GetSupportRoomsAsync();
+            return Ok(result);
+        }
     }
 }

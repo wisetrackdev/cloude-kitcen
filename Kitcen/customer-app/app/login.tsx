@@ -93,6 +93,52 @@ export default function LoginScreen() {
     }
   };
 
+  // Pick Profile Image from Gallery
+  const pickProfileImageFromGallery = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Gallery permissions are required.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setAvatar(result.assets[0].uri);
+      }
+    } catch (err) {
+      console.warn('Gallery failed:', err);
+      Alert.alert('Gallery Error', 'Could not open photo library.');
+    }
+  };
+
+  // Alert Dialog Selector
+  const requestPhotoSource = () => {
+    Alert.alert(
+      'Profile Photo Source',
+      'Select how you want to upload your photo:',
+      [
+        {
+          text: 'Camera (Take Photo)',
+          onPress: captureProfileImage
+        },
+        {
+          text: 'Gallery (Choose from Library)',
+          onPress: pickProfileImageFromGallery
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        }
+      ]
+    );
+  };
+
   // Complete Profile
   const handleCompleteProfile = async () => {
     if (!firstName.trim() || !lastName.trim()) {
@@ -353,10 +399,10 @@ export default function LoginScreen() {
                         paddingVertical: 8, 
                         borderRadius: 6 
                       }} 
-                      onPress={captureProfileImage}
+                      onPress={requestPhotoSource}
                     >
                       <Camera size={14} color="#FFF" style={{ marginRight: 6 }} />
-                      <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold' }}>Click Photo</Text>
+                      <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold' }}>Upload Photo</Text>
                     </TouchableOpacity>
                   </View>
 

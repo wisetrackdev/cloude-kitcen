@@ -59,12 +59,12 @@ export default function SellerDashboard() {
   const kitchenOrders = orders.filter(o => o.kitchenId === selectedKitchenId);
 
   const themeColors = {
-    background: isDarkMode ? '#0B0B0C' : '#F5F6F8',
-    card: isDarkMode ? '#121214' : '#FFFFFF',
-    border: isDarkMode ? '#1F1F22' : '#EAEAEA',
-    text: isDarkMode ? '#FFFFFF' : '#1E2022',
-    textSecondary: isDarkMode ? '#8E8E93' : '#686E73',
-    inputBg: isDarkMode ? '#0F0F0F' : '#F0F2F4'
+    background: '#F5F6F8',
+    card: '#FFFFFF',
+    border: '#EAEAEA',
+    text: '#1E2022',
+    textSecondary: '#686E73',
+    inputBg: '#F0F2F4'
   };
 
   const handleOrderStatusToggle = async (orderId: string, currentStatus: string) => {

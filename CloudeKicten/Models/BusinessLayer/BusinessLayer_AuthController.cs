@@ -18,6 +18,7 @@ namespace CloudeKicten.Models.BusinessLayer
         Task<ApiResponse<UserDto>> GetUserProfileAsync(string id);
         Task<ApiResponse<UserDto>> UpdateUserProfileAsync(string id, UserDto dto);
         Task<ApiResponse<UserDto>> CompleteProfileAsync(CompleteProfileDto dto);
+        Task<ApiResponse<List<UserDb>>> GetAllUsersAsync();
     }
 
     public class BusinessLayer_AuthController : IBusinessLayer_AuthController
@@ -319,6 +320,12 @@ namespace CloudeKicten.Models.BusinessLayer
 
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
+        }
+
+        public async Task<ApiResponse<List<UserDb>>> GetAllUsersAsync()
+        {
+            var users = await _databaseLayer.GetAllUsersAsync();
+            return ApiResponse<List<UserDb>>.Ok(users);
         }
     }
 }

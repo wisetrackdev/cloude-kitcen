@@ -63,11 +63,11 @@ export default function ProfileScreen() {
 
   const themeColors = {
     background: '#FFCC00', // Gold-yellow top header background
-    card: isDarkMode ? '#121214' : '#FFFFFF',
-    border: isDarkMode ? '#1F1F22' : '#EAEAEA',
-    text: isDarkMode ? '#FFFFFF' : '#1E2022',
-    textSecondary: isDarkMode ? '#8E8E93' : '#686E73',
-    inputBg: isDarkMode ? '#0F0F0F' : '#F0F2F4'
+    card: '#FFFFFF',
+    border: '#EAEAEA',
+    text: '#1E2022',
+    textSecondary: '#686E73',
+    inputBg: '#F0F2F4'
   };
 
   const handleUpdateProfile = async () => {

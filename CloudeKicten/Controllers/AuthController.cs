@@ -70,5 +70,12 @@ namespace CloudeKicten.Controllers
             }
             return Ok(result);
         }
+
+        [HttpGet("users")]
+        public async Task<IActionResult> GetAllUsers()
+        {
+            var result = await _businessLayer.GetAllUsersAsync();
+            return Ok(result);
+        }
     }
 }

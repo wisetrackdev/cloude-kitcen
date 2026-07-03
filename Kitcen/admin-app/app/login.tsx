@@ -10,7 +10,7 @@ import {
   ScrollView
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Users, Mail, Key, User, Camera } from 'lucide-react-native';
+import { Users, Mail, Key, User, Camera, ArrowLeft } from 'lucide-react-native';
 import { theme } from '../styles/theme';
 import { useAuthStore } from '../store/useAuthStore';
 import { API_BASE_URL } from '../store/apiConfig';
@@ -36,6 +36,28 @@ export default function AdminLoginScreen() {
   const [tempUser, setTempUser] = useState<any>(null);
   const [showCompleteProfile, setShowCompleteProfile] = useState(false);
 
+  // Alert Selector (Camera or Gallery)
+  const requestPhotoSource = () => {
+    Alert.alert(
+      'Profile Photo Source',
+      'Select how you want to upload your photo:',
+      [
+        {
+          text: 'Camera (Take Photo)',
+          onPress: captureProfileImage
+        },
+        {
+          text: 'Gallery (Choose from Library)',
+          onPress: pickProfileImageFromGallery
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        }
+      ]
+    );
+  };
+
   // Capture Profile Image via Camera
   const captureProfileImage = async () => {
     try {
@@ -57,6 +79,30 @@ export default function AdminLoginScreen() {
     } catch (err) {
       console.warn('Camera failed:', err);
       Alert.alert('Camera Error', 'Could not open camera.');
+    }
+  };
+
+  // Pick Profile Image from Gallery
+  const pickProfileImageFromGallery = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Gallery permissions are required.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setProfileImage(result.assets[0].uri);
+      }
+    } catch (err) {
+      console.warn('Gallery failed:', err);
+      Alert.alert('Gallery Error', 'Could not open photo library.');
     }
   };
 
@@ -237,219 +283,249 @@ export default function AdminLoginScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <View style={styles.container}>
+      {/* Gold Header */}
       <View style={styles.header}>
-        <Users size={48} color={theme.colors.primary} />
-        <Text style={styles.title}>Clude Admin Control</Text>
-        <Text style={styles.subtitle}>Super Admin Panel Authenticator</Text>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.replace('/')}>
+          <ArrowLeft size={20} color="#FFF" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Admin Control Login</Text>
+        <View style={{ width: 36 }} />
       </View>
 
-      {isLoading && (
-        <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginBottom: 20 }} />
-      )}
+      {/* Form Area in White Rounded Card */}
+      <View style={styles.formContainer}>
+        <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <Users size={48} color="#FFB300" style={{ alignSelf: 'center', marginBottom: 12 }} />
+          <Text style={styles.title}>Clude Control</Text>
+          <Text style={styles.subtitle}>Super Admin Panel Authenticator</Text>
 
-      {/* STEP 1: Enter Email */}
-      {step === 'email' && (
-        <View style={styles.form}>
-          <View style={styles.inputWrapper}>
-            <Mail size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />
-            <TextInput
-              placeholder="Admin Email Address"
-              placeholderTextColor="#888"
-              autoCapitalize="none"
-              keyboardType="email-address"
-              value={email}
-              onChangeText={setEmail}
-              style={styles.inputField}
-            />
-          </View>
+          {isLoading && (
+            <ActivityIndicator size="large" color="#FFB300" style={{ marginBottom: 20 }} />
+          )}
 
-          <TouchableOpacity style={styles.loginBtn} onPress={handleRequestOtp}>
-            <Text style={styles.loginBtnText}>Request OTP</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* STEP 2: Enter OTP */}
-      {step === 'otp' && (
-        <View style={styles.form}>
-          <View style={styles.inputWrapper}>
-            <Key size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />
-            <TextInput
-              placeholder="Enter 6-digit OTP code"
-              placeholderTextColor="#888"
-              keyboardType="numeric"
-              value={otpCode}
-              onChangeText={setOtpCode}
-              editable={!showCompleteProfile}
-              style={[styles.inputField, showCompleteProfile && { opacity: 0.6 }]}
-            />
-          </View>
-
-          {showCompleteProfile ? (
-            <View style={{ width: '100%', marginTop: 15 }}>
-              <Text style={styles.stepTitle}>Enter Basic Details</Text>
-              
+          {/* STEP 1: Enter Email */}
+          {step === 'email' && (
+            <View style={styles.fieldSection}>
               <View style={styles.inputWrapper}>
-                <User size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />
+                <Mail size={16} color="#888" />
                 <TextInput
-                  placeholder="First Name"
+                  placeholder="Admin Email Address"
                   placeholderTextColor="#888"
-                  value={firstName}
-                  onChangeText={setFirstName}
-                  style={styles.inputField}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  value={email}
+                  onChangeText={setEmail}
+                  style={styles.input}
                 />
               </View>
 
-              <View style={styles.inputWrapper}>
-                <User size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />
-                <TextInput
-                  placeholder="Last Name"
-                  placeholderTextColor="#888"
-                  value={lastName}
-                  onChangeText={setLastName}
-                  style={styles.inputField}
-                />
-              </View>
-
-              {/* Profile Photo Capture */}
-              <View style={styles.captureContainer}>
-                <View style={styles.imagePlaceholder}>
-                  <Text style={styles.imagePlaceholderText}>Profile Photo</Text>
-                  {profileImage ? (
-                    <Text style={styles.imagePlaceholderSubText} numberOfLines={1}>✓ Clicked: {profileImage.substring(profileImage.lastIndexOf('/') + 1)}</Text>
-                  ) : (
-                    <Text style={styles.imagePlaceholderSubText}>No photo captured</Text>
-                  )}
-                </View>
-                <TouchableOpacity style={styles.captureBtn} onPress={captureProfileImage}>
-                  <Camera size={14} color={theme.colors.primary} style={{ marginRight: 6 }} />
-                  <Text style={styles.captureBtnText}>Open Camera</Text>
-                </TouchableOpacity>
-              </View>
-
-              <TouchableOpacity style={[styles.loginBtn, { marginTop: 15 }]} onPress={handleRegisterAdminDetails}>
-                <Text style={styles.loginBtnText}>Submit & Access Panel</Text>
+              <TouchableOpacity style={styles.primaryBtn} onPress={handleRequestOtp}>
+                <Text style={styles.primaryBtnText}>Request OTP</Text>
               </TouchableOpacity>
             </View>
-          ) : (
-            <>
-              <TouchableOpacity style={styles.loginBtn} onPress={handleVerifyOtp}>
-                <Text style={styles.loginBtnText}>Verify OTP</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity onPress={() => { setStep('email'); setOtpCode(''); }}>
-                <Text style={styles.toggleText}>Change Email</Text>
-              </TouchableOpacity>
-            </>
           )}
-        </View>
-      )}
-    </ScrollView>
+
+          {/* STEP 2: Enter OTP / Name Details */}
+          {step === 'otp' && (
+            <View style={styles.fieldSection}>
+              <View style={styles.inputWrapper}>
+                <Key size={16} color="#888" />
+                <TextInput
+                  placeholder="Enter 6-digit OTP code"
+                  placeholderTextColor="#888"
+                  keyboardType="numeric"
+                  value={otpCode}
+                  onChangeText={setOtpCode}
+                  editable={!showCompleteProfile}
+                  style={[styles.input, showCompleteProfile && { opacity: 0.6 }]}
+                />
+              </View>
+
+              {showCompleteProfile ? (
+                <View style={{ width: '100%', marginTop: 10 }}>
+                  <Text style={{ color: '#FFB300', fontWeight: 'bold', fontSize: 15, marginBottom: 12, textAlign: 'center' }}>
+                    Complete Profile
+                  </Text>
+                  
+                  <View style={styles.inputWrapper}>
+                    <User size={16} color="#888" />
+                    <TextInput
+                      placeholder="First Name"
+                      placeholderTextColor="#888"
+                      value={firstName}
+                      onChangeText={setFirstName}
+                      style={styles.input}
+                    />
+                  </View>
+
+                  <View style={styles.inputWrapper}>
+                    <User size={16} color="#888" />
+                    <TextInput
+                      placeholder="Last Name"
+                      placeholderTextColor="#888"
+                      value={lastName}
+                      onChangeText={setLastName}
+                      style={styles.input}
+                    />
+                  </View>
+
+                  {/* Profile Photo Selector (Open Dialog) */}
+                  <View style={styles.captureContainer}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#333' }}>Profile Photo</Text>
+                      {profileImage ? (
+                        <Text style={{ fontSize: 10, color: '#2ecc71', marginTop: 2 }}>✓ Image Selected</Text>
+                      ) : (
+                        <Text style={{ fontSize: 10, color: '#888', marginTop: 2 }}>No photo selected</Text>
+                      )}
+                    </View>
+                    <TouchableOpacity style={styles.captureBtn} onPress={requestPhotoSource}>
+                      <Camera size={14} color="#FFB300" style={{ marginRight: 6 }} />
+                      <Text style={styles.captureBtnText}>Upload Photo</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <TouchableOpacity style={styles.primaryBtn} onPress={handleRegisterAdminDetails}>
+                    <Text style={styles.primaryBtnText}>Submit & Access Panel</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <>
+                  <TouchableOpacity style={styles.primaryBtn} onPress={handleVerifyOtp}>
+                    <Text style={styles.primaryBtnText}>Verify OTP</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity onPress={() => { setStep('email'); setOtpCode(''); }}>
+                    <Text style={styles.toggleText}>Change Email</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          )}
+        </ScrollView>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
-    backgroundColor: '#0A0A0A',
-    justifyContent: 'center',
-    padding: 24,
+    flex: 1,
+    backgroundColor: '#FFCC00', // Gold-yellow top header background
   },
   header: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 40,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 35,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFF',
+  },
+  formContainer: {
+    flex: 1,
+    backgroundColor: '#F5F5F7', // Rounded white body card
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    padding: 24,
+    paddingTop: 40,
   },
   title: {
-    fontSize: 22,
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#FFF',
-    marginTop: 16,
+    color: '#FFB300', // Golden amber primary theme
+    textAlign: 'center',
   },
   subtitle: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-    marginTop: 4,
+    fontSize: 13,
+    color: '#666',
     textAlign: 'center',
+    marginTop: 8,
+    marginBottom: 30,
   },
-  form: {
-    width: '100%',
-  },
-  stepTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#FFF',
-    marginBottom: 16,
-    textAlign: 'center',
+  fieldSection: {
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#121212',
+    backgroundColor: '#FFF',
     borderWidth: 1,
-    borderColor: '#1F1F1F',
-    borderRadius: 12,
+    borderColor: '#EAEAEA',
+    borderRadius: 14,
     paddingHorizontal: 16,
+    paddingVertical: 12,
     marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.02,
+    shadowRadius: 2,
+    elevation: 1,
   },
-  inputIcon: {
-    marginRight: 12,
-  },
-  inputField: {
+  input: {
     flex: 1,
-    paddingVertical: 16,
-    color: '#FFF',
+    color: '#333',
     fontSize: 13,
+    marginLeft: 12,
   },
-  loginBtn: {
-    backgroundColor: theme.colors.primary,
-    borderRadius: 12,
-    paddingVertical: 16,
+  primaryBtn: {
+    backgroundColor: '#FFB300', // Golden amber primary theme button
+    borderRadius: 14,
+    paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 8,
+    marginVertical: 12,
+    shadowColor: '#FFB300',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    elevation: 3,
   },
-  loginBtnText: {
-    fontSize: 13,
+  primaryBtnText: {
+    fontSize: 14,
     fontWeight: 'bold',
-    color: '#000',
+    color: '#FFF',
   },
   toggleText: {
     fontSize: 12,
-    color: theme.colors.primary,
+    color: '#FFB300',
     fontWeight: 'bold',
     textAlign: 'center',
-    marginTop: 16,
+    marginTop: 10,
   },
   captureContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#121212',
+    backgroundColor: '#FFF',
     borderWidth: 1,
-    borderColor: '#1F1F1F',
-    borderRadius: 12,
+    borderColor: '#EAEAEA',
+    borderRadius: 14,
     padding: 16,
     marginBottom: 16,
-  },
-  imagePlaceholder: {
-    flex: 1,
-  },
-  imagePlaceholderText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#FFF',
-  },
-  imagePlaceholderSubText: {
-    fontSize: 10,
-    color: theme.colors.textSecondary,
-    marginTop: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.02,
+    shadowRadius: 2,
+    elevation: 1,
   },
   captureBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,107,0,0.1)',
+    backgroundColor: 'rgba(255,179,0,0.1)',
     borderWidth: 1,
-    borderColor: theme.colors.primary,
+    borderColor: '#FFB300',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
@@ -457,6 +533,6 @@ const styles = StyleSheet.create({
   captureBtnText: {
     fontSize: 11,
     fontWeight: 'bold',
-    color: theme.colors.primary,
+    color: '#FFB300',
   }
 });
