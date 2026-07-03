@@ -14,6 +14,7 @@ import { theme } from '../../styles/theme';
 import { useCartStore } from '../../store/useCartStore';
 import { useKitchenStore } from '../../store/useKitchenStore';
 import { useAuthStore } from '../../store/useAuthStore';
+import { safeStorage } from '../../store/safeStorage';
 
 export default function RestaurantDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -36,15 +37,15 @@ export default function RestaurantDetailScreen() {
   const [hiddenCategories, setHiddenCategories] = useState<string[]>([]);
 
   useEffect(() => {
-    if (id) {
-      import('@react-native-async-storage/async-storage').then(({ default: AsyncStorage }) => {
-        AsyncStorage.getItem(`hidden_categories_${id}`).then(val => {
-          if (val) {
-            setHiddenCategories(JSON.parse(val));
-          }
-        });
-      });
-    }
+    const loadHiddenCategories = async () => {
+      if (id) {
+        const val = await safeStorage.getItem(`hidden_categories_${id}`);
+        if (val) {
+          setHiddenCategories(JSON.parse(val));
+        }
+      }
+    };
+    loadHiddenCategories();
   }, [id]);
 
   const visibleProducts = kitchenProducts.filter(item => !hiddenCategories.includes(item.category.toLowerCase()));

@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeStorage } from '../store/safeStorage';
 
 export default function RootLayout() {
   const router = useRouter();
@@ -10,7 +10,7 @@ export default function RootLayout() {
   useEffect(() => {
     const checkFingerprintLock = async () => {
       try {
-        const isEnabled = await AsyncStorage.getItem('isFingerprintEnabled');
+        const isEnabled = await safeStorage.getItem('isFingerprintEnabled');
         if (isEnabled === 'true') {
           router.replace('/lock');
         }

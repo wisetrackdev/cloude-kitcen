@@ -10,7 +10,8 @@ import {
   Alert,
   Switch,
   Dimensions,
-  ActivityIndicator
+  ActivityIndicator,
+  Modal
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { 
@@ -26,12 +27,14 @@ import {
   Utensils, 
   Grape, 
   Cookie, 
-  GlassWater
+  GlassWater,
+  X
 } from 'lucide-react-native';
 import { theme } from '../../styles/theme';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useKitchenStore } from '../../store/useKitchenStore';
 import { useCartStore } from '../../store/useCartStore';
+import { useNotificationStore } from '../../store/useNotificationStore';
 import { API_BASE_URL } from '../../store/apiConfig';
 
 const { width } = Dimensions.get('window');
@@ -61,6 +64,12 @@ export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [liveBanners, setLiveBanners] = useState<any[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  const notifications = useNotificationStore(state => state.notifications);
+  const unreadCount = useNotificationStore(state => state.unreadCount);
+  const markAllAsRead = useNotificationStore(state => state.markAllAsRead);
+  const clearAllNotifs = useNotificationStore(state => state.clearAll);
 
   useEffect(() => {
     fetchKitchens();
@@ -167,7 +176,7 @@ export default function HomeScreen() {
   };
 
   const getRecommendations = () => {
-    if (selectedCategory) {
+    if (selectedCategory || searchQuery.trim() !== '') {
       return filteredDishes;
     }
     const list = allProducts && allProducts.length > 0 ? allProducts : fallbackRecommends;
@@ -200,8 +209,13 @@ export default function HomeScreen() {
             <TouchableOpacity style={styles.actionCircle} onPress={() => router.push('/cart')}>
               <ShoppingBag size={16} color="#FF6B00" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.actionCircle} onPress={() => Alert.alert('Notifications', 'No new notifications.')}>
+            <TouchableOpacity style={styles.actionCircle} onPress={() => setShowNotifications(true)}>
               <Bell size={16} color="#FF6B00" />
+              {unreadCount > 0 && (
+                <View style={styles.badgeWrapper}>
+                  <Text style={styles.badgeText}>{unreadCount}</Text>
+                </View>
+              )}
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionCircle} onPress={() => router.push('/profile')}>
               <User size={16} color="#FF6B00" />
@@ -327,7 +341,7 @@ export default function HomeScreen() {
 
           {/* Recommend Section */}
           <Text style={[styles.sectionTitle, { marginLeft: 20, marginBottom: 15 }]}>
-            {selectedCategory ? `${selectedCategory} Matches` : 'Recommend'}
+            {searchQuery.trim() !== '' ? `Search: "${searchQuery}"` : (selectedCategory ? `${selectedCategory} Matches` : 'Recommend')}
           </Text>
 
           <View style={styles.recommendGrid}>
@@ -379,6 +393,77 @@ export default function HomeScreen() {
           </View>
           <Text style={styles.cartActionText}>Go to Basket ❯</Text>
         </TouchableOpacity>
+      )}
+      {showNotifications && (
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={showNotifications}
+          onRequestClose={() => setShowNotifications(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Notifications</Text>
+                <TouchableOpacity 
+                  onPress={() => setShowNotifications(false)} 
+                  style={styles.closeBtn}
+                >
+                  <X size={18} color="#FF6B00" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView 
+                contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+                showsVerticalScrollIndicator={false}
+              >
+                {notifications.length === 0 ? (
+                  <Text style={styles.emptyNotifText}>
+                    No notifications available.
+                  </Text>
+                ) : (
+                  notifications.map((item) => (
+                    <View 
+                      key={item.id} 
+                      style={[
+                        styles.notifCard, 
+                        !item.isRead && styles.unreadNotifCard
+                      ]}
+                    >
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text style={styles.notifTitle}>{item.title}</Text>
+                        {!item.isRead && <View style={styles.unreadDot} />}
+                      </View>
+                      <Text style={styles.notifBody}>{item.body}</Text>
+                      <Text style={styles.notifTime}>{item.timestamp}</Text>
+                    </View>
+                  ))
+                )}
+              </ScrollView>
+
+              <View style={styles.modalFooter}>
+                <TouchableOpacity 
+                  style={styles.markReadBtn}
+                  onPress={() => {
+                    markAllAsRead();
+                    Alert.alert('Success', 'All notifications marked as read.');
+                  }}
+                >
+                  <Text style={styles.markReadText}>Mark all as read</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.clearAllBtn}
+                  onPress={() => {
+                    clearAllNotifs();
+                    Alert.alert('Cleared', 'Notification inbox cleared.');
+                  }}
+                >
+                  <Text style={styles.clearAllText}>Clear All</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       )}
 
     </View>
@@ -740,5 +825,130 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontWeight: 'bold',
     fontSize: 12,
+  },
+  badgeWrapper: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    backgroundColor: '#FF3B30',
+    borderRadius: 8,
+    width: 14,
+    height: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: {
+    color: '#FFF',
+    fontSize: 8,
+    fontWeight: 'bold',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#F5F5F7',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    maxHeight: '80%',
+    minHeight: '50%',
+    paddingBottom: 30,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderColor: '#EAEAEA',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FF6B00',
+  },
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FFEFEB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyNotifText: {
+    textAlign: 'center',
+    color: '#999',
+    marginTop: 40,
+    fontSize: 13,
+  },
+  notifCard: {
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: '#EAEAEA',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+  },
+  unreadNotifCard: {
+    borderColor: '#FFFFE0',
+    backgroundColor: '#FFFBE6',
+  },
+  unreadDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FF3B30',
+  },
+  notifTitle: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#333',
+    flex: 1,
+  },
+  notifBody: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+    lineHeight: 18,
+  },
+  notifTime: {
+    fontSize: 9,
+    color: '#999',
+    marginTop: 8,
+    alignSelf: 'flex-end',
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderColor: '#EAEAEA',
+  },
+  markReadBtn: {
+    flex: 1,
+    backgroundColor: '#FF6B00',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  markReadText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  clearAllBtn: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#FF6B00',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  clearAllText: {
+    color: '#FF6B00',
+    fontSize: 12,
+    fontWeight: 'bold',
   }
 });

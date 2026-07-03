@@ -18,11 +18,13 @@ import {
   CheckCircle,
   Clock,
   X,
-  Trash2
+  Trash2,
+  Send
 } from 'lucide-react-native';
 import { theme } from '../../styles/theme';
 import { useKitchenStore } from '../../store/useKitchenStore';
 import { useAuthStore } from '../../store/useAuthStore';
+import { API_BASE_URL } from '../../store/apiConfig';
 
 export default function AdminDashboard() {
   const kitchens = useKitchenStore(state => state.kitchens);
@@ -41,6 +43,63 @@ export default function AdminDashboard() {
   const [selectedKitchen, setSelectedKitchen] = useState<any>(null);
   const [newCatName, setNewCatName] = useState('');
   const [newCatImage, setNewCatImage] = useState('');
+
+  // Support chat states
+  const [showSupportModal, setShowSupportModal] = useState(false);
+  const [supportMessages, setSupportMessages] = useState<any[]>([]);
+  const [supportInput, setSupportInput] = useState('');
+  const [sendingSupport, setSendingSupport] = useState(false);
+
+  useEffect(() => {
+    if (!showSupportModal) return;
+    
+    const fetchSupport = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/orders/support-general/chats`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && json.data) {
+            setSupportMessages(json.data);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load support chats in admin:', err);
+      }
+    };
+
+    fetchSupport();
+    const interval = setInterval(fetchSupport, 2500);
+    return () => clearInterval(interval);
+  }, [showSupportModal]);
+
+  const handleSendSupportReply = async () => {
+    if (!supportInput.trim()) return;
+    const text = supportInput.trim();
+    setSupportInput('');
+    setSendingSupport(true);
+    try {
+      await fetch(`${API_BASE_URL}/api/orders/support-general/chats`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          senderId: 'usr-admin-support',
+          message: text
+        })
+      });
+      // Refresh local list
+      const res = await fetch(`${API_BASE_URL}/api/orders/support-general/chats`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          setSupportMessages(json.data);
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to send admin support reply:', err);
+    } finally {
+      setSendingSupport(false);
+    }
+  };
 
   const selectedKitchenOrders = selectedKitchen 
     ? orders.filter(o => o.kitchenId === selectedKitchen.id) 
@@ -81,12 +140,20 @@ export default function AdminDashboard() {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: themeColors.background }]} showsVerticalScrollIndicator={false}>
-      <View style={styles.sellerHeader}>
-        <Users size={28} color="#FF5252" />
-        <View style={styles.sellerHeaderMeta}>
-          <Text style={styles.sellerRoleText}>Super Admin Panel</Text>
-          <Text style={[styles.sellerKitchenName, { color: themeColors.text }]}>Global Analytics</Text>
+      <View style={[styles.sellerHeader, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Users size={28} color="#FF5252" />
+          <View style={styles.sellerHeaderMeta}>
+            <Text style={styles.sellerRoleText}>Super Admin Panel</Text>
+            <Text style={[styles.sellerKitchenName, { color: themeColors.text }]}>Global Analytics</Text>
+          </View>
         </View>
+        <TouchableOpacity 
+          style={styles.adminSupportBtn}
+          onPress={() => setShowSupportModal(true)}
+        >
+          <Text style={styles.adminSupportBtnText}>Support Center</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Global KPI Counters */}
@@ -355,6 +422,76 @@ export default function AdminDashboard() {
                   </View>
                 </View>
               </ScrollView>
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {showSupportModal && (
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={showSupportModal}
+          onRequestClose={() => setShowSupportModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { backgroundColor: themeColors.card, borderColor: themeColors.border, height: '70%' }]}>
+              <View style={[styles.modalHeader, { borderBottomColor: themeColors.border }]}>
+                <Text style={styles.modalTitle}>User Support Messages</Text>
+                <TouchableOpacity onPress={() => setShowSupportModal(false)} style={[styles.closeBtn, { backgroundColor: themeColors.border }]}>
+                  <X size={18} color={themeColors.text} />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView 
+                contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+                showsVerticalScrollIndicator={false}
+              >
+                {supportMessages.length === 0 ? (
+                  <Text style={{ textAlign: 'center', color: themeColors.textSecondary, marginTop: 40 }}>
+                    No support chats received yet.
+                  </Text>
+                ) : (
+                  supportMessages.map((msg) => (
+                    <View 
+                      key={msg.id} 
+                      style={{ 
+                        marginVertical: 6,
+                        alignSelf: msg.senderId === 'usr-admin-support' ? 'flex-end' : 'flex-start',
+                        backgroundColor: msg.senderId === 'usr-admin-support' ? '#FF5252' : themeColors.background,
+                        padding: 12,
+                        borderRadius: 12,
+                        maxWidth: '80%'
+                      }}
+                    >
+                      <Text style={{ fontSize: 9, fontWeight: 'bold', color: msg.senderId === 'usr-admin-support' ? '#FFF' : '#FF5252', marginBottom: 2 }}>
+                        {msg.senderName}
+                      </Text>
+                      <Text style={{ fontSize: 13, color: msg.senderId === 'usr-admin-support' ? '#FFF' : themeColors.text }}>
+                        {msg.message}
+                      </Text>
+                    </View>
+                  ))
+                )}
+              </ScrollView>
+
+              {/* Admin Input Row */}
+              <View style={{ flexDirection: 'row', padding: 12, borderTopWidth: 1, borderTopColor: themeColors.border, alignItems: 'center' }}>
+                <TextInput
+                  placeholder="Type administrator response..."
+                  placeholderTextColor="#888"
+                  value={supportInput}
+                  onChangeText={setSupportInput}
+                  style={[styles.adminInput, { flex: 1, marginBottom: 0, marginRight: 10, backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
+                />
+                <TouchableOpacity 
+                  style={{ backgroundColor: '#FF5252', width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }}
+                  onPress={handleSendSupportReply}
+                  disabled={sendingSupport}
+                >
+                  <Send size={18} color="#FFF" />
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </Modal>
@@ -684,5 +821,16 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     flex: 1,
     marginRight: 8,
+  },
+  adminSupportBtn: {
+    backgroundColor: '#FF5252',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  adminSupportBtnText: {
+    color: '#FFF',
+    fontSize: 11,
+    fontWeight: 'bold',
   }
 });

@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as LocalAuthentication from 'expo-local-authentication';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeStorage } from '../store/safeStorage';
 import { Fingerprint, Lock, LogOut } from 'lucide-react-native';
 import { useAuthStore } from '../store/useAuthStore';
 
@@ -90,7 +90,7 @@ export default function LockScreen() {
           text: 'Log Out', 
           style: 'destructive',
           onPress: async () => {
-            await AsyncStorage.removeItem('isFingerprintEnabled');
+            await safeStorage.removeItem('isFingerprintEnabled');
             logoutUser();
             router.replace('/login');
           } 

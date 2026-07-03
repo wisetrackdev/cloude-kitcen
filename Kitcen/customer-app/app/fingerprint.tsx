@@ -9,7 +9,7 @@ import {
   Dimensions
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeStorage } from '../store/safeStorage';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { 
   ArrowLeft, 
@@ -52,7 +52,7 @@ export default function FingerprintScreen() {
                 setTimeout(async () => {
                   setIsScanning(false);
                   setIsRegistered(true);
-                  await AsyncStorage.setItem('isFingerprintEnabled', 'true');
+                  await safeStorage.setItem('isFingerprintEnabled', 'true');
                   Alert.alert('Simulated Success', 'Fingerprint simulated and enabled successfully!');
                 }, 1200);
               }
@@ -71,7 +71,7 @@ export default function FingerprintScreen() {
 
       if (result.success) {
         setIsRegistered(true);
-        await AsyncStorage.setItem('isFingerprintEnabled', 'true');
+        await safeStorage.setItem('isFingerprintEnabled', 'true');
         Alert.alert('Success', 'Biometric lock enabled successfully!');
       } else {
         Alert.alert('Failed', 'Biometric verification failed.');

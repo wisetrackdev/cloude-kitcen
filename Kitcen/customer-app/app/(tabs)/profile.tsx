@@ -26,7 +26,9 @@ import {
   Sun,
   Moon,
   Plus,
-  Camera
+  Camera,
+  FileText,
+  RefreshCw
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { theme } from '../../styles/theme';
@@ -283,7 +285,49 @@ export default function ProfileScreen() {
                   </View>
                   <View>
                     <Text style={styles.rowTitle}>Support Center</Text>
-                    <Text style={styles.rowDesc}>Direct assistance & order cancellation support</Text>
+                    <Text style={styles.rowDesc}>Direct assistance & admin chat support</Text>
+                  </View>
+                </View>
+                <ChevronRight size={16} color="#FF6B00" />
+              </TouchableOpacity>
+
+              {/* Option 4: Terms & Conditions */}
+              <TouchableOpacity style={styles.zomatoRow} onPress={() => router.push('/terms')}>
+                <View style={styles.rowLeft}>
+                  <View style={[styles.iconBg, { backgroundColor: '#FFEFEB' }]}>
+                    <FileText size={18} color="#FF6B00" />
+                  </View>
+                  <View>
+                    <Text style={styles.rowTitle}>Terms & Conditions</Text>
+                    <Text style={styles.rowDesc}>Read platform policies and tiffin delivery rules</Text>
+                  </View>
+                </View>
+                <ChevronRight size={16} color="#FF6B00" />
+              </TouchableOpacity>
+
+              {/* Option 5: Privacy Policy */}
+              <TouchableOpacity style={styles.zomatoRow} onPress={() => router.push('/privacy')}>
+                <View style={styles.rowLeft}>
+                  <View style={[styles.iconBg, { backgroundColor: '#FFEFEB' }]}>
+                    <ShieldCheck size={18} color="#FF6B00" />
+                  </View>
+                  <View>
+                    <Text style={styles.rowTitle}>Privacy Policy</Text>
+                    <Text style={styles.rowDesc}>Learn how we protect your biometric & personal data</Text>
+                  </View>
+                </View>
+                <ChevronRight size={16} color="#FF6B00" />
+              </TouchableOpacity>
+
+              {/* Option 6: Return & Refund */}
+              <TouchableOpacity style={styles.zomatoRow} onPress={() => router.push('/refund')}>
+                <View style={styles.rowLeft}>
+                  <View style={[styles.iconBg, { backgroundColor: '#FFEFEB' }]}>
+                    <RefreshCw size={18} color="#FF6B00" />
+                  </View>
+                  <View>
+                    <Text style={styles.rowTitle}>Return & Refund</Text>
+                    <Text style={styles.rowDesc}>Read cancellation policies and refund terms</Text>
                   </View>
                 </View>
                 <ChevronRight size={16} color="#FF6B00" />
@@ -352,6 +396,12 @@ export default function ProfileScreen() {
                 Email: support@cludekitchen.com{"\n"}
                 Hotline: 1800-419-8600
               </Text>
+              <TouchableOpacity 
+                style={[styles.primaryBtn, { width: '100%', marginTop: 20 }]} 
+                onPress={() => router.push('/chat/admin')}
+              >
+                <Text style={styles.primaryBtnText}>Chat with Support Representative</Text>
+              </TouchableOpacity>
             </View>
           </ScrollView>
         )}

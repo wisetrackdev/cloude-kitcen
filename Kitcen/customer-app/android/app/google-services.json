@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "527867995051",
+    "project_id": "cloud-kitchen-d6d35",
+    "storage_bucket": "cloud-kitchen-d6d35.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:527867995051:android:4d526c7b61b373ec7c68ee",
+        "android_client_info": {
+          "package_name": "in.wisetrack.cloudkitchen"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCf0Seytz_68ahCFF1cZEA8WhFN-xGv7ns"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

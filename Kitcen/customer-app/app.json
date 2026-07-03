@@ -16,7 +16,8 @@
       }
     },
     "android": {
-      "package": "com.devkumar8527.cludekitchencustomer"
+      "package": "in.wisetrack.cloudkitchen",
+      "googleServicesFile": "./google-services.json"
     }
   }
 }

@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { Plus, Trash2, ChefHat, Tag, Camera, Image as ImageIcon } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeStorage } from '../../store/safeStorage';
 import { theme } from '../../styles/theme';
 import { useKitchenStore } from '../../store/useKitchenStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -65,13 +65,15 @@ export default function SellerMenuScreen() {
   const [hiddenCategories, setHiddenCategories] = useState<string[]>([]);
 
   useEffect(() => {
-    if (selectedKitchenId) {
-      AsyncStorage.getItem(`hidden_categories_${selectedKitchenId}`).then(val => {
+    const loadHidden = async () => {
+      if (selectedKitchenId) {
+        const val = await safeStorage.getItem(`hidden_categories_${selectedKitchenId}`);
         if (val) {
           setHiddenCategories(JSON.parse(val));
         }
-      });
-    }
+      }
+    };
+    loadHidden();
   }, [selectedKitchenId]);
 
   const handleHideCategory = async (catName: string) => {
@@ -86,7 +88,7 @@ export default function SellerMenuScreen() {
           onPress: async () => {
             const updated = [...hiddenCategories, catName.toLowerCase()];
             setHiddenCategories(updated);
-            await AsyncStorage.setItem(`hidden_categories_${selectedKitchenId}`, JSON.stringify(updated));
+            await safeStorage.setItem(`hidden_categories_${selectedKitchenId}`, JSON.stringify(updated));
             Alert.alert('Deleted', `Category "${catName}" has been deleted from your shop.`);
           }
         }
@@ -96,7 +98,7 @@ export default function SellerMenuScreen() {
 
   const handleRestoreCategories = async () => {
     setHiddenCategories([]);
-    await AsyncStorage.removeItem(`hidden_categories_${selectedKitchenId}`);
+    await safeStorage.removeItem(`hidden_categories_${selectedKitchenId}`);
     Alert.alert('Restored', 'All deleted categories have been restored.');
   };
 
