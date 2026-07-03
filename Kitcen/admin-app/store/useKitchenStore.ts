@@ -99,6 +99,12 @@ interface KitchenState {
   // Order actions
   placeOrder: (order: Omit<OrderRecord, 'id' | 'status' | 'date'>) => Promise<string>;
   updateOrderStatus: (orderId: string, status: OrderRecord['status']) => Promise<void>;
+  
+  // Category actions
+  categories: Array<{ id: string, name: string, image?: string }>;
+  fetchCategories: () => Promise<void>;
+  createCategory: (name: string, imageUrl?: string) => Promise<void>;
+  deleteCategory: (id: string) => Promise<void>;
 }
 
 // Offline fallback mock data
@@ -162,6 +168,7 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
   kitchens: initialKitchens,
   products: initialProducts,
   orders: [],
+  categories: [],
   isLoading: false,
   error: null,
 
@@ -524,5 +531,53 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
     set((state) => ({
       orders: state.orders.map(o => o.id === orderId ? { ...o, status } : o)
     }));
+  },
+
+  fetchCategories: async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/categories`);
+      if (res.ok) {
+        const json = await res.json();
+        set({ categories: json });
+      }
+    } catch (err) {
+      console.warn('API Error fetching categories in admin:', err);
+    }
+  },
+  createCategory: async (name, imageUrl) => {
+    try {
+      const id = 'cat-' + name.toLowerCase().replace(/ /g, '-');
+      const res = await fetch(`${API_BASE_URL}/api/categories`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, name, image: imageUrl || '', isActive: true })
+      });
+      const json = await res.json();
+      if (json.success) {
+        set((state) => ({ categories: [...state.categories, { id, name, image: imageUrl }] }));
+        return;
+      }
+    } catch (err) {
+      console.error('API Error creating category:', err);
+    }
+    // Fallback
+    const fallbackId = 'cat-' + Math.floor(Math.random() * 10000);
+    set((state) => ({ categories: [...state.categories, { id: fallbackId, name, image: imageUrl }] }));
+  },
+  deleteCategory: async (id) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/categories/${id}`, {
+        method: 'DELETE'
+      });
+      const json = await res.json();
+      if (json.success) {
+        set((state) => ({ categories: state.categories.filter(c => c.id !== id) }));
+        return;
+      }
+    } catch (err) {
+      console.error('API Error deleting category:', err);
+    }
+    // Fallback
+    set((state) => ({ categories: state.categories.filter(c => c.id !== id) }));
   }
 }));

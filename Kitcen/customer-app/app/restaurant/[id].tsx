@@ -33,7 +33,22 @@ export default function RestaurantDetailScreen() {
   const addItem = useCartStore(state => state.addItem);
   const cartTotals = useCartStore(state => state.getTotals());
 
-  const categories = Array.from(new Set(kitchenProducts.map(item => item.category)));
+  const [hiddenCategories, setHiddenCategories] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (id) {
+      import('@react-native-async-storage/async-storage').then(({ default: AsyncStorage }) => {
+        AsyncStorage.getItem(`hidden_categories_${id}`).then(val => {
+          if (val) {
+            setHiddenCategories(JSON.parse(val));
+          }
+        });
+      });
+    }
+  }, [id]);
+
+  const visibleProducts = kitchenProducts.filter(item => !hiddenCategories.includes(item.category.toLowerCase()));
+  const categories = Array.from(new Set(visibleProducts.map(item => item.category)));
   const [activeCategory, setActiveCategory] = useState('Tiffin Meals');
 
   useEffect(() => {
@@ -183,7 +198,7 @@ export default function RestaurantDetailScreen() {
 
         {/* Menu list */}
         <View style={styles.menuContainer}>
-          {kitchenProducts.filter(item => item.category === activeCategory).map(item => {
+          {visibleProducts.filter(item => item.category === activeCategory).map(item => {
             const qty = getQuantityInCart(item.id);
             return (
               <View key={item.id} style={[styles.menuItem, { borderBottomColor: themeColors.border }]}>
@@ -216,7 +231,7 @@ export default function RestaurantDetailScreen() {
               </View>
             );
           })}
-          {kitchenProducts.length === 0 && (
+          {visibleProducts.length === 0 && (
             <Text style={[styles.noItemsText, { color: themeColors.textSecondary }]}>No items added to this kitchen yet.</Text>
           )}
         </View>

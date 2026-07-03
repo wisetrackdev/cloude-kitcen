@@ -146,6 +146,40 @@ namespace CloudeKicten.Models.DatabaseLayer
 
         private async Task SeedMockStoresAsync(NpgsqlCommand cmd)
         {
+            // 1. Seed Categories Table (10 categories with images)
+            cmd.CommandText = @"
+                INSERT INTO categories (id, name, image_url, is_active)
+                VALUES 
+                    ('cat-pizza', 'Pizza', 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=120', true),
+                    ('cat-burger', 'Burger', 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=120', true),
+                    ('cat-cake', 'Cake', 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=120', true),
+                    ('cat-coffee', 'Coffee', 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=120', true),
+                    ('cat-colddrink', 'Cold Drink', 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=120', true),
+                    ('cat-snacks', 'Snacks', 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=120', true),
+                    ('cat-meal', 'Meal', 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=120', true),
+                    ('cat-vegan', 'Vegan', 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=120', true),
+                    ('cat-dessert', 'Dessert', 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=120', true),
+                    ('cat-drinks', 'Drinks', 'https://images.unsplash.com/photo-1536935338788-846bb9981813?w=120', true)
+                ON CONFLICT (name) DO NOTHING;
+            ";
+            cmd.Parameters.Clear();
+            await cmd.ExecuteNonQueryAsync();
+
+            // 2. Seed Banners Table (5 dynamic banners redirecting to specific shops)
+            cmd.CommandText = @"
+                INSERT INTO banners (id, image_url, link_url, is_active)
+                VALUES 
+                    ('ban-1', 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600', 'restaurant/shp-seed-2', true),
+                    ('ban-2', 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600', 'restaurant/shp-seed-1', true),
+                    ('ban-3', 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=600', 'restaurant/shp-seed-6', true),
+                    ('ban-4', 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=600', 'restaurant/shp-seed-9', true),
+                    ('ban-5', 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=600', 'restaurant/shp-seed-4', true)
+                ON CONFLICT (id) DO NOTHING;
+            ";
+            cmd.Parameters.Clear();
+            await cmd.ExecuteNonQueryAsync();
+
+            // 3. Seed 10 Shops
             for (int i = 1; i <= 10; i++)
             {
                 string userId = $"usr-seller-seed-{i}";
@@ -217,19 +251,106 @@ namespace CloudeKicten.Models.DatabaseLayer
                     cmd.Parameters.AddWithValue("@Address", $"Sector " + (10 + i).ToString() + ", Noida, Uttar Pradesh");
                     await cmd.ExecuteNonQueryAsync();
 
+                    // Seed 3 specific products per store matching our 10 seeded categories
                     for (int p = 1; p <= 3; p++)
                     {
+                        string prodId = $"prd-seed-{i}-{p}";
+                        string prodName = "";
+                        string catName = "";
+                        string catId = "";
+                        string prodImg = logoUrl;
+
+                        if (p == 1) {
+                            prodName = i switch {
+                                1 => "Veg Whopper Burger",
+                                2 => "Double Cheese Margherita Pizza",
+                                3 => "Veg Zinger Burger",
+                                4 => "Hot Cappuccino Coffee",
+                                5 => "McAloo Tikki Burger",
+                                6 => "Subway Veggie Tiffin Meal",
+                                7 => "Kachori & Samosa Snacks",
+                                8 => "Wendy Veg Burger",
+                                9 => "Ginger Kullhad Chai Coffee",
+                                _ => "Deluxe Veg Tiffin Meal"
+                            };
+                            catName = i switch {
+                                1 => "Burger",
+                                2 => "Pizza",
+                                3 => "Burger",
+                                4 => "Coffee",
+                                5 => "Burger",
+                                6 => "Meal",
+                                7 => "Snacks",
+                                8 => "Burger",
+                                9 => "Coffee",
+                                _ => "Meal"
+                            };
+                        } else if (p == 2) {
+                            prodName = i switch {
+                                1 => "Creamy Cold Coffee",
+                                2 => "Garlic Breadsticks Snacks",
+                                3 => "Chocolate Lava Cake",
+                                4 => "Blueberry Muffin Cake",
+                                5 => "Chilled Coca Cola",
+                                6 => "Vegan Salad Bowl",
+                                7 => "Gulab Jamun Dessert",
+                                8 => "Strawberry Milk Shake",
+                                9 => "Hot Bun Maska Snacks",
+                                _ => "Chilled Diet Pepsi"
+                            };
+                            catName = i switch {
+                                1 => "Coffee",
+                                2 => "Snacks",
+                                3 => "Cake",
+                                4 => "Cake",
+                                5 => "Cold Drink",
+                                6 => "Vegan",
+                                7 => "Dessert",
+                                8 => "Drinks",
+                                9 => "Snacks",
+                                _ => "Cold Drink"
+                            };
+                        } else {
+                            prodName = i switch {
+                                1 => "Crispy French Fries",
+                                2 => "Ice Pepsi Cold Drink",
+                                3 => "Chilled 7Up Drink",
+                                4 => "Iced Green Tea Drink",
+                                5 => "Hot Fudge Brownie Dessert",
+                                6 => "Choco Chip Cookie",
+                                7 => "Sweet Mango Lassi Drink",
+                                8 => "Cheese Fries Snacks",
+                                9 => "Aloo Tikki Samosa",
+                                _ => "Fresh Green Veg Salad"
+                            };
+                            catName = i switch {
+                                1 => "Snacks",
+                                2 => "Cold Drink",
+                                3 => "Cold Drink",
+                                4 => "Drinks",
+                                5 => "Dessert",
+                                6 => "Dessert",
+                                7 => "Drinks",
+                                8 => "Snacks",
+                                9 => "Snacks",
+                                _ => "Vegan"
+                            };
+                        }
+
+                        catId = "cat-" + catName.ToLower().Replace(" ", "");
+
                         cmd.CommandText = @"
-                            INSERT INTO products (id, kitchen_id, name, price, description, category_name, is_veg, image_url)
-                            VALUES (@ProdId, @ShpId, @ProdName, @Price, @Desc, @CatName, TRUE, @Logo);";
+                            INSERT INTO products (id, kitchen_id, name, price, description, category_name, is_veg, image_url, category_id)
+                            VALUES (@ProdId, @ShpId, @ProdName, @Price, @Desc, @CatName, TRUE, @Logo, @CatId);";
                         cmd.Parameters.Clear();
-                        cmd.Parameters.AddWithValue("@ProdId", $"prd-seed-{i}-{p}");
+                        cmd.Parameters.AddWithValue("@ProdId", prodId);
                         cmd.Parameters.AddWithValue("@ShpId", shopId);
-                        cmd.Parameters.AddWithValue("@ProdName", $"{shopName} Special Dish {p}");
-                        cmd.Parameters.AddWithValue("@Price", 99m + (p * 50m));
-                        cmd.Parameters.AddWithValue("@Desc", $"Delicious freshly prepared signature dish {p} from {shopName}");
-                        cmd.Parameters.AddWithValue("@CatName", p == 1 ? "Meals" : (p == 2 ? "Biryani" : "Burgers"));
-                        cmd.Parameters.AddWithValue("@Logo", logoUrl);
+                        cmd.Parameters.AddWithValue("@ProdName", prodName);
+                        cmd.Parameters.AddWithValue("@Price", 49m + (p * 25m));
+                        cmd.Parameters.AddWithValue("@Desc", $"Freshly prepared {prodName} from {shopName}");
+                        cmd.Parameters.AddWithValue("@CatName", catName);
+                        cmd.Parameters.AddWithValue("@Logo", prodImg);
+                        cmd.Parameters.AddWithValue("@CatId", catId);
                         await cmd.ExecuteNonQueryAsync();
                     }
                 }

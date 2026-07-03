@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Plus, Trash2, ChefHat, Tag, Camera, Image as ImageIcon } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { theme } from '../../styles/theme';
 import { useKitchenStore } from '../../store/useKitchenStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -60,6 +61,48 @@ export default function SellerMenuScreen() {
   const [newDishVeg, setNewDishVeg] = useState(true);
   const [newDishCat, setNewDishCat] = useState('Tiffin Meals');
   const [customCategory, setCustomCategory] = useState('');
+
+  const [hiddenCategories, setHiddenCategories] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (selectedKitchenId) {
+      AsyncStorage.getItem(`hidden_categories_${selectedKitchenId}`).then(val => {
+        if (val) {
+          setHiddenCategories(JSON.parse(val));
+        }
+      });
+    }
+  }, [selectedKitchenId]);
+
+  const handleHideCategory = async (catName: string) => {
+    Alert.alert(
+      'Delete Category',
+      `Are you sure you want to delete "${catName}" and hide all its items temporarily from your shop?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            const updated = [...hiddenCategories, catName.toLowerCase()];
+            setHiddenCategories(updated);
+            await AsyncStorage.setItem(`hidden_categories_${selectedKitchenId}`, JSON.stringify(updated));
+            Alert.alert('Deleted', `Category "${catName}" has been deleted from your shop.`);
+          }
+        }
+      ]
+    );
+  };
+
+  const handleRestoreCategories = async () => {
+    setHiddenCategories([]);
+    await AsyncStorage.removeItem(`hidden_categories_${selectedKitchenId}`);
+    Alert.alert('Restored', 'All deleted categories have been restored.');
+  };
+
+  const visibleProducts = kitchenProducts.filter(
+    item => !hiddenCategories.includes(item.category.toLowerCase())
+  );
 
   const pickFromCamera = async () => {
     try {
@@ -192,8 +235,35 @@ export default function SellerMenuScreen() {
 
       <Text style={styles.subtitle}>Manage available items for {kitchenInfo.name}</Text>
 
+      {/* Shop Categories Section with Delete option */}
+      <View style={styles.shopCategoriesSection}>
+        <Text style={styles.sectionTitle}>Shop Categories</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesScroll}>
+          {Array.from(new Set(kitchenProducts.map(p => p.category)))
+            .filter(catName => catName && catName.trim() !== '')
+            .map((catName, idx) => {
+              const isHidden = hiddenCategories.includes(catName.toLowerCase());
+              if (isHidden) return null;
+              return (
+                <View key={idx} style={styles.catChip}>
+                  <Text style={styles.catChipText}>{catName}</Text>
+                  <TouchableOpacity onPress={() => handleHideCategory(catName)} style={styles.catDeleteBtn}>
+                    <Text style={styles.catDeleteBtnText}>×</Text>
+                  </TouchableOpacity>
+                </View>
+              );
+            })
+          }
+          {hiddenCategories.length > 0 && (
+            <TouchableOpacity style={styles.restoreBtn} onPress={handleRestoreCategories}>
+              <Text style={styles.restoreBtnText}>Restore All</Text>
+            </TouchableOpacity>
+          )}
+        </ScrollView>
+      </View>
+
       <View style={styles.dishList}>
-        {kitchenProducts.map((item) => (
+        {visibleProducts.map((item) => (
           <View key={item.id} style={styles.dishCard}>
             <View style={styles.dishCardMeta}>
               <View style={[styles.vegBadge, { borderColor: item.isVeg ? theme.colors.veg : theme.colors.nonVeg }]}>
@@ -209,6 +279,11 @@ export default function SellerMenuScreen() {
             </TouchableOpacity>
           </View>
         ))}
+        {visibleProducts.length === 0 && (
+          <Text style={{ color: '#888', fontSize: 12, textAlign: 'center', marginVertical: 30 }}>
+            No items visible. Add a dish or restore hidden categories.
+          </Text>
+        )}
       </View>
 
       {/* Add item Modal */}
@@ -569,6 +644,66 @@ const styles = StyleSheet.create({
   pickerActionText: {
     fontSize: 10,
     color: '#FFF',
+    fontWeight: 'bold',
+  },
+  shopCategoriesSection: {
+    marginTop: 15,
+    marginBottom: 15,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#FFF',
+    marginLeft: 16,
+    marginBottom: 6,
+  },
+  categoriesScroll: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    marginTop: 8,
+  },
+  catChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1E1E1E',
+    borderRadius: 14,
+    paddingLeft: 12,
+    paddingRight: 8,
+    paddingVertical: 6,
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  catChipText: {
+    color: '#FFF',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  catDeleteBtn: {
+    marginLeft: 6,
+    backgroundColor: 'rgba(255, 107, 0, 0.2)',
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  catDeleteBtnText: {
+    color: '#FF6B00',
+    fontSize: 11,
+    fontWeight: 'bold',
+    lineHeight: 12,
+  },
+  restoreBtn: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    justifyContent: 'center',
+  },
+  restoreBtnText: {
+    color: '#FFF',
+    fontSize: 11,
     fontWeight: 'bold',
   }
 });

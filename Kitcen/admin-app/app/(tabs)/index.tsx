@@ -6,7 +6,9 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  Modal
+  Modal,
+  TextInput,
+  Image
 } from 'react-native';
 import { 
   Users, 
@@ -15,7 +17,8 @@ import {
   Store,
   CheckCircle,
   Clock,
-  X
+  X,
+  Trash2
 } from 'lucide-react-native';
 import { theme } from '../../styles/theme';
 import { useKitchenStore } from '../../store/useKitchenStore';
@@ -24,14 +27,20 @@ import { useAuthStore } from '../../store/useAuthStore';
 export default function AdminDashboard() {
   const kitchens = useKitchenStore(state => state.kitchens);
   const orders = useKitchenStore(state => state.orders);
+  const categories = useKitchenStore(state => state.categories);
   const fetchKitchens = useKitchenStore(state => state.fetchKitchens);
   const fetchOrders = useKitchenStore(state => state.fetchOrders);
+  const fetchCategories = useKitchenStore(state => state.fetchCategories);
   const approveKitchen = useKitchenStore(state => state.approveKitchen);
+  const createCategory = useKitchenStore(state => state.createCategory);
+  const deleteCategory = useKitchenStore(state => state.deleteCategory);
 
   // Theme support
   const isDarkMode = useAuthStore(state => state.isDarkMode);
 
   const [selectedKitchen, setSelectedKitchen] = useState<any>(null);
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatImage, setNewCatImage] = useState('');
 
   const selectedKitchenOrders = selectedKitchen 
     ? orders.filter(o => o.kitchenId === selectedKitchen.id) 
@@ -48,9 +57,11 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchKitchens();
     fetchOrders();
+    fetchCategories();
     const interval = setInterval(() => {
       fetchKitchens();
       fetchOrders();
+      fetchCategories();
     }, 5000);
     return () => clearInterval(interval);
   }, []);
@@ -194,6 +205,79 @@ export default function AdminDashboard() {
             </View>
           </View>
         ))}
+      </View>
+
+      {/* Category Management */}
+      <View style={styles.sellerSection}>
+        <Text style={[styles.sellerSectionTitle, { color: themeColors.text }]}>Category Management</Text>
+        
+        {/* Add Category Box */}
+        <View style={[styles.addCatBox, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+          <TextInput
+            placeholder="Category Name (e.g. Pizza, Cake, Coffee)"
+            placeholderTextColor="#888"
+            value={newCatName}
+            onChangeText={setNewCatName}
+            style={[styles.adminInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
+          />
+          <TextInput
+            placeholder="Image URL (Unsplash/Web Link)"
+            placeholderTextColor="#888"
+            value={newCatImage}
+            onChangeText={setNewCatImage}
+            style={[styles.adminInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
+          />
+          <TouchableOpacity 
+            style={styles.addCatBtn}
+            onPress={async () => {
+              if (!newCatName.trim()) {
+                Alert.alert('Error', 'Please enter a category name');
+                return;
+              }
+              await createCategory(newCatName.trim(), newCatImage.trim());
+              setNewCatName('');
+              setNewCatImage('');
+              Alert.alert('Success', 'Category added globally!');
+            }}
+          >
+            <Text style={styles.addCatBtnText}>Add Category Tag</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Categories Grid */}
+        <View style={styles.categoriesGrid}>
+          {categories.map((cat) => (
+            <View key={cat.id} style={[styles.catCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+              {cat.image ? (
+                <Image source={{ uri: cat.image }} style={styles.catCardImage} />
+              ) : (
+                <View style={styles.catCardPlaceholder} />
+              )}
+              <View style={styles.catCardInfo}>
+                <Text style={[styles.catCardName, { color: themeColors.text }]} numberOfLines={1}>{cat.name}</Text>
+                <TouchableOpacity onPress={() => {
+                  Alert.alert(
+                    'Delete Category',
+                    `Are you sure you want to delete category "${cat.name}" globally?`,
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      { 
+                        text: 'Delete', 
+                        style: 'destructive',
+                        onPress: () => {
+                          deleteCategory(cat.id);
+                          Alert.alert('Deleted', 'Category deleted globally.');
+                        }
+                      }
+                    ]
+                  );
+                }}>
+                  <Trash2 size={14} color="#FF5252" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+        </View>
       </View>
       <View style={{ height: 40 }} />
 
@@ -540,5 +624,65 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: 'bold',
     marginTop: 6,
+  },
+  addCatBox: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+  },
+  adminInput: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 13,
+    marginBottom: 12,
+  },
+  addCatBtn: {
+    backgroundColor: '#FF5252',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addCatBtnText: {
+    color: '#FFF',
+    fontSize: 13,
+    fontWeight: 'bold',
+  },
+  categoriesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  catCard: {
+    width: '48%',
+    borderWidth: 1,
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 16,
+  },
+  catCardImage: {
+    width: '100%',
+    height: 90,
+    backgroundColor: '#333',
+  },
+  catCardPlaceholder: {
+    width: '100%',
+    height: 90,
+    backgroundColor: '#222',
+  },
+  catCardInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+  },
+  catCardName: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    flex: 1,
+    marginRight: 8,
   }
 });

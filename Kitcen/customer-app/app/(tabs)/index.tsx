@@ -32,6 +32,7 @@ import { theme } from '../../styles/theme';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useKitchenStore } from '../../store/useKitchenStore';
 import { useCartStore } from '../../store/useCartStore';
+import { API_BASE_URL } from '../../store/apiConfig';
 
 const { width } = Dimensions.get('window');
 
@@ -59,11 +60,27 @@ export default function HomeScreen() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [liveBanners, setLiveBanners] = useState<any[]>([]);
 
   useEffect(() => {
     fetchKitchens();
     fetchAllProducts();
+    fetchLiveBanners();
   }, []);
+
+  const fetchLiveBanners = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/banners`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data.length > 0) {
+          setLiveBanners(json.data);
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to load live banners:', err);
+    }
+  };
 
   // Filter products dynamically
   const getFilteredDishes = () => {
@@ -115,16 +132,16 @@ export default function HomeScreen() {
 
   // Best seller fallback items matching home-screen.png
   const fallbackBestSellers = [
-    { id: 'bs1', name: 'Sushi Wave', price: 103.00, image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=200' },
-    { id: 'bs2', name: 'Butter Chicken', price: 50.00, image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=200' },
-    { id: 'bs3', name: 'Veg Lasagna', price: 12.99, image: 'https://images.unsplash.com/photo-1574894709920-11b28e7367e3?w=200' },
-    { id: 'bs4', name: 'Sweet Cupcake', price: 8.20, image: 'https://images.unsplash.com/photo-1576618148400-f54bed99fcfd?w=200' },
+    { id: 'bs1', name: 'Sushi Wave', price: 103.00, image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=200', kitchenId: 'shp-seed-10', kitchenName: 'Rumali By Enoki' },
+    { id: 'bs2', name: 'Butter Chicken', price: 50.00, image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=200', kitchenId: 'shp-seed-1', kitchenName: 'Burger King' },
+    { id: 'bs3', name: 'Veg Lasagna', price: 12.99, image: 'https://images.unsplash.com/photo-1574894709920-11b28e7367e3?w=200', kitchenId: 'shp-seed-2', kitchenName: 'Pizza Hut' },
+    { id: 'bs4', name: 'Sweet Cupcake', price: 8.20, image: 'https://images.unsplash.com/photo-1576618148400-f54bed99fcfd?w=200', kitchenId: 'shp-seed-4', kitchenName: 'Starbucks Coffee' },
   ];
 
   // Recommendations fallback matching home-screen.png
   const fallbackRecommends = [
-    { id: 'rc1', name: 'Classic Burger', price: 10.00, rating: 5.0, image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=300' },
-    { id: 'rc2', name: 'Fresh Spring Rolls', price: 25.00, rating: 5.0, image: 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=300' },
+    { id: 'rc1', name: 'Classic Burger', price: 10.00, rating: 5.0, image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=300', kitchenId: 'shp-seed-1', kitchenName: 'Burger King' },
+    { id: 'rc2', name: 'Fresh Spring Rolls', price: 25.00, rating: 5.0, image: 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=300', kitchenId: 'shp-seed-9', kitchenName: 'Chaayos Chai' },
   ];
 
   const getBestSellers = () => {
@@ -135,11 +152,26 @@ export default function HomeScreen() {
     return fallbackBestSellers;
   };
 
-  const getRecommendations = () => {
-    if (allProducts && allProducts.length > 4) {
-      return allProducts.slice(4, 8);
+  const [visibleRecommendCount, setVisibleRecommendCount] = useState(4);
+
+  const handleScroll = (event: any) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    // Check if scrolled 90% of the way to the bottom
+    const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 150;
+    if (isCloseToBottom && !selectedCategory) {
+      const totalProds = allProducts?.length || 0;
+      if (visibleRecommendCount < totalProds) {
+        setVisibleRecommendCount(prev => prev + 4);
+      }
     }
-    return fallbackRecommends;
+  };
+
+  const getRecommendations = () => {
+    if (selectedCategory) {
+      return filteredDishes;
+    }
+    const list = allProducts && allProducts.length > 0 ? allProducts : fallbackRecommends;
+    return list.slice(0, visibleRecommendCount);
   };
 
   return (
@@ -180,7 +212,9 @@ export default function HomeScreen() {
         {/* Greeting Banner */}
         <View style={styles.greetingWrapper}>
           <View style={styles.greetingHeaderRow}>
-            <Text style={styles.greetingTitle}>Good Morning</Text>
+            <Text style={styles.greetingTitle}>
+              Good Morning {user?.firstName || user?.name?.split(' ')[0] || 'Dev'} {user?.lastName || user?.name?.split(' ').slice(1).join(' ') || 'Kumar'}
+            </Text>
             <View style={styles.cyanUnderline} />
           </View>
           <Text style={styles.greetingSubtitle}>Rise And Shine! It's Breakfast Time</Text>
@@ -189,7 +223,12 @@ export default function HomeScreen() {
 
       {/* 2. White Card Container for Body Scroll */}
       <View style={styles.bodyCard}>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+        <ScrollView 
+          showsVerticalScrollIndicator={false} 
+          contentContainerStyle={{ paddingBottom: 100 }}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+        >
           
           {/* Categories Horizontal Slider */}
           <View style={styles.categoryContainer}>
@@ -226,7 +265,7 @@ export default function HomeScreen() {
               <TouchableOpacity 
                 key={item.id} 
                 style={styles.bestSellerCard}
-                onPress={() => handleAddToCart(item)}
+                onPress={() => router.push(`/restaurant/${item.kitchenId || 'shp-seed-1'}`)}
               >
                 <Image source={{ uri: item.image }} style={styles.bestSellerImage} />
                 <View style={styles.pricePill}>
@@ -236,18 +275,47 @@ export default function HomeScreen() {
             ))}
           </ScrollView>
 
-          {/* Promotion Banner */}
-          <View style={styles.promoBanner}>
-            <View style={styles.promoLeft}>
-              <Text style={styles.promoTextMain}>Experience our</Text>
-              <Text style={styles.promoTextMain}>delicious new dish</Text>
-              <Text style={styles.promoDiscount}>30% OFF</Text>
-            </View>
-            <Image 
-              source={{ uri: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300' }} 
-              style={styles.promoImage} 
-            />
-          </View>
+          {/* Dynamic Promo Banners Slider */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
+            {liveBanners.map((banner, index) => (
+              <TouchableOpacity 
+                key={banner.id || index} 
+                style={[styles.promoBanner, { marginRight: 15, width: width - 40 }]}
+                onPress={() => {
+                  const targetRoute = banner.linkUrl || 'restaurant/shp-seed-1';
+                  router.push(`/${targetRoute}`);
+                }}
+              >
+                <View style={styles.promoLeft}>
+                  <Text style={styles.promoTextMain}>Chef Special</Text>
+                  <Text style={styles.promoTextMain}>Exclusive Offer</Text>
+                  <Text style={styles.promoDiscount}>30% OFF</Text>
+                </View>
+                <Image 
+                  source={{ uri: banner.image_url || banner.imageUrl || 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300' }} 
+                  style={styles.promoImage} 
+                />
+              </TouchableOpacity>
+            ))}
+
+            {liveBanners.length === 0 && (
+              /* Fallback Promo Banner if empty */
+              <TouchableOpacity 
+                style={[styles.promoBanner, { width: width - 40, marginHorizontal: 20 }]}
+                onPress={() => router.push('/restaurant/shp-seed-2')}
+              >
+                <View style={styles.promoLeft}>
+                  <Text style={styles.promoTextMain}>Experience our</Text>
+                  <Text style={styles.promoTextMain}>delicious new dish</Text>
+                  <Text style={styles.promoDiscount}>30% OFF</Text>
+                </View>
+                <Image 
+                  source={{ uri: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300' }} 
+                  style={styles.promoImage} 
+                />
+              </TouchableOpacity>
+            )}
+          </ScrollView>
           
           {/* Carousel dots indicator */}
           <View style={styles.dotsRow}>
@@ -258,14 +326,16 @@ export default function HomeScreen() {
           </View>
 
           {/* Recommend Section */}
-          <Text style={[styles.sectionTitle, { marginLeft: 20, marginBottom: 15 }]}>Recommend</Text>
+          <Text style={[styles.sectionTitle, { marginLeft: 20, marginBottom: 15 }]}>
+            {selectedCategory ? `${selectedCategory} Matches` : 'Recommend'}
+          </Text>
 
           <View style={styles.recommendGrid}>
             {getRecommendations().map((item: any) => (
               <TouchableOpacity 
                 key={item.id} 
                 style={styles.recommendCard}
-                onPress={() => handleAddToCart(item)}
+                onPress={() => router.push(`/restaurant/${item.kitchenId || 'shp-seed-1'}`)}
               >
                 <Image source={{ uri: item.image }} style={styles.recommendImage} />
                 
