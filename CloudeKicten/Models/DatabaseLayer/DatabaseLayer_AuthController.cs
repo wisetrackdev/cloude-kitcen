@@ -129,10 +129,13 @@ namespace CloudeKicten.Models.DatabaseLayer
             {
                 cmd.CommandText = "ALTER TABLE order_chats DROP CONSTRAINT IF EXISTS order_chats_order_id_fkey;";
                 await cmd.ExecuteNonQueryAsync();
+                
+                cmd.CommandText = "ALTER TABLE order_chats DROP CONSTRAINT IF EXISTS order_chats_sender_id_fkey;";
+                await cmd.ExecuteNonQueryAsync();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[DB MIGRATION WARNING] Failed to drop order_chats order_id fkey constraint: {ex.Message}");
+                Console.WriteLine($"[DB MIGRATION WARNING] Failed to drop order_chats fkey constraints: {ex.Message}");
             }
 
             try

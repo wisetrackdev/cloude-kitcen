@@ -157,7 +157,7 @@ namespace CloudeKicten
             CREATE TABLE IF NOT EXISTS order_chats (
                 id VARCHAR(50) PRIMARY KEY,
                 order_id VARCHAR(50) NOT NULL,
-                sender_id VARCHAR(50) NOT NULL REFERENCES user_register(id) ON DELETE CASCADE,
+                sender_id VARCHAR(50) NOT NULL,
                 message VARCHAR(1000) NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
