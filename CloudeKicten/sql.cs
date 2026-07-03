@@ -156,7 +156,7 @@ namespace CloudeKicten
         public const string CreateOrderChatsTable = @"
             CREATE TABLE IF NOT EXISTS order_chats (
                 id VARCHAR(50) PRIMARY KEY,
-                order_id VARCHAR(50) NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+                order_id VARCHAR(50) NOT NULL,
                 sender_id VARCHAR(50) NOT NULL REFERENCES user_register(id) ON DELETE CASCADE,
                 message VARCHAR(1000) NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

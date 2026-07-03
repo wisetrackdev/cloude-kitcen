@@ -9,7 +9,8 @@ import {
   KeyboardAvoidingView, 
   Platform,
   ActivityIndicator,
-  SafeAreaView
+  SafeAreaView,
+  StatusBar
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Send } from 'lucide-react-native';
@@ -198,6 +199,7 @@ export default function SellerAdminChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 24) + 8 : 0,
   },
   header: {
     flexDirection: 'row',
