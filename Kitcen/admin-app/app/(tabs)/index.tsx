@@ -885,7 +885,7 @@ export default function AdminDashboard() {
                       style={[styles.chatSellerBtn, { backgroundColor: themeColors.primary }]}
                       onPress={() => {
                         setSelectedRoom({
-                          orderId: `support-seller-${selectedSellerForStats.id}`,
+                          orderId: `support-seller-${selectedSellerForStats.owner}`,
                           customerId: selectedSellerForStats.owner,
                           customerName: `${selectedSellerForStats.name} (Seller)`
                         });
