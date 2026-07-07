@@ -101,60 +101,9 @@ interface KitchenState {
 }
 
 // Offline fallback mock data
-const initialKitchens: Kitchen[] = [
-  { 
-    id: 'k1', 
-    name: 'The Pizza Box (Offline)', 
-    owner: 'Arjun Mehta',
-    type: 'restaurant',
-    cuisines: 'Italian, Pizza', 
-    rating: 4.8, 
-    ratingCount: 128,
-    time: '20-25 mins', 
-    distance: '1.8 km',
-    offer: '50% OFF up to ₹120', 
-    image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&auto=format&fit=crop&q=80',
-    revenue: 12450,
-    ordersCount: 24
-  },
-  { 
-    id: 'k2', 
-    name: 'Burger Bistro (Offline)', 
-    owner: 'Sneha Rao',
-    type: 'restaurant',
-    cuisines: 'Fast Food, American', 
-    rating: 4.5, 
-    ratingCount: 94,
-    time: '15-20 mins', 
-    distance: '0.9 km',
-    offer: 'Buy 1 Get 1 Free', 
-    image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&auto=format&fit=crop&q=80',
-    revenue: 8400,
-    ordersCount: 18
-  },
-  { 
-    id: 'k3', 
-    name: 'Auntie\'s Homely Tiffin (Offline)', 
-    owner: 'Rupa Sharma (Housewife)',
-    type: 'home_tiffin',
-    cuisines: 'North Indian, Homestyle Dal-Roti', 
-    rating: 4.9, 
-    ratingCount: 312,
-    time: '30 mins', 
-    distance: '1.2 km',
-    offer: 'Healthy Homestyle Food', 
-    image: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=600&auto=format&fit=crop&q=80',
-    revenue: 24500,
-    ordersCount: 56
-  }
-];
+const initialKitchens: Kitchen[] = [];
 
-const initialProducts: Record<string, ProductItem[]> = {
-  k1: [
-    { id: 'p1', name: 'Margherita Pizza', price: 249, desc: 'Classic mozzarella cheese and fresh basil leaves on thin crust', category: 'Pizzas', isVeg: true, image: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=300&auto=format&fit=crop&q=80', customizable: true },
-    { id: 'p4', name: 'Garlic Breadsticks', price: 129, desc: 'Baked dough sticks brushed with garlic butter and herbs', category: 'Starters', isVeg: true, image: 'https://images.unsplash.com/photo-1544982503-9f984c14501a?w=300&auto=format&fit=crop&q=80' }
-  ]
-};
+const initialProducts: Record<string, ProductItem[]> = {};
 
 export const useKitchenStore = create<KitchenState>((set, get) => ({
   role: 'customer',

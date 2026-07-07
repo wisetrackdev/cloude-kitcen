@@ -501,6 +501,304 @@ export default function LoginScreen() {
     }
   };
 
+  const isFormStep = step === 'shop_details' || step === 'payment';
+
+  if (isFormStep) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#F5F6F8' }}>
+        {/* Fixed Header */}
+        <View style={{ 
+          backgroundColor: '#FFCC00', 
+          paddingTop: 50, 
+          paddingHorizontal: 20, 
+          paddingBottom: 20, 
+          borderBottomLeftRadius: 24, 
+          borderBottomRightRadius: 24,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          elevation: 3,
+          zIndex: 10
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <ChefHat size={28} color="#000" style={{ marginRight: 10 }} />
+            <View>
+              <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#000' }}>
+                {step === 'shop_details' ? 'Shop Registration' : 'Platform Payment'}
+              </Text>
+              <Text style={{ fontSize: 11, color: 'rgba(0,0,0,0.6)' }}>
+                {step === 'shop_details' ? 'Enter your kitchen outlet info' : 'Pay platform activation fee'}
+              </Text>
+            </View>
+          </View>
+          {step === 'payment' && (
+            <TouchableOpacity 
+              onPress={() => setStep('shop_details')}
+              style={{ backgroundColor: 'rgba(0,0,0,0.08)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 }}
+            >
+              <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#000' }}>Back</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Scrollable Card Container */}
+        <ScrollView 
+          contentContainerStyle={{ padding: 16, paddingBottom: 40 }} 
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={[styles.card, { padding: 20 }]}>
+            {isLoading && (
+              <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginBottom: 20 }} />
+            )}
+
+            {/* STEP 4: Shop Details Registration */}
+            {step === 'shop_details' && (
+              <View style={styles.form}>
+                <Text style={styles.stepTitle}>Register Your Shop / Kitchen</Text>
+
+                <View style={styles.inputWrapper}>
+                  <Store size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />
+                  <TextInput
+                    placeholder="Shop / Kitchen Name"
+                    placeholderTextColor="#888"
+                    value={shopName}
+                    onChangeText={setShopName}
+                    style={styles.inputField}
+                  />
+                </View>
+
+                {/* Shop Banner Image capture */}
+                <View style={styles.captureContainer}>
+                  <View style={styles.imagePlaceholder}>
+                    <Text style={styles.imagePlaceholderText}>Shop Banner Image</Text>
+                    {shopImage ? (
+                      <Text style={styles.imagePlaceholderSubText} numberOfLines={1}>✓ Clicked: {shopImage.substring(shopImage.lastIndexOf('/') + 1)}</Text>
+                    ) : (
+                      <Text style={styles.imagePlaceholderSubText}>No photo captured</Text>
+                    )}
+                  </View>
+                  <TouchableOpacity style={styles.captureBtn} onPress={() => captureImage('banner')}>
+                    <Camera size={14} color={theme.colors.primary} style={{ marginRight: 6 }} />
+                    <Text style={styles.captureBtnText}>Open Camera</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Logo capture */}
+                <View style={styles.captureContainer}>
+                  <View style={styles.imagePlaceholder}>
+                    <Text style={styles.imagePlaceholderText}>Shop Logo / Avatar</Text>
+                    {shopLogo ? (
+                      <Text style={styles.imagePlaceholderSubText} numberOfLines={1}>✓ Clicked: {shopLogo.substring(shopLogo.lastIndexOf('/') + 1)}</Text>
+                    ) : (
+                      <Text style={styles.imagePlaceholderSubText}>No photo captured</Text>
+                    )}
+                  </View>
+                  <TouchableOpacity style={styles.captureBtn} onPress={() => captureImage('logo')}>
+                    <Camera size={14} color={theme.colors.primary} style={{ marginRight: 6 }} />
+                    <Text style={styles.captureBtnText}>Open Camera</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* GPS Location (Auto-Detected) */}
+                <View style={styles.locationContainer}>
+                  <MapPin size={16} color={theme.colors.primary} style={styles.inputIcon} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.locationLabel}>Live Shop Location (Auto-Picked)</Text>
+                    <Text style={styles.locationValue} numberOfLines={1}>{locationAddress}</Text>
+                  </View>
+                  <TouchableOpacity onPress={detectLiveLocation}>
+                    <Text style={styles.refreshLocText}>Retry GPS</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.inputWrapper}>
+                  <MapPin size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />
+                  <TextInput
+                    placeholder="Gali / Street Address"
+                    placeholderTextColor="#888"
+                    value={shopAddress}
+                    onChangeText={setShopAddress}
+                    style={styles.inputField}
+                  />
+                </View>
+
+                <View style={styles.row}>
+                  <View style={[styles.inputWrapper, { flex: 1, marginRight: 8 }]}>
+                    <TextInput
+                      placeholder="Floor (e.g. 1st)"
+                      placeholderTextColor="#888"
+                      value={shopFloor}
+                      onChangeText={setShopFloor}
+                      style={styles.inputField}
+                    />
+                  </View>
+
+                  <View style={[styles.inputWrapper, { flex: 1 }]}>
+                    <TextInput
+                      placeholder="Office/Shop No."
+                      placeholderTextColor="#888"
+                      value={shopGaliNumber}
+                      onChangeText={setShopGaliNumber}
+                      style={styles.inputField}
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.row}>
+                  <View style={[styles.inputWrapper, { flex: 1, marginRight: 8 }]}>
+                    <TextInput
+                      placeholder="State"
+                      placeholderTextColor="#888"
+                      value={shopState}
+                      onChangeText={setShopState}
+                      style={styles.inputField}
+                    />
+                  </View>
+
+                  <View style={[styles.inputWrapper, { flex: 1 }]}>
+                    <TextInput
+                      placeholder="Pin Code"
+                      placeholderTextColor="#888"
+                      keyboardType="numeric"
+                      value={shopPincode}
+                      onChangeText={setShopPincode}
+                      style={styles.inputField}
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.inputWrapper}>
+                  <FileText size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />
+                  <TextInput
+                    placeholder="GSTIN Number (GST is manually input)"
+                    placeholderTextColor="#888"
+                    autoCapitalize="characters"
+                    value={shopGst}
+                    onChangeText={setShopGst}
+                    style={styles.inputField}
+                  />
+                </View>
+
+                <TouchableOpacity style={styles.loginBtn} onPress={handleProceedToPayment}>
+                  <Text style={styles.loginBtnText}>Proceed to Payment (Next)</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* PAYMENT STEP: Pay Platform Activation Fee */}
+            {step === 'payment' && (
+              <View style={styles.form}>
+                <Text style={styles.stepTitle}>Platform Activation Fee</Text>
+                
+                <Text style={{ fontSize: 12, color: '#333', textAlign: 'center', lineHeight: 18, marginBottom: 16 }}>
+                  To activate your store, please pay a one-time platform activation fee of <Text style={{ fontWeight: 'bold', color: '#000' }}>₹1.00</Text>.
+                </Text>
+
+                {/* UPI details & Paytm App redirection */}
+                <View style={{ backgroundColor: '#F0F2F4', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#EAEAEA', alignItems: 'center', marginBottom: 16 }}>
+                  <Smartphone size={28} color="#002E6E" style={{ marginBottom: 8 }} />
+                  <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#1E2022' }}>Direct App Payment</Text>
+                  <Text style={{ fontSize: 11, color: '#686E73', textAlign: 'center', marginTop: 4, marginBottom: 12 }}>
+                    Click below to pay ₹1.00 directly via Paytm or other UPI apps on this phone.
+                  </Text>
+                  <TouchableOpacity 
+                    style={{ backgroundColor: '#002E6E', paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8 }}
+                    onPress={() => {
+                      const upiUrl = `upi://pay?pa=${adminUpiId}&pn=CloudeKitchenAdmin&am=1.00&cu=INR&tn=PlatformFee`;
+                      Linking.openURL(upiUrl).catch(() => {
+                        Alert.alert('App Redirection Error', 'Could not open UPI apps directly. Please scan the QR code instead.');
+                      });
+                    }}
+                  >
+                    <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold' }}>Pay via Paytm App</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* QR Scanner option */}
+                <View style={{ backgroundColor: '#FFFFFF', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#EAEAEA', alignItems: 'center', marginBottom: 16 }}>
+                  <QrCode size={28} color="#FF6B00" style={{ marginBottom: 8 }} />
+                  <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#1E2022' }}>Scan Paytm QR Code</Text>
+                  <Text style={{ fontSize: 11, color: '#686E73', textAlign: 'center', marginTop: 4, marginBottom: 12 }}>
+                    Or scan this QR Code using Paytm or any UPI scanner to make the payment:
+                  </Text>
+                  
+                  <Image 
+                    source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`upi://pay?pa=${adminUpiId}&pn=CloudeKitchenAdmin&am=1.00&cu=INR`)}` }}
+                    style={{ width: 180, height: 180, borderRadius: 8, borderWidth: 1, borderColor: '#EAEAEA', backgroundColor: '#FFF' }}
+                  />
+                  <Text style={{ fontSize: 10, color: '#FF6B00', fontWeight: 'bold', marginTop: 10 }}>UPI ID: {adminUpiId}</Text>
+                  {adminUpiNumber ? <Text style={{ fontSize: 10, color: '#686E73', marginTop: 2 }}>UPI Phone: {adminUpiNumber}</Text> : null}
+                </View>
+
+                {/* Proof Submission */}
+                <Text style={[styles.stepTitle, { textAlign: 'left', fontSize: 13, marginBottom: 8 }]}>Submit Payment Proof</Text>
+
+                {/* UTR Input */}
+                <View style={styles.inputWrapper}>
+                  <FileText size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />
+                  <TextInput
+                    placeholder="Enter 12-Digit UTR / Transaction No."
+                    placeholderTextColor="#888"
+                    keyboardType="numeric"
+                    value={utrNumber}
+                    onChangeText={setUtrNumber}
+                    style={styles.inputField}
+                  />
+                </View>
+
+                {/* Screenshot Capture / upload */}
+                <View style={styles.captureContainer}>
+                  <View style={styles.imagePlaceholder}>
+                    <Text style={styles.imagePlaceholderText}>Payment Screenshot</Text>
+                    {paymentScreenshot ? (
+                      <Text style={styles.imagePlaceholderSubText} numberOfLines={1}>✓ Selected: {paymentScreenshot.substring(paymentScreenshot.lastIndexOf('/') + 1)}</Text>
+                    ) : (
+                      <Text style={styles.imagePlaceholderSubText}>Capture photo or select receipt</Text>
+                    )}
+                  </View>
+                  <View style={{ flexDirection: 'row' }}>
+                    <TouchableOpacity 
+                      style={[styles.captureBtn, { marginRight: 6 }]} 
+                      onPress={() => capturePaymentScreenshot('camera')}
+                    >
+                      <Camera size={12} color={theme.colors.primary} style={{ marginRight: 4 }} />
+                      <Text style={[styles.captureBtnText, { fontSize: 10 }]}>Camera</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={styles.captureBtn} 
+                      onPress={() => capturePaymentScreenshot('gallery')}
+                    >
+                      <Upload size={12} color={theme.colors.primary} style={{ marginRight: 4 }} />
+                      <Text style={[styles.captureBtnText, { fontSize: 10 }]}>Gallery</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {paymentScreenshot ? (
+                  <Image 
+                    source={{ uri: paymentScreenshot }}
+                    style={{ width: '100%', height: 160, borderRadius: 12, marginBottom: 16, borderWidth: 1, borderColor: '#EAEAEA' }}
+                    resizeMode="contain"
+                  />
+                ) : null}
+
+                <TouchableOpacity style={styles.loginBtn} onPress={handleRegisterShop}>
+                  <Text style={styles.loginBtnText}>Save & Submit Registration</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  // Otherwise, default centered layout for email / otp / pending_approval
   return (
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       <View style={styles.card}>
@@ -608,295 +906,6 @@ export default function LoginScreen() {
                   <Text style={styles.toggleText}>Resend OTP / Change Email</Text>
                 </TouchableOpacity>
               </>
-            )}
-          </View>
-        )}
-
-        {/* STEP 4: Shop Details Registration */}
-        {step === 'shop_details' && (
-          <View style={styles.form}>
-            <Text style={styles.stepTitle}>Register Your Shop / Kitchen</Text>
-
-            <View style={styles.inputWrapper}>
-              <Store size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />
-              <TextInput
-                placeholder="Shop / Kitchen Name"
-                placeholderTextColor="#888"
-                value={shopName}
-                onChangeText={setShopName}
-                style={styles.inputField}
-              />
-            </View>
-
-            {/* Shop Banner Image capture */}
-            <View style={styles.captureContainer}>
-              <View style={styles.imagePlaceholder}>
-                <Text style={styles.imagePlaceholderText}>Shop Banner Image</Text>
-                {shopImage ? (
-                  <Text style={styles.imagePlaceholderSubText} numberOfLines={1}>✓ Clicked: {shopImage.substring(shopImage.lastIndexOf('/') + 1)}</Text>
-                ) : (
-                  <Text style={styles.imagePlaceholderSubText}>No photo captured</Text>
-                )}
-              </View>
-              <TouchableOpacity style={styles.captureBtn} onPress={() => captureImage('banner')}>
-                <Camera size={14} color={theme.colors.primary} style={{ marginRight: 6 }} />
-                <Text style={styles.captureBtnText}>Open Camera</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Logo capture */}
-            <View style={styles.captureContainer}>
-              <View style={styles.imagePlaceholder}>
-                <Text style={styles.imagePlaceholderText}>Shop Logo / Avatar</Text>
-                {shopLogo ? (
-                  <Text style={styles.imagePlaceholderSubText} numberOfLines={1}>✓ Clicked: {shopLogo.substring(shopLogo.lastIndexOf('/') + 1)}</Text>
-                ) : (
-                  <Text style={styles.imagePlaceholderSubText}>No photo captured</Text>
-                )}
-              </View>
-              <TouchableOpacity style={styles.captureBtn} onPress={() => captureImage('logo')}>
-                <Camera size={14} color={theme.colors.primary} style={{ marginRight: 6 }} />
-                <Text style={styles.captureBtnText}>Open Camera</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* GPS Location (Auto-Detected) */}
-            <View style={styles.locationContainer}>
-              <MapPin size={16} color={theme.colors.primary} style={styles.inputIcon} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.locationLabel}>Live Shop Location (Auto-Picked)</Text>
-                <Text style={styles.locationValue} numberOfLines={1}>{locationAddress}</Text>
-              </View>
-              <TouchableOpacity onPress={detectLiveLocation}>
-                <Text style={styles.refreshLocText}>Retry GPS</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.inputWrapper}>
-              <MapPin size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />
-              <TextInput
-                placeholder="Gali / Street Address"
-                placeholderTextColor="#888"
-                value={shopAddress}
-                onChangeText={setShopAddress}
-                style={styles.inputField}
-              />
-            </View>
-
-            <View style={styles.row}>
-              <View style={[styles.inputWrapper, { flex: 1, marginRight: 8 }]}>
-                <TextInput
-                  placeholder="Floor (e.g. 1st)"
-                  placeholderTextColor="#888"
-                  value={shopFloor}
-                  onChangeText={setShopFloor}
-                  style={styles.inputField}
-                />
-              </View>
-
-              <View style={[styles.inputWrapper, { flex: 1 }]}>
-                <TextInput
-                  placeholder="Office/Shop No."
-                  placeholderTextColor="#888"
-                  value={shopGaliNumber}
-                  onChangeText={setShopGaliNumber}
-                  style={styles.inputField}
-                />
-              </View>
-            </View>
-
-            <View style={styles.row}>
-              <View style={[styles.inputWrapper, { flex: 1, marginRight: 8 }]}>
-                <TextInput
-                  placeholder="State"
-                  placeholderTextColor="#888"
-                  value={shopState}
-                  onChangeText={setShopState}
-                  style={styles.inputField}
-                />
-              </View>
-
-              <View style={[styles.inputWrapper, { flex: 1 }]}>
-                <TextInput
-                  placeholder="Pin Code"
-                  placeholderTextColor="#888"
-                  keyboardType="numeric"
-                  value={shopPincode}
-                  onChangeText={setShopPincode}
-                  style={styles.inputField}
-                />
-              </View>
-            </View>
-
-            <View style={styles.inputWrapper}>
-              <FileText size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />
-              <TextInput
-                placeholder="GSTIN Number (GST is manually input)"
-                placeholderTextColor="#888"
-                autoCapitalize="characters"
-                value={shopGst}
-                onChangeText={setShopGst}
-                style={styles.inputField}
-              />
-            </View>
-
-            <TouchableOpacity style={styles.loginBtn} onPress={handleProceedToPayment}>
-              <Text style={styles.loginBtnText}>Proceed to Payment (Next)</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* PAYMENT STEP: Pay Platform Activation Fee */}
-        {step === 'payment' && (
-          <View style={styles.form}>
-            {/* Back Header */}
-            <TouchableOpacity 
-              style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}
-              onPress={() => setStep('shop_details')}
-            >
-              <ArrowLeft size={16} color={theme.colors.primary} style={{ marginRight: 6 }} />
-              <Text style={{ fontSize: 13, fontWeight: 'bold', color: theme.colors.primary }}>Go Back to Shop Details</Text>
-            </TouchableOpacity>
-
-            <Text style={styles.stepTitle}>Step 5: Platform Activation Fee</Text>
-            
-            <Text style={{ fontSize: 12, color: '#333', textAlign: 'center', lineHeight: 18, marginBottom: 16 }}>
-              To activate your store, please pay a one-time platform activation fee of <Text style={{ fontWeight: 'bold', color: '#000' }}>₹1.00</Text>.
-            </Text>
-
-            {/* UPI details & Paytm App redirection */}
-            <View style={{ backgroundColor: '#F0F2F4', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#EAEAEA', alignItems: 'center', marginBottom: 16 }}>
-              <Smartphone size={28} color="#002E6E" style={{ marginBottom: 8 }} />
-              <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#1E2022' }}>Direct App Payment</Text>
-              <Text style={{ fontSize: 11, color: '#686E73', textAlign: 'center', marginTop: 4, marginBottom: 12 }}>
-                Click below to pay ₹1.00 directly via Paytm or other UPI apps on this phone.
-              </Text>
-              <TouchableOpacity 
-                style={{ backgroundColor: '#002E6E', paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8 }}
-                onPress={() => {
-                  const upiUrl = `upi://pay?pa=${adminUpiId}&pn=CloudeKitchenAdmin&am=1.00&cu=INR&tn=PlatformFee`;
-                  Linking.openURL(upiUrl).catch(() => {
-                    Alert.alert('App Redirection Error', 'Could not open UPI apps directly. Please scan the QR code instead.');
-                  });
-                }}
-              >
-                <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold' }}>Pay via Paytm App</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* QR Scanner option */}
-            <View style={{ backgroundColor: '#FFFFFF', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#EAEAEA', alignItems: 'center', marginBottom: 16 }}>
-              <QrCode size={28} color="#FF6B00" style={{ marginBottom: 8 }} />
-              <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#1E2022' }}>Scan Paytm QR Code</Text>
-              <Text style={{ fontSize: 11, color: '#686E73', textAlign: 'center', marginTop: 4, marginBottom: 12 }}>
-                Or scan this QR Code using Paytm or any UPI scanner to make the payment:
-              </Text>
-              
-              <Image 
-                source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`upi://pay?pa=${adminUpiId}&pn=CloudeKitchenAdmin&am=1.00&cu=INR`)}` }}
-                style={{ width: 180, height: 180, borderRadius: 8, borderWidth: 1, borderColor: '#EAEAEA', backgroundColor: '#FFF' }}
-              />
-              <Text style={{ fontSize: 10, color: '#FF6B00', fontWeight: 'bold', marginTop: 10 }}>UPI ID: {adminUpiId}</Text>
-              {adminUpiNumber ? <Text style={{ fontSize: 10, color: '#686E73', marginTop: 2 }}>UPI Phone: {adminUpiNumber}</Text> : null}
-            </View>
-
-            {/* Proof Submission */}
-            <Text style={[styles.stepTitle, { textAlign: 'left', fontSize: 13, marginBottom: 8 }]}>Submit Payment Proof</Text>
-
-            {/* UTR Input */}
-            <View style={styles.inputWrapper}>
-              <FileText size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />
-              <TextInput
-                placeholder="Enter 12-Digit UTR / Transaction No."
-                placeholderTextColor="#888"
-                keyboardType="numeric"
-                value={utrNumber}
-                onChangeText={setUtrNumber}
-                style={styles.inputField}
-              />
-            </View>
-
-            {/* Screenshot Capture / upload */}
-            <View style={styles.captureContainer}>
-              <View style={styles.imagePlaceholder}>
-                <Text style={styles.imagePlaceholderText}>Payment Screenshot</Text>
-                {paymentScreenshot ? (
-                  <Text style={styles.imagePlaceholderSubText} numberOfLines={1}>✓ Selected: {paymentScreenshot.substring(paymentScreenshot.lastIndexOf('/') + 1)}</Text>
-                ) : (
-                  <Text style={styles.imagePlaceholderSubText}>Capture photo or select receipt</Text>
-                )}
-              </View>
-              <View style={{ flexDirection: 'row' }}>
-                <TouchableOpacity 
-                  style={[styles.captureBtn, { marginRight: 6 }]} 
-                  onPress={() => capturePaymentScreenshot('camera')}
-                >
-                  <Camera size={12} color={theme.colors.primary} style={{ marginRight: 4 }} />
-                  <Text style={[styles.captureBtnText, { fontSize: 10 }]}>Camera</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={styles.captureBtn} 
-                  onPress={() => capturePaymentScreenshot('gallery')}
-                >
-                  <Upload size={12} color={theme.colors.primary} style={{ marginRight: 4 }} />
-                  <Text style={[styles.captureBtnText, { fontSize: 10 }]}>Gallery</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {paymentScreenshot ? (
-              <Image 
-                source={{ uri: paymentScreenshot }}
-                style={{ width: '100%', height: 160, borderRadius: 12, marginBottom: 16, borderWidth: 1, borderColor: '#EAEAEA' }}
-                resizeMode="contain"
-              />
-            ) : null}
-
-            <TouchableOpacity style={styles.loginBtn} onPress={handleRegisterShop}>
-              <Text style={styles.loginBtnText}>Save & Submit Registration</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* STEP 5: Pending Approval Screen */}
-        {step === 'pending_approval' && (
-          <View style={styles.approvalSection}>
-            <CheckCircle size={64} color={kitchenStatus === 'rejected' ? '#FF3B30' : theme.colors.warning} style={{ marginBottom: 20 }} />
-            <Text style={[styles.approvalTitle, kitchenStatus === 'rejected' && { color: '#FF3B30' }]}>
-              {kitchenStatus === 'rejected' ? 'Registration Rejected' : 'Registration Submitted'}
-            </Text>
-            <Text style={styles.approvalText}>
-              {kitchenStatus === 'rejected' 
-                ? 'Your shop registration has been REJECTED by the SuperAdmin.'
-                : 'Your shop registration is successfully submitted and is currently PENDING APPROVAL by SuperAdmin.'}
-            </Text>
-            <Text style={styles.approvalSubtext}>
-              {kitchenStatus === 'rejected'
-                ? 'Please check details with support or try re-submitting with correct information.'
-                : 'You will be granted access to add menu items and view dashboard earnings once the SuperAdmin approves your request.'}
-            </Text>
-
-            <TouchableOpacity 
-              style={styles.loginBtn} 
-              onPress={() => {
-                setStep('email');
-                setEmail('');
-                setOtpCode('');
-              }}
-            >
-              <Text style={styles.loginBtnText}>Return to Login</Text>
-            </TouchableOpacity>
-
-            {tempToken === 'mock_token' && (
-              <TouchableOpacity 
-                style={[styles.loginBtn, { backgroundColor: '#34C759', marginTop: 12 }]} 
-                onPress={() => {
-                  setKitchenId('mock_kitchen_id');
-                  setStep('shop_details');
-                }}
-              >
-                <Text style={styles.loginBtnText}>[Demo] Approve & Proceed</Text>
-              </TouchableOpacity>
             )}
           </View>
         )}
