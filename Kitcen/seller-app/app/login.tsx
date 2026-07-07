@@ -19,6 +19,7 @@ import { useKitchenStore } from '../store/useKitchenStore';
 import { API_BASE_URL } from '../store/apiConfig';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
+import { uploadImageToServer } from '../store/uploadHelper';
 
 type LoginStep = 'email' | 'otp' | 'name' | 'shop_details' | 'payment' | 'pending_approval';
 
@@ -62,8 +63,8 @@ export default function LoginScreen() {
   const [locationAddress, setLocationAddress] = useState('Detecting live location...');
 
   // Payment Step Inputs
-  const [adminUpiNumber, setAdminUpiNumber] = useState('9999900000');
-  const [adminUpiId, setAdminUpiId] = useState('admin@paytm');
+  const [adminUpiNumber, setAdminUpiNumber] = useState('8527430152');
+  const [adminUpiId, setAdminUpiId] = useState('8527430152@slc');
   const [utrNumber, setUtrNumber] = useState('');
   const [paymentScreenshot, setPaymentScreenshot] = useState('');
 
@@ -428,6 +429,33 @@ export default function LoginScreen() {
     }
 
     setIsLoading(true);
+    try {
+      // 1. Verify Platform Fee Payment via backend
+      const verifyRes = await fetch(`${API_BASE_URL}/api/wallet/payments/verify`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tempToken}`
+        },
+        body: JSON.stringify({
+          utrNumber: utrNumber.trim(),
+          amount: 1.00,
+          upiId: adminUpiId,
+          userId: tempUser?.id || ''
+        })
+      });
+
+      if (!verifyRes.ok) {
+        const verifyJson = await verifyRes.json();
+        setIsLoading(false);
+        Alert.alert('Payment Verification Failed', verifyJson.message || 'The entered UTR number could not be verified.');
+        return;
+      }
+    } catch (verifyErr: any) {
+      console.warn('Verify payment offline fallback:', verifyErr);
+      // Fallback in case backend is offline
+    }
+
     const completeAddress = `${shopAddress.trim()}, Floor: ${shopFloor.trim()}, Gali/Office: ${shopGaliNumber.trim()}, State: ${shopState.trim()}, PinCode: ${shopPincode.trim()} | GST: ${shopGst.trim()}`;
     
     try {
@@ -709,7 +737,7 @@ export default function LoginScreen() {
                   <TouchableOpacity 
                     style={{ backgroundColor: '#002E6E', paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8 }}
                     onPress={() => {
-                      const upiUrl = `upi://pay?pa=${adminUpiId}&pn=CloudeKitchenAdmin&am=1.00&cu=INR&tn=PlatformFee`;
+                      const upiUrl = `upi://pay?pa=${adminUpiId}&pn=${encodeURIComponent('Dev Kumar')}&am=1.00&cu=INR&tn=PlatformFee`;
                       Linking.openURL(upiUrl).catch(() => {
                         Alert.alert('App Redirection Error', 'Could not open UPI apps directly. Please scan the QR code instead.');
                       });
@@ -728,7 +756,7 @@ export default function LoginScreen() {
                   </Text>
                   
                   <Image 
-                    source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`upi://pay?pa=${adminUpiId}&pn=CloudeKitchenAdmin&am=1.00&cu=INR`)}` }}
+                    source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`upi://pay?pa=${adminUpiId}&pn=${encodeURIComponent('Dev Kumar')}&am=1.00&cu=INR`)}` }}
                     style={{ width: 180, height: 180, borderRadius: 8, borderWidth: 1, borderColor: '#EAEAEA', backgroundColor: '#FFF' }}
                   />
                   <Text style={{ fontSize: 10, color: '#FF6B00', fontWeight: 'bold', marginTop: 10 }}>UPI ID: {adminUpiId}</Text>

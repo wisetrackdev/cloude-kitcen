@@ -160,6 +160,20 @@ namespace CloudeKicten.Models.DatabaseLayer
 
         private async Task SeedMockStoresAsync(NpgsqlCommand cmd)
         {
+            // 0. Seed SuperAdmin User
+            cmd.CommandText = @"
+                INSERT INTO user_register (id, email, first_name, last_name, phone_number, role, is_verified, upi_number, upi_id, created_at)
+                VALUES ('usr-admin-dev', 'admin@gmail.com', 'Dev', 'Kumar', '8527430152', 'superadmin', true, '8527430152', '8527430152@slc', CURRENT_TIMESTAMP)
+                ON CONFLICT (email) DO UPDATE 
+                SET first_name = 'Dev', 
+                    last_name = 'Kumar', 
+                    phone_number = '8527430152', 
+                    role = 'superadmin', 
+                    upi_number = '8527430152', 
+                    upi_id = '8527430152@slc';
+            ";
+            await cmd.ExecuteNonQueryAsync();
+
             // 1. Seed Categories Table (10 categories with images)
             cmd.CommandText = @"
                 INSERT INTO categories (id, name, image_url, is_active)

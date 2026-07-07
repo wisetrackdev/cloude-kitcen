@@ -267,6 +267,16 @@ namespace CloudeKicten.Models.DatabaseLayer
                         bookings
                         CASCADE;
                     DELETE FROM user_register WHERE role <> 'superadmin';
+
+                    INSERT INTO user_register (id, email, first_name, last_name, phone_number, role, is_verified, upi_number, upi_id, created_at)
+                    VALUES ('usr-admin-dev', 'admin@gmail.com', 'Dev', 'Kumar', '8527430152', 'superadmin', true, '8527430152', '8527430152@slc', CURRENT_TIMESTAMP)
+                    ON CONFLICT (email) DO UPDATE 
+                    SET first_name = 'Dev', 
+                        last_name = 'Kumar', 
+                        phone_number = '8527430152', 
+                        role = 'superadmin', 
+                        upi_number = '8527430152', 
+                        upi_id = '8527430152@slc';
                 ", conn, tx);
                 await cmd.ExecuteNonQueryAsync();
 
