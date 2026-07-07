@@ -459,6 +459,8 @@ namespace CloudeKicten.Models.DatabaseLayer
             cmd.Parameters.AddWithValue("@Gender", (object?)user.Gender ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@Role", user.Role);
             cmd.Parameters.AddWithValue("@RewardPoints", user.RewardPoints);
+            cmd.Parameters.AddWithValue("@UpiNumber", (object?)user.UpiNumber ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@UpiId", (object?)user.UpiId ?? DBNull.Value);
 
             var result = await cmd.ExecuteNonQueryAsync();
             return result > 0;
@@ -480,7 +482,9 @@ namespace CloudeKicten.Models.DatabaseLayer
                 Otp = r.IsDBNull(r.GetOrdinal("otp")) ? null : r.GetString(r.GetOrdinal("otp")),
                 OtpExpiry = r.IsDBNull(r.GetOrdinal("otp_expires_at")) ? null : r.GetDateTime(r.GetOrdinal("otp_expires_at")),
                 IsVerified = r.IsDBNull(r.GetOrdinal("is_verified")) ? false : r.GetBoolean(r.GetOrdinal("is_verified")),
-                CreatedAt = r.GetDateTime(r.GetOrdinal("created_at"))
+                CreatedAt = r.GetDateTime(r.GetOrdinal("created_at")),
+                UpiNumber = r.IsDBNull(r.GetOrdinal("upi_number")) ? null : r.GetString(r.GetOrdinal("upi_number")),
+                UpiId = r.IsDBNull(r.GetOrdinal("upi_id")) ? null : r.GetString(r.GetOrdinal("upi_id"))
             };
         }
 

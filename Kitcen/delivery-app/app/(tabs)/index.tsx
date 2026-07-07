@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   StyleSheet, 
   Text, 
   View, 
   ScrollView, 
   TouchableOpacity, 
-  Linking,
-  Alert,
-  Modal,
-  TextInput,
-  ActivityIndicator,
-  Switch
+  Linking, 
+  Alert, 
+  Modal, 
+  TextInput, 
+  ActivityIndicator, 
+  Switch 
 } from 'react-native';
 import { 
   MapPin, 
@@ -23,16 +23,30 @@ import {
   HelpCircle, 
   AlertTriangle, 
   Award, 
-  Gift, 
-  ChevronRight, 
+  Compass, 
+  Power, 
+  Navigation, 
   Clock, 
-  Sparkles,
-  ShieldAlert
+  TrendingUp, 
+  User, 
+  CheckCircle2, 
+  Bike, 
+  Check, 
+  FileText, 
+  Info, 
+  History, 
+  Plus, 
+  DollarSign, 
+  Activity, 
+  Calendar, 
+  Inbox, 
+  ShieldAlert 
 } from 'lucide-react-native';
 import { theme } from '../../styles/theme';
 import { useKitchenStore } from '../../store/useKitchenStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { API_BASE_URL } from '../../store/apiConfig';
+import { alertService } from '../../store/alertService';
 
 export default function RiderDashboard() {
   const user = useAuthStore(state => state.user);
@@ -70,6 +84,30 @@ export default function RiderDashboard() {
       return () => clearInterval(interval);
     }
   }, [isOnline]);
+
+  // Alert when a new order becomes available in the pool
+  const prevAvailableOrderIds = useRef<string[]>([]);
+  useEffect(() => {
+    if (!isOnline) {
+      prevAvailableOrderIds.current = [];
+      return;
+    }
+    
+    // Available orders: no riderId, status in ['ready', 'placed', 'preparing']
+    const availableIds = orders
+      .filter((o) => !o.riderId && ['ready', 'placed', 'preparing'].includes(o.status))
+      .map((o) => o.id);
+
+    // Find if there are any new IDs that were not in our previous list
+    const newOrders = availableIds.filter(id => !prevAvailableOrderIds.current.includes(id));
+    
+    if (newOrders.length > 0) {
+      alertService.triggerOrderAlert();
+      console.log('New orders detected for rider:', newOrders);
+    }
+    
+    prevAvailableOrderIds.current = availableIds;
+  }, [orders, isOnline]);
 
   // Poll chat messages when modal is active
   useEffect(() => {

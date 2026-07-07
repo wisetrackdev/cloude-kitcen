@@ -17,6 +17,7 @@ export interface Kitchen {
   name: string;
   owner: string;
   ownerName?: string;
+  ownerPhone?: string;
   bankAccount?: string;
   type: 'restaurant' | 'home_tiffin';
   cuisines: string;
@@ -35,6 +36,12 @@ export interface Kitchen {
   officeGaliNumber?: string;
   latitude?: number;
   longitude?: number;
+  coverImageUrl?: string;
+  bankName?: string;
+  accountNumber?: string;
+  ifscCode?: string;
+  utrNumber?: string;
+  paymentScreenshot?: string;
 }
 
 export interface OrderItem {
@@ -187,6 +194,7 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
           name: k.name,
           owner: k.ownerId,
           ownerName: k.ownerName || 'Housewife Partner',
+          ownerPhone: k.ownerPhone,
           bankAccount: k.bankAccount || 'SBI A/C 30948576291',
           type: k.type,
           cuisines: k.cuisines,
@@ -204,7 +212,13 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
           floor: k.floor,
           officeGaliNumber: k.officeGaliNumber,
           latitude: k.latitude ? Number(k.latitude) : undefined,
-          longitude: k.longitude ? Number(k.longitude) : undefined
+          longitude: k.longitude ? Number(k.longitude) : undefined,
+          coverImageUrl: k.coverImageUrl,
+          bankName: k.bankName,
+          accountNumber: k.accountNumber,
+          ifscCode: k.ifscCode,
+          utrNumber: k.utrNumber,
+          paymentScreenshot: k.paymentScreenshot
         }));
         set({ kitchens: mappedKitchens, isLoading: false });
       } else {

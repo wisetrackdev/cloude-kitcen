@@ -53,6 +53,8 @@ export default function HomeScreen() {
   const location = useAuthStore(state => state.location);
   const user = useAuthStore(state => state.user);
   
+  const kitchens = useKitchenStore(state => state.kitchens);
+  const isLoading = useKitchenStore(state => state.isLoading);
   const allProducts = useKitchenStore(state => state.allProducts);
   const fetchKitchens = useKitchenStore(state => state.fetchKitchens);
   const fetchAllProducts = useKitchenStore(state => state.fetchAllProducts);
@@ -154,11 +156,10 @@ export default function HomeScreen() {
   ];
 
   const getBestSellers = () => {
-    // If we have actual products in store, use them, otherwise fallback to mock
     if (allProducts && allProducts.length > 0) {
       return allProducts.slice(0, 4);
     }
-    return fallbackBestSellers;
+    return [];
   };
 
   const [visibleRecommendCount, setVisibleRecommendCount] = useState(4);
@@ -179,7 +180,7 @@ export default function HomeScreen() {
     if (selectedCategory || searchQuery.trim() !== '') {
       return filteredDishes;
     }
-    const list = allProducts && allProducts.length > 0 ? allProducts : fallbackRecommends;
+    const list = allProducts && allProducts.length > 0 ? allProducts : [];
     return list.slice(0, visibleRecommendCount);
   };
 
@@ -243,138 +244,150 @@ export default function HomeScreen() {
           onScroll={handleScroll}
           scrollEventThrottle={16}
         >
-          
-          {/* Categories Horizontal Slider */}
-          <View style={styles.categoryContainer}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
-              {categories.map((cat, index) => {
-                const IconComponent = cat.icon || Utensils;
-                const isSelected = selectedCategory?.toLowerCase() === cat.name.toLowerCase();
-                return (
-                  <TouchableOpacity 
-                    key={index} 
-                    style={styles.categoryItem}
-                    onPress={() => setSelectedCategory(isSelected ? null : cat.name)}
-                  >
-                    <View style={[styles.categoryCircle, isSelected && styles.categoryCircleSelected]}>
-                      <IconComponent size={22} color={isSelected ? "#FFF" : "#FFB300"} strokeWidth={1.8} />
-                    </View>
-                    <Text style={[styles.categoryLabel, isSelected && styles.categoryLabelSelected]}>{cat.name}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
+          {isLoading ? (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 100 }}>
+              <ActivityIndicator size="large" color="#FFB300" />
+            </View>
+          ) : kitchens.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Soup size={64} color="#FFB300" style={styles.emptyIcon} />
+              <Text style={styles.emptyTitle}>No Shop Available</Text>
+              <Text style={styles.emptySubtitle}>We couldn't find any active kitchens in your area right now. Please check back later!</Text>
+            </View>
+          ) : (
+            <>
+              {/* Categories Horizontal Slider */}
+              <View style={styles.categoryContainer}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
+                  {categories.map((cat, index) => {
+                    const IconComponent = cat.icon || Utensils;
+                    const isSelected = selectedCategory?.toLowerCase() === cat.name.toLowerCase();
+                    return (
+                      <TouchableOpacity 
+                        key={index} 
+                        style={styles.categoryItem}
+                        onPress={() => setSelectedCategory(isSelected ? null : cat.name)}
+                      >
+                        <View style={[styles.categoryCircle, isSelected && styles.categoryCircleSelected]}>
+                          <IconComponent size={22} color={isSelected ? "#FFF" : "#FFB300"} strokeWidth={1.8} />
+                        </View>
+                        <Text style={[styles.categoryLabel, isSelected && styles.categoryLabelSelected]}>{cat.name}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
 
-          {/* Best Seller Section */}
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Best Seller</Text>
-            <TouchableOpacity onPress={() => router.push('/search')}>
-              <Text style={styles.viewAllText}>View All ❯</Text>
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.bestSellerScroll}>
-            {getBestSellers().map((item: any) => (
-              <TouchableOpacity 
-                key={item.id} 
-                style={styles.bestSellerCard}
-                onPress={() => router.push(`/restaurant/${item.kitchenId || 'shp-seed-1'}`)}
-              >
-                <Image source={{ uri: item.image }} style={styles.bestSellerImage} />
-                <View style={styles.pricePill}>
-                  <Text style={styles.pricePillText}>₹{item.price}</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          {/* Dynamic Promo Banners Slider */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
-            {liveBanners.map((banner, index) => (
-              <TouchableOpacity 
-                key={banner.id || index} 
-                style={[styles.promoBanner, { marginRight: 15, width: width - 40 }]}
-                onPress={() => {
-                  const targetRoute = banner.linkUrl || 'restaurant/shp-seed-1';
-                  router.push(`/${targetRoute}`);
-                }}
-              >
-                <View style={styles.promoLeft}>
-                  <Text style={styles.promoTextMain}>Chef Special</Text>
-                  <Text style={styles.promoTextMain}>Exclusive Offer</Text>
-                  <Text style={styles.promoDiscount}>30% OFF</Text>
-                </View>
-                <Image 
-                  source={{ uri: banner.image_url || banner.imageUrl || 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300' }} 
-                  style={styles.promoImage} 
-                />
-              </TouchableOpacity>
-            ))}
-
-            {liveBanners.length === 0 && (
-              /* Fallback Promo Banner if empty */
-              <TouchableOpacity 
-                style={[styles.promoBanner, { width: width - 40, marginHorizontal: 20 }]}
-                onPress={() => router.push('/restaurant/shp-seed-2')}
-              >
-                <View style={styles.promoLeft}>
-                  <Text style={styles.promoTextMain}>Experience our</Text>
-                  <Text style={styles.promoTextMain}>delicious new dish</Text>
-                  <Text style={styles.promoDiscount}>30% OFF</Text>
-                </View>
-                <Image 
-                  source={{ uri: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300' }} 
-                  style={styles.promoImage} 
-                />
-              </TouchableOpacity>
-            )}
-          </ScrollView>
-          
-          {/* Carousel dots indicator */}
-          <View style={styles.dotsRow}>
-            <View style={styles.dot} />
-            <View style={styles.dot} />
-            <View style={[styles.dot, styles.dotActive]} />
-            <View style={styles.dot} />
-          </View>
-
-          {/* Recommend Section */}
-          <Text style={[styles.sectionTitle, { marginLeft: 20, marginBottom: 15 }]}>
-            {searchQuery.trim() !== '' ? `Search: "${searchQuery}"` : (selectedCategory ? `${selectedCategory} Matches` : 'Recommend')}
-          </Text>
-
-          <View style={styles.recommendGrid}>
-            {getRecommendations().map((item: any) => (
-              <TouchableOpacity 
-                key={item.id} 
-                style={styles.recommendCard}
-                onPress={() => router.push(`/restaurant/${item.kitchenId || 'shp-seed-1'}`)}
-              >
-                <Image source={{ uri: item.image }} style={styles.recommendImage} />
-                
-                {/* Rating Badge */}
-                <View style={styles.ratingBadge}>
-                  <Text style={styles.ratingText}>{item.rating || '5.0'}</Text>
-                  <Star size={9} color="#FFD700" fill="#FFD700" style={{ marginLeft: 2 }} />
-                </View>
-
-                {/* Heart Badge */}
-                <TouchableOpacity style={styles.heartBadge}>
-                  <Heart size={12} color="#FF3B30" fill="#FF3B30" />
+              {/* Best Seller Section */}
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Best Seller</Text>
+                <TouchableOpacity onPress={() => router.push('/search')}>
+                  <Text style={styles.viewAllText}>View All ❯</Text>
                 </TouchableOpacity>
+              </View>
 
-                {/* Bottom Details */}
-                <View style={styles.recommendDetails}>
-                  <Text style={styles.recommendName} numberOfLines={1}>{item.name}</Text>
-                  <View style={styles.recommendPricePill}>
-                    <Text style={styles.recommendPriceText}>₹{item.price}</Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.bestSellerScroll}>
+                {getBestSellers().map((item: any) => (
+                  <TouchableOpacity 
+                    key={item.id} 
+                    style={styles.bestSellerCard}
+                    onPress={() => router.push(`/restaurant/${item.kitchenId || 'shp-seed-1'}`)}
+                  >
+                    <Image source={{ uri: item.image }} style={styles.bestSellerImage} />
+                    <View style={styles.pricePill}>
+                      <Text style={styles.pricePillText}>₹{item.price}</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
 
+              {/* Dynamic Promo Banners Slider */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
+                {liveBanners.map((banner, index) => (
+                  <TouchableOpacity 
+                    key={banner.id || index} 
+                    style={[styles.promoBanner, { marginRight: 15, width: width - 40 }]}
+                    onPress={() => {
+                      const targetRoute = banner.linkUrl || 'restaurant/shp-seed-1';
+                      router.push(`/${targetRoute}`);
+                    }}
+                  >
+                    <View style={styles.promoLeft}>
+                      <Text style={styles.promoTextMain}>Chef Special</Text>
+                      <Text style={styles.promoTextMain}>Exclusive Offer</Text>
+                      <Text style={styles.promoDiscount}>30% OFF</Text>
+                    </View>
+                    <Image 
+                      source={{ uri: banner.image_url || banner.imageUrl || 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300' }} 
+                      style={styles.promoImage} 
+                    />
+                  </TouchableOpacity>
+                ))}
+
+                {liveBanners.length === 0 && (
+                  /* Fallback Promo Banner if empty */
+                  <TouchableOpacity 
+                    style={[styles.promoBanner, { width: width - 40, marginHorizontal: 20 }]}
+                    onPress={() => router.push('/restaurant/shp-seed-2')}
+                  >
+                    <View style={styles.promoLeft}>
+                      <Text style={styles.promoTextMain}>Experience our</Text>
+                      <Text style={styles.promoTextMain}>delicious new dish</Text>
+                      <Text style={styles.promoDiscount}>30% OFF</Text>
+                    </View>
+                    <Image 
+                      source={{ uri: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300' }} 
+                      style={styles.promoImage} 
+                    />
+                  </TouchableOpacity>
+                )}
+              </ScrollView>
+              
+              {/* Carousel dots indicator */}
+              <View style={styles.dotsRow}>
+                <View style={styles.dot} />
+                <View style={styles.dot} />
+                <View style={[styles.dot, styles.dotActive]} />
+                <View style={styles.dot} />
+              </View>
+
+              {/* Recommend Section */}
+              <Text style={[styles.sectionTitle, { marginLeft: 20, marginBottom: 15 }]}>
+                {searchQuery.trim() !== '' ? `Search: "${searchQuery}"` : (selectedCategory ? `${selectedCategory} Matches` : 'Recommend')}
+              </Text>
+
+              <View style={styles.recommendGrid}>
+                {getRecommendations().map((item: any) => (
+                  <TouchableOpacity 
+                    key={item.id} 
+                    style={styles.recommendCard}
+                    onPress={() => router.push(`/restaurant/${item.kitchenId || 'shp-seed-1'}`)}
+                  >
+                    <Image source={{ uri: item.image }} style={styles.recommendImage} />
+                    
+                    {/* Rating Badge */}
+                    <View style={styles.ratingBadge}>
+                      <Text style={styles.ratingText}>{item.rating || '5.0'}</Text>
+                      <Star size={9} color="#FFD700" fill="#FFD700" style={{ marginLeft: 2 }} />
+                    </View>
+
+                    {/* Heart Badge */}
+                    <TouchableOpacity style={styles.heartBadge}>
+                      <Heart size={12} color="#FF3B30" fill="#FF3B30" />
+                    </TouchableOpacity>
+
+                    {/* Bottom Details */}
+                    <View style={styles.recommendDetails}>
+                      <Text style={styles.recommendName} numberOfLines={1}>{item.name}</Text>
+                      <View style={styles.recommendPricePill}>
+                        <Text style={styles.recommendPriceText}>₹{item.price}</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          )}
         </ScrollView>
       </View>
 
@@ -950,5 +963,28 @@ const styles = StyleSheet.create({
     color: '#FFB300',
     fontSize: 12,
     fontWeight: 'bold',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
+    paddingVertical: 80,
+  },
+  emptyIcon: {
+    marginBottom: 20,
+    opacity: 0.8,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2B2B2B',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 20,
   }
 });

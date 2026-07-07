@@ -16,6 +16,8 @@ export interface Kitchen {
   id: string;
   name: string;
   owner: string;
+  ownerName?: string;
+  ownerPhone?: string;
   type: 'restaurant' | 'home_tiffin';
   cuisines: string;
   rating: number;
@@ -37,6 +39,8 @@ export interface Kitchen {
   bankName?: string;
   accountNumber?: string;
   ifscCode?: string;
+  utrNumber?: string;
+  paymentScreenshot?: string;
 }
 
 export interface OrderItem {
@@ -178,6 +182,8 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
           id: k.id,
           name: k.name,
           owner: k.ownerId, // Map OwnerId to Owner representation
+          ownerName: k.ownerName || 'Housewife Partner',
+          ownerPhone: k.ownerPhone,
           type: k.type,
           cuisines: k.cuisines,
           rating: Number(k.rating),
@@ -198,7 +204,9 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
           coverImageUrl: k.coverImageUrl,
           bankName: k.bankName,
           accountNumber: k.accountNumber,
-          ifscCode: k.ifscCode
+          ifscCode: k.ifscCode,
+          utrNumber: k.utrNumber,
+          paymentScreenshot: k.paymentScreenshot
         }));
         set({ kitchens: mappedKitchens, isLoading: false });
       } else {

@@ -27,7 +27,7 @@ export default function RestaurantDetailScreen() {
   const products = useKitchenStore(state => state.products);
   const fetchProducts = useKitchenStore(state => state.fetchProducts);
 
-  const kitchenInfo = kitchens.find(k => k.id === id) || kitchens[0];
+  const kitchenInfo = kitchens.find(k => k.id === id);
   const kitchenProducts = products[id as string] || [];
 
   const cartItems = useCartStore(state => state.items);
@@ -78,6 +78,23 @@ export default function RestaurantDetailScreen() {
     textSecondary: isDarkMode ? '#8E8E93' : '#686E73',
     inputBg: isDarkMode ? '#0F0F0F' : '#F0F2F4'
   };
+
+  if (!kitchenInfo) {
+    return (
+      <View style={[styles.container, { backgroundColor: themeColors.background }]}>
+        <View style={styles.coverWrapper}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <ArrowLeft size={20} color="#FFF" />
+          </TouchableOpacity>
+        </View>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+          <ShoppingBag size={48} color={themeColors.textSecondary} style={{ marginBottom: 16, opacity: 0.5 }} />
+          <Text style={{ color: themeColors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 8 }}>No Shop Available</Text>
+          <Text style={{ color: themeColors.textSecondary, textAlign: 'center' }}>This store is currently not operating or could not be found.</Text>
+        </View>
+      </View>
+    );
+  }
 
   const handleAddPress = (item: any) => {
     if (item.customizable) {

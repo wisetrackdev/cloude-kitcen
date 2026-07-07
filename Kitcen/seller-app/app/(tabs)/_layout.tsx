@@ -18,8 +18,8 @@ export default function TabLayout() {
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.textSecondary,
         tabBarStyle: {
-          backgroundColor: '#121212',
-          borderTopColor: '#1F1F1F',
+          backgroundColor: '#FFB300',
+          borderTopColor: '#FFB300',
           borderTopWidth: 1,
           height: 60,
           paddingBottom: 8,

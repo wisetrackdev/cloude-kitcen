@@ -87,6 +87,14 @@ namespace CloudeKicten.Controllers
             if (!result.Success) return BadRequest(result);
             return Ok(result);
         }
+
+        [HttpPost("truncate")]
+        public async Task<IActionResult> TruncateDatabase([FromQuery] string adminUserId)
+        {
+            var result = await _businessLayer.TruncateAllTablesAsync(adminUserId);
+            if (!result.Success) return BadRequest(result);
+            return Ok(result);
+        }
     }
 
     public class SettlementUpdateDto

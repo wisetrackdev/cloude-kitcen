@@ -548,7 +548,7 @@ export default function AdminDashboard() {
                 <TouchableOpacity 
                   key={kitchen.id} 
                   style={[styles.kitchenAdminCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}
-                  onPress={() => setSelectedKitchen(kitchen)}
+                  onPress={() => router.push(`/kitchen/${kitchen.id}`)}
                 >
                   <View style={{ flex: 1, marginRight: 12 }}>
                     <Text style={[styles.kitchenAdminName, { color: themeColors.text }]}>{kitchen.name}</Text>

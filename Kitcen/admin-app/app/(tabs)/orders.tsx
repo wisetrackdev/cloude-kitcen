@@ -102,9 +102,9 @@ export default function AdminOrdersScreen() {
   return (
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
       {/* Title Header */}
-      <View style={styles.header}>
-        <Text style={[styles.subtitle, { color: themeColors.primary }]}>Superadmin Dashboard</Text>
-        <Text style={[styles.title, { color: themeColors.text }]}>All System Orders</Text>
+      <View style={[styles.header, { backgroundColor: '#FFCC00' }]}>
+        <Text style={[styles.subtitle, { color: 'rgba(255, 255, 255, 0.85)' }]}>Superadmin Dashboard</Text>
+        <Text style={[styles.title, { color: '#FFF' }]}>All System Orders</Text>
       </View>
 
       {/* Metrics Row */}
@@ -255,11 +255,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
-    paddingTop: 50,
-    paddingHorizontal: 16,
   },
   header: {
     marginBottom: 15,
+    backgroundColor: '#FFCC00',
+    paddingTop: 50,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
   title: {
     fontSize: 22,
@@ -270,13 +274,14 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: theme.colors.primary,
     textTransform: 'uppercase',
   },
   metricsContainer: {
     flexDirection: 'row',
     maxHeight: 75,
     marginBottom: 15,
+    marginTop: 15,
+    paddingHorizontal: 16,
   },
   metricCard: {
     borderWidth: 1.5,
@@ -305,7 +310,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#1F1F1F',
     borderRadius: 12,
-    paddingHorizontal: 12,
+    marginHorizontal: 16,
     height: 40,
     marginBottom: 12,
   },
@@ -320,6 +325,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#1F1F1F',
     borderRadius: 10,
+    marginHorizontal: 16,
     padding: 3,
     marginBottom: 15,
   },
@@ -342,6 +348,7 @@ const styles = StyleSheet.create({
   },
   listScroller: {
     flex: 1,
+    paddingHorizontal: 16,
   },
   orderCard: {
     backgroundColor: '#121212',

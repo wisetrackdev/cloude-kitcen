@@ -1,9 +1,26 @@
-import React from 'react';
-import { Stack } from 'expo-router';
+import React, { useEffect } from 'react';
+import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { safeStorage } from '../store/safeStorage';
 
 export default function RootLayout() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const checkFingerprintLock = async () => {
+      try {
+        const isEnabled = await safeStorage.getItem('isFingerprintEnabled');
+        if (isEnabled === 'true') {
+          router.replace('/lock');
+        }
+      } catch (err) {
+        console.warn('Error reading fingerprint lock state:', err);
+      }
+    };
+    checkFingerprintLock();
+  }, []);
+
   return (
     <SafeAreaProvider>
       <StatusBar style="light" />
@@ -18,6 +35,9 @@ export default function RootLayout() {
         <Stack.Screen name="login" options={{ presentation: 'modal' }} />
         <Stack.Screen name="add-banner" options={{ headerShown: false }} />
         <Stack.Screen name="all-banners" options={{ headerShown: false }} />
+        <Stack.Screen name="fingerprint" options={{ headerShown: false }} />
+        <Stack.Screen name="lock" options={{ headerShown: false, gestureEnabled: false }} />
+        <Stack.Screen name="kitchen/[id]" options={{ headerShown: false }} />
       </Stack>
     </SafeAreaProvider>
   );

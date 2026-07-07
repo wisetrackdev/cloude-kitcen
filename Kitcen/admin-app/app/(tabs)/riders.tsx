@@ -109,11 +109,11 @@ export default function AdminRidersScreen() {
   return (
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
-        <Bike size={28} color={themeColors.primary} />
+      <View style={[styles.header, { backgroundColor: '#FFCC00' }]}>
+        <Bike size={28} color={'#FFF'} />
         <View style={styles.headerMeta}>
-          <Text style={[styles.roleText, { color: themeColors.primary }]}>Super Admin Panel</Text>
-          <Text style={[styles.kitchenName, { color: themeColors.text }]}>Rider Directory & Payouts</Text>
+          <Text style={[styles.roleText, { color: 'rgba(255, 255, 255, 0.85)' }]}>Super Admin Panel</Text>
+          <Text style={[styles.kitchenName, { color: '#FFF' }]}>Rider Directory & Payouts</Text>
         </View>
       </View>
 
@@ -277,8 +277,6 @@ export default function AdminRidersScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
-    paddingTop: 50,
   },
   loadingContainer: {
     flex: 1,
@@ -295,8 +293,13 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
     marginBottom: 16,
+    backgroundColor: '#FFCC00',
+    paddingTop: 50,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
   headerMeta: {
     marginLeft: 12,
@@ -304,13 +307,11 @@ const styles = StyleSheet.create({
   roleText: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: theme.colors.primary,
     textTransform: 'uppercase',
   },
   kitchenName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#FFF',
     marginTop: 2,
   },
   searchContainer: {
@@ -332,6 +333,7 @@ const styles = StyleSheet.create({
   },
   scroller: {
     flex: 1,
+    paddingHorizontal: 16,
   },
   sectionTitle: {
     fontSize: 14,
@@ -346,7 +348,6 @@ const styles = StyleSheet.create({
     borderColor: '#1F1F1F',
     borderRadius: 16,
     padding: 16,
-    marginHorizontal: 16,
     marginBottom: 16,
   },
   cardHeader: {

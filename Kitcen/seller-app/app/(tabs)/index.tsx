@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -24,8 +24,9 @@ import {
 import { theme } from '../../styles/theme';
 import { useKitchenStore } from '../../store/useKitchenStore';
 import { useAuthStore } from '../../store/useAuthStore';
+import { alertService } from '../../store/alertService';
 
-const ZOMATO_RED = '#FFB300';
+const ZOMATO_RED = '#E23744';
 
 type OrderTabFilter = 'live' | 'history';
 
@@ -57,6 +58,30 @@ export default function SellerDashboard() {
 
   const myKitchen = kitchens.find(k => k.owner === user?.id) || kitchens[0];
   const selectedKitchenId = myKitchen?.id || 'k3';
+  const isApproved = myKitchen?.isApproved === 'approved';
+
+  // Alert when a new order is received for the seller's kitchen
+  const prevPlacedOrderIds = useRef<string[]>([]);
+  useEffect(() => {
+    if (!isApproved) {
+      prevPlacedOrderIds.current = [];
+      return;
+    }
+    
+    // Filter orders for this kitchen that are in 'placed' state (newly ordered by customer)
+    const placedIds = orders
+      .filter((o) => o.kitchenId === selectedKitchenId && o.status === 'placed')
+      .map((o) => o.id);
+
+    // If there is any new order ID that wasn't in our previous list, trigger the alert
+    const newOrders = placedIds.filter(id => !prevPlacedOrderIds.current.includes(id));
+    if (newOrders.length > 0) {
+      alertService.triggerOrderAlert();
+      console.log('New order received for kitchen:', newOrders);
+    }
+    
+    prevPlacedOrderIds.current = placedIds;
+  }, [orders, selectedKitchenId, isApproved]);
 
   const kitchenInfo = myKitchen || kitchens[0] || { name: 'My Kitchen', revenue: 0 };
   const kitchenOrders = orders.filter(o => o.kitchenId === selectedKitchenId);
@@ -82,24 +107,33 @@ export default function SellerDashboard() {
     await updateOrderStatus(orderId, nextStatus);
   };
 
-  const isApproved = myKitchen?.isApproved === 'approved';
-
   if (!isApproved) {
+    const isRejected = myKitchen?.isApproved === 'rejected';
     return (
       <View style={[styles.container, { backgroundColor: themeColors.background, justifyContent: 'center', alignItems: 'center', padding: 24 }]}>
-        <ChefHat size={72} color={ZOMATO_RED} style={{ marginBottom: 20 }} />
-        <Text style={{ color: ZOMATO_RED, fontSize: 22, fontWeight: 'bold', textAlign: 'center', marginBottom: 12 }}>
-          Kitchen Approval Pending
+        <ChefHat size={72} color={isRejected ? '#FF3B30' : ZOMATO_RED} style={{ marginBottom: 20 }} />
+        <Text style={{ color: isRejected ? '#FF3B30' : ZOMATO_RED, fontSize: 22, fontWeight: 'bold', textAlign: 'center', marginBottom: 12 }}>
+          {isRejected ? 'Registration Rejected' : 'Kitchen Approval Pending'}
         </Text>
         <Text style={{ color: themeColors.text, fontSize: 13, textAlign: 'center', lineHeight: 22, paddingHorizontal: 10 }}>
-          Your kitchen "{kitchenInfo.name}" registration is being reviewed by the SuperAdmin.
+          {isRejected 
+            ? `Your kitchen "${kitchenInfo.name}" registration has been REJECTED by the SuperAdmin.`
+            : `Your kitchen "${kitchenInfo.name}" registration is being reviewed by the SuperAdmin.`}
         </Text>
-        <View style={styles.pendingBadge}>
-          <Clock size={14} color="#FF9500" />
-          <Text style={styles.pendingBadgeText}>Status: Under Review</Text>
+        <View style={[styles.pendingBadge, isRejected && { backgroundColor: 'rgba(255, 59, 48, 0.1)' }]}>
+          {isRejected ? (
+            <XCircle size={14} color="#FF3B30" />
+          ) : (
+            <Clock size={14} color="#FF9500" />
+          )}
+          <Text style={[styles.pendingBadgeText, isRejected && { color: '#FF3B30' }]}>
+            Status: {isRejected ? 'Rejected' : 'Under Review'}
+          </Text>
         </View>
         <Text style={{ color: themeColors.textSecondary, fontSize: 11, textAlign: 'center', marginTop: 15, lineHeight: 18, paddingHorizontal: 20 }}>
-          We will notify you via email once your store dashboard goes live. Thank you for partnering with us!
+          {isRejected
+            ? 'Please check with support or re-submit your registration. You can log out from profile settings.'
+            : 'We will notify you once your store dashboard goes live. Thank you for partnering with us!'}
         </Text>
       </View>
     );

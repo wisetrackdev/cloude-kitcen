@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useKitchenStore } from './useKitchenStore';
 
 export interface CartItem {
   id: string; // unique item id including customization combinations
@@ -133,10 +134,27 @@ export const useCartStore = create<CartState>((set, get) => ({
   }),
 
   getTotals: () => {
-    const { items, coupon, tip } = get();
+    const { items, coupon, tip, restaurantId } = get();
     const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const tax = Math.round(subtotal * 0.15 * 100) / 100; // 15% combined GST/Service charges
-    const deliveryCharge = subtotal > 0 ? 29 : 0; // Flat base fee
+    
+    let deliveryCharge = 0;
+    if (subtotal > 0 && restaurantId) {
+      const kitchens = useKitchenStore.getState().kitchens;
+      const kitchen = kitchens.find(k => k.id === restaurantId);
+      if (kitchen && kitchen.distance) {
+        // Extract numeric distance (e.g. "1.8 km" -> 1.8)
+        const distNum = parseFloat(kitchen.distance.replace(/[^0-9.]/g, ''));
+        if (!isNaN(distNum)) {
+          // Rs. 5 per km
+          deliveryCharge = Math.max(5, Math.round(distNum * 5));
+        } else {
+          deliveryCharge = 29; // fallback
+        }
+      } else {
+        deliveryCharge = 29; // fallback
+      }
+    }
     
     let discount = 0;
     if (coupon && subtotal >= coupon.minOrderValue) {

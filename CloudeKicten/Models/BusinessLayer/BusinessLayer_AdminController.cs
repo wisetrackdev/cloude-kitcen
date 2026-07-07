@@ -16,6 +16,7 @@ namespace CloudeKicten.Models.BusinessLayer
         Task<ApiResponse<bool>> UpdateSettlementStatusAsync(string adminUserId, string settlementId, string status, string txDetails);
         Task<ApiResponse<List<BannerDb>>> GetActiveBannersAsync();
         Task<ApiResponse<BannerDb>> UploadBannerAsync(string adminUserId, BannerDb banner);
+        Task<ApiResponse<bool>> TruncateAllTablesAsync(string adminUserId);
     }
 
     public class BusinessLayer_AdminController : IBusinessLayer_AdminController
@@ -133,6 +134,18 @@ namespace CloudeKicten.Models.BusinessLayer
 
             await _databaseLayer.WriteAuditLogAsync(adminUserId, "UPLOAD_BANNER", $"Admin uploaded new banner {banner.Id}");
             return ApiResponse<BannerDb>.Ok(banner, "Promotional banner uploaded successfully.");
+        }
+
+        public async Task<ApiResponse<bool>> TruncateAllTablesAsync(string adminUserId)
+        {
+            if (!await IsAdminUserAsync(adminUserId))
+                return ApiResponse<bool>.Fail("Unauthorized access. Admin role required.");
+
+            var success = await _databaseLayer.TruncateAllTablesAsync();
+            if (!success) return ApiResponse<bool>.Fail("Failed to truncate database tables.");
+
+            await _databaseLayer.WriteAuditLogAsync(adminUserId, "TRUNCATE_DATABASE", "Admin reset/truncated all database tables");
+            return ApiResponse<bool>.Ok(true, "All tables truncated and reset successfully.");
         }
     }
 }

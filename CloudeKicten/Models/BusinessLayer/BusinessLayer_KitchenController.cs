@@ -74,6 +74,8 @@ namespace CloudeKicten.Models.BusinessLayer
                 BankName = dto.BankName,
                 AccountNumber = dto.AccountNumber,
                 IfscCode = dto.IfscCode,
+                UtrNumber = dto.UtrNumber,
+                PaymentScreenshot = dto.PaymentScreenshot,
                 Revenue = 0.0m,
                 OrdersCount = 0
             };
@@ -125,6 +127,8 @@ namespace CloudeKicten.Models.BusinessLayer
             kitchen.BankName = dto.BankName ?? kitchen.BankName;
             kitchen.AccountNumber = dto.AccountNumber ?? kitchen.AccountNumber;
             kitchen.IfscCode = dto.IfscCode ?? kitchen.IfscCode;
+            kitchen.UtrNumber = dto.UtrNumber ?? kitchen.UtrNumber;
+            kitchen.PaymentScreenshot = dto.PaymentScreenshot ?? kitchen.PaymentScreenshot;
 
             await _databaseLayer.UpdateKitchenAsync(id, kitchen);
             return ApiResponse<KitchenDb>.Ok(kitchen, "Kitchen updated successfully.");

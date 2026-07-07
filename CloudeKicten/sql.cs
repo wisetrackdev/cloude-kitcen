@@ -113,8 +113,12 @@ namespace CloudeKicten
             ALTER TABLE user_register ADD COLUMN IF NOT EXISTS latitude NUMERIC(10,8) NULL;
             ALTER TABLE user_register ADD COLUMN IF NOT EXISTS longitude NUMERIC(11,8) NULL;
             ALTER TABLE user_register ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'active';
+            ALTER TABLE user_register ADD COLUMN IF NOT EXISTS upi_number VARCHAR(50) NULL;
+            ALTER TABLE user_register ADD COLUMN IF NOT EXISTS upi_id VARCHAR(100) NULL;
 
             ALTER TABLE shops ADD COLUMN IF NOT EXISTS category_id VARCHAR(50) NULL;
+            ALTER TABLE shops ADD COLUMN IF NOT EXISTS utr_number VARCHAR(100) NULL;
+            ALTER TABLE shops ADD COLUMN IF NOT EXISTS payment_screenshot VARCHAR(500) NULL;
 
             ALTER TABLE products ADD COLUMN IF NOT EXISTS category_id VARCHAR(50) NULL;
 
@@ -523,13 +527,13 @@ namespace CloudeKicten
         ";
 
         public const string GetUserByEmail = @"
-            SELECT id, email, first_name, last_name, phone_number, avatar, gender, role, reward_points, otp, otp_expires_at, is_verified, created_at
+            SELECT id, email, first_name, last_name, phone_number, avatar, gender, role, reward_points, otp, otp_expires_at, is_verified, created_at, upi_number, upi_id
             FROM user_register 
             WHERE LOWER(email) = LOWER(@Email);
         ";
 
         public const string GetUserById = @"
-            SELECT id, email, first_name, last_name, phone_number, avatar, gender, role, reward_points, otp, otp_expires_at, is_verified, created_at
+            SELECT id, email, first_name, last_name, phone_number, avatar, gender, role, reward_points, otp, otp_expires_at, is_verified, created_at, upi_number, upi_id
             FROM user_register 
             WHERE id = @Id;
         ";
@@ -548,7 +552,7 @@ namespace CloudeKicten
 
         public const string UpdateUserProfile = @"
             UPDATE user_register
-            SET first_name = @FirstName, last_name = @LastName, phone_number = @Phone, avatar = @Avatar, gender = @Gender, role = @Role, reward_points = @RewardPoints
+            SET first_name = @FirstName, last_name = @LastName, phone_number = @Phone, avatar = @Avatar, gender = @Gender, role = @Role, reward_points = @RewardPoints, upi_number = @UpiNumber, upi_id = @UpiId
             WHERE id = @Id;
         ";
 
@@ -557,12 +561,12 @@ namespace CloudeKicten
         // ==========================================
 
         public const string InsertKitchen = @"
-            INSERT INTO shops (id, vendor_id, name, type, cuisines, rating, rating_count, prep_time, distance, offer, image_url, is_live, revenue, orders_count, logo_url, address, floor, office_gali_number, latitude, longitude, is_approved, bank_account, cover_image_url, bank_name, account_number, ifsc_code, created_at)
-            VALUES (@Id, @VendorId, @Name, @Type, @Cuisines, @Rating, @RatingCount, @Time, @Distance, @Offer, @Image, @IsLive, @Revenue, @OrdersCount, @LogoUrl, @Address, @Floor, @OfficeGaliNumber, @Latitude, @Longitude, @IsApproved, @BankAccount, @CoverImageUrl, @BankName, @AccountNumber, @IfscCode, CURRENT_TIMESTAMP);
+            INSERT INTO shops (id, vendor_id, name, type, cuisines, rating, rating_count, prep_time, distance, offer, image_url, is_live, revenue, orders_count, logo_url, address, floor, office_gali_number, latitude, longitude, is_approved, bank_account, cover_image_url, bank_name, account_number, ifsc_code, utr_number, payment_screenshot, created_at)
+            VALUES (@Id, @VendorId, @Name, @Type, @Cuisines, @Rating, @RatingCount, @Time, @Distance, @Offer, @Image, @IsLive, @Revenue, @OrdersCount, @LogoUrl, @Address, @Floor, @OfficeGaliNumber, @Latitude, @Longitude, @IsApproved, @BankAccount, @CoverImageUrl, @BankName, @AccountNumber, @IfscCode, @UtrNumber, @PaymentScreenshot, CURRENT_TIMESTAMP);
         ";
 
         public const string GetAllKitchens = @"
-            SELECT s.id, s.vendor_id, s.name, s.type, s.cuisines, s.rating, s.rating_count, s.prep_time, s.distance, s.offer, s.image_url, s.is_live, s.revenue, s.orders_count, s.logo_url, s.address, s.floor, s.office_gali_number, s.latitude, s.longitude, s.is_approved, s.bank_account, s.cover_image_url, s.bank_name, s.account_number, s.ifsc_code, s.created_at,
+            SELECT s.id, s.vendor_id, s.name, s.type, s.cuisines, s.rating, s.rating_count, s.prep_time, s.distance, s.offer, s.image_url, s.is_live, s.revenue, s.orders_count, s.logo_url, s.address, s.floor, s.office_gali_number, s.latitude, s.longitude, s.is_approved, s.bank_account, s.cover_image_url, s.bank_name, s.account_number, s.ifsc_code, s.utr_number, s.payment_screenshot, s.created_at,
                    COALESCE(CONCAT(u.first_name, ' ', u.last_name), 'Housewife Partner') AS owner_name,
                    u.phone_number AS owner_phone
             FROM shops s
@@ -571,7 +575,7 @@ namespace CloudeKicten
         ";
 
         public const string GetKitchenById = @"
-            SELECT s.id, s.vendor_id, s.name, s.type, s.cuisines, s.rating, s.rating_count, s.prep_time, s.distance, s.offer, s.image_url, s.is_live, s.revenue, s.orders_count, s.logo_url, s.address, s.floor, s.office_gali_number, s.latitude, s.longitude, s.is_approved, s.bank_account, s.cover_image_url, s.bank_name, s.account_number, s.ifsc_code, s.created_at,
+            SELECT s.id, s.vendor_id, s.name, s.type, s.cuisines, s.rating, s.rating_count, s.prep_time, s.distance, s.offer, s.image_url, s.is_live, s.revenue, s.orders_count, s.logo_url, s.address, s.floor, s.office_gali_number, s.latitude, s.longitude, s.is_approved, s.bank_account, s.cover_image_url, s.bank_name, s.account_number, s.ifsc_code, s.utr_number, s.payment_screenshot, s.created_at,
                    COALESCE(CONCAT(u.first_name, ' ', u.last_name), 'Housewife Partner') AS owner_name,
                    u.phone_number AS owner_phone
             FROM shops s
@@ -581,7 +585,7 @@ namespace CloudeKicten
 
         public const string UpdateKitchen = @"
             UPDATE shops
-            SET name = @Name, type = @Type, cuisines = @Cuisines, prep_time = @Time, distance = @Distance, offer = @Offer, image_url = @Image, is_live = @IsLive, logo_url = @LogoUrl, address = @Address, floor = @Floor, office_gali_number = @OfficeGaliNumber, latitude = @Latitude, longitude = @Longitude, is_approved = @IsApproved, bank_account = @BankAccount, cover_image_url = @CoverImageUrl, bank_name = @BankName, account_number = @AccountNumber, ifsc_code = @IfscCode
+            SET name = @Name, type = @Type, cuisines = @Cuisines, prep_time = @Time, distance = @Distance, offer = @Offer, image_url = @Image, is_live = @IsLive, logo_url = @LogoUrl, address = @Address, floor = @Floor, office_gali_number = @OfficeGaliNumber, latitude = @Latitude, longitude = @Longitude, is_approved = @IsApproved, bank_account = @BankAccount, cover_image_url = @CoverImageUrl, bank_name = @BankName, account_number = @AccountNumber, ifsc_code = @IfscCode, utr_number = @UtrNumber, payment_screenshot = @PaymentScreenshot
             WHERE id = @Id;
         ";
 

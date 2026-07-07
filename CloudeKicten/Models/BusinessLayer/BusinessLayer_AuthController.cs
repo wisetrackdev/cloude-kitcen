@@ -112,7 +112,9 @@ namespace CloudeKicten.Models.BusinessLayer
                 Avatar = user.Avatar,
                 Gender = user.Gender,
                 Role = user.Role,
-                RewardPoints = user.RewardPoints
+                RewardPoints = user.RewardPoints,
+                UpiNumber = user.UpiNumber,
+                UpiId = user.UpiId
             };
 
             var authResponse = new AuthResponseDto
@@ -142,7 +144,9 @@ namespace CloudeKicten.Models.BusinessLayer
                 Avatar = user.Avatar,
                 Gender = user.Gender,
                 Role = user.Role,
-                RewardPoints = user.RewardPoints
+                RewardPoints = user.RewardPoints,
+                UpiNumber = user.UpiNumber,
+                UpiId = user.UpiId
             };
 
             return ApiResponse<UserDto>.Ok(dto);
@@ -168,6 +172,8 @@ namespace CloudeKicten.Models.BusinessLayer
             user.Phone = dto.Phone ?? user.Phone;
             user.Avatar = dto.Avatar ?? user.Avatar;
             user.Gender = dto.Gender ?? user.Gender;
+            user.UpiNumber = dto.UpiNumber ?? user.UpiNumber;
+            user.UpiId = dto.UpiId ?? user.UpiId;
             if (!string.IsNullOrEmpty(dto.Role))
             {
                 user.Role = dto.Role;
@@ -179,6 +185,8 @@ namespace CloudeKicten.Models.BusinessLayer
             dto.Name = $"{user.FirstName} {user.LastName}".Trim();
             dto.FirstName = user.FirstName;
             dto.LastName = user.LastName;
+            dto.UpiNumber = user.UpiNumber;
+            dto.UpiId = user.UpiId;
             return ApiResponse<UserDto>.Ok(dto, "Profile updated successfully.");
         }
 
@@ -213,7 +221,9 @@ namespace CloudeKicten.Models.BusinessLayer
                 Avatar = user.Avatar,
                 Gender = user.Gender,
                 Role = user.Role,
-                RewardPoints = user.RewardPoints
+                RewardPoints = user.RewardPoints,
+                UpiNumber = user.UpiNumber,
+                UpiId = user.UpiId
             };
 
             return ApiResponse<UserDto>.Ok(userDto, "Profile completed successfully.");

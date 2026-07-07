@@ -22,6 +22,8 @@ namespace CloudeKicten.Models
         public DateTime? OtpExpiry { get; set; }
         public bool IsVerified { get; set; } = false;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public string? UpiNumber { get; set; }
+        public string? UpiId { get; set; }
     }
 
     public class KitchenDb
@@ -54,6 +56,8 @@ namespace CloudeKicten.Models
         public string? IfscCode { get; set; }
         public string? OwnerPhone { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public string? UtrNumber { get; set; }
+        public string? PaymentScreenshot { get; set; }
     }
 
     public class ProductDb
@@ -186,6 +190,8 @@ namespace CloudeKicten.Models
         public string? Gender { get; set; }
         public string Role { get; set; } = "customer";
         public int RewardPoints { get; set; }
+        public string? UpiNumber { get; set; }
+        public string? UpiId { get; set; }
     }
 
     public class AuthResponseDto
@@ -234,6 +240,8 @@ namespace CloudeKicten.Models
         public string? BankName { get; set; }
         public string? AccountNumber { get; set; }
         public string? IfscCode { get; set; }
+        public string? UtrNumber { get; set; }
+        public string? PaymentScreenshot { get; set; }
     }
 
     public class KitchenUpdateDto
@@ -257,6 +265,8 @@ namespace CloudeKicten.Models
         public string? BankName { get; set; }
         public string? AccountNumber { get; set; }
         public string? IfscCode { get; set; }
+        public string? UtrNumber { get; set; }
+        public string? PaymentScreenshot { get; set; }
     }
 
     public class ProductCreateDto

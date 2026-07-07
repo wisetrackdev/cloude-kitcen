@@ -92,6 +92,8 @@ namespace CloudeKicten.Models.DatabaseLayer
             cmd.Parameters.AddWithValue("@BankName", (object?)kitchen.BankName ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@AccountNumber", (object?)kitchen.AccountNumber ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@IfscCode", (object?)kitchen.IfscCode ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@UtrNumber", (object?)kitchen.UtrNumber ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@PaymentScreenshot", (object?)kitchen.PaymentScreenshot ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@IsLive", true);
 
             var result = await cmd.ExecuteNonQueryAsync();
@@ -123,6 +125,8 @@ namespace CloudeKicten.Models.DatabaseLayer
             cmd.Parameters.AddWithValue("@BankName", (object?)kitchen.BankName ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@AccountNumber", (object?)kitchen.AccountNumber ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@IfscCode", (object?)kitchen.IfscCode ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@UtrNumber", (object?)kitchen.UtrNumber ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@PaymentScreenshot", (object?)kitchen.PaymentScreenshot ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@IsLive", true);
 
             var result = await cmd.ExecuteNonQueryAsync();
@@ -183,7 +187,9 @@ namespace CloudeKicten.Models.DatabaseLayer
                 AccountNumber = r.IsDBNull(r.GetOrdinal("account_number")) ? null : r.GetString(r.GetOrdinal("account_number")),
                 IfscCode = r.IsDBNull(r.GetOrdinal("ifsc_code")) ? null : r.GetString(r.GetOrdinal("ifsc_code")),
                 OwnerPhone = r.IsDBNull(r.GetOrdinal("owner_phone")) ? null : r.GetString(r.GetOrdinal("owner_phone")),
-                CreatedAt = r.GetDateTime(r.GetOrdinal("created_at"))
+                CreatedAt = r.GetDateTime(r.GetOrdinal("created_at")),
+                UtrNumber = r.IsDBNull(r.GetOrdinal("utr_number")) ? null : r.GetString(r.GetOrdinal("utr_number")),
+                PaymentScreenshot = r.IsDBNull(r.GetOrdinal("payment_screenshot")) ? null : r.GetString(r.GetOrdinal("payment_screenshot"))
             };
         }
 

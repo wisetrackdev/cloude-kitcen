@@ -39,6 +39,8 @@ interface UserProfile {
   rewardPoints: number;
   firstName?: string;
   lastName?: string;
+  upiNumber?: string;
+  upiId?: string;
 }
 
 interface LocationCoords {

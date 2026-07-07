@@ -47,7 +47,21 @@ export default function AdminProfile() {
   const [firstName, setFirstName] = useState(user?.firstName || user?.name?.split(' ')[0] || '');
   const [lastName, setLastName] = useState(user?.lastName || user?.name?.split(' ').slice(1).join(' ') || '');
   const [email, setEmail] = useState(user?.email || '');
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [upiNumber, setUpiNumber] = useState(user?.upiNumber || '');
+  const [upiId, setUpiId] = useState(user?.upiId || '');
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (showProfileModal && user) {
+      setFirstName(user.firstName || user.name?.split(' ')[0] || '');
+      setLastName(user.lastName || user.name?.split(' ').slice(1).join(' ') || '');
+      setEmail(user.email || '');
+      setPhone(user.phone || '');
+      setUpiNumber(user.upiNumber || '');
+      setUpiId(user.upiId || '');
+    }
+  }, [showProfileModal, user]);
 
   // Banners state
   const [banners, setBanners] = useState<any[]>([]);
@@ -324,7 +338,10 @@ export default function AdminProfile() {
           lastName: lastName.trim(),
           name: `${firstName.trim()} ${lastName.trim()}`,
           avatar: user.avatar,
-          role: user.role
+          role: user.role,
+          phone: phone.trim(),
+          upiNumber: upiNumber.trim(),
+          upiId: upiId.trim()
         })
       });
 
@@ -345,7 +362,10 @@ export default function AdminProfile() {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         name: `${firstName.trim()} ${lastName.trim()}`,
-        email: email.trim() || user.email
+        email: email.trim() || user.email,
+        phone: phone.trim(),
+        upiNumber: upiNumber.trim(),
+        upiId: upiId.trim()
       });
       Alert.alert('Offline Mode', 'Profile settings updated locally.');
       setShowProfileModal(false);
@@ -354,10 +374,9 @@ export default function AdminProfile() {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: themeColors.background }]} showsVerticalScrollIndicator={false}>
-      
       {/* Profile info */}
       <TouchableOpacity 
-        style={[styles.profileHeader, { backgroundColor: themeColors.card, borderBottomColor: themeColors.border }]}
+        style={[styles.profileHeader, { backgroundColor: '#FFCC00' }]}
         onPress={() => setShowProfileModal(true)}
       >
         <View style={{ position: 'relative' }}>
@@ -373,9 +392,9 @@ export default function AdminProfile() {
           </TouchableOpacity>
         </View>
         <View style={styles.meta}>
-          <Text style={[styles.name, { color: themeColors.text }]}>{user?.name || 'Super Admin'}</Text>
-          <Text style={[styles.email, { color: themeColors.textSecondary }]}>{user?.email || 'admin@cludekitchen.com'}</Text>
-          <Text style={styles.roleTag}>Master Controller</Text>
+          <Text style={[styles.name, { color: '#FFF' }]}>{user?.name || 'Super Admin'}</Text>
+          <Text style={[styles.email, { color: 'rgba(255, 255, 255, 0.85)' }]}>{user?.email || 'admin@cludekitchen.com'}</Text>
+          <Text style={[styles.roleTag, { color: '#FFF' }]}>Master Controller</Text>
         </View>
       </TouchableOpacity>
 
@@ -423,6 +442,50 @@ export default function AdminProfile() {
           <View style={styles.optionLeft}>
             <ShieldCheck size={16} color={themeColors.textSecondary} />
             <Text style={[styles.optionLabel, { color: themeColors.text }]}>Platform System Security Audit</Text>
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.optionRow} 
+          onPress={() => {
+            Alert.alert(
+              'Reset Database',
+              'Are you sure you want to TRUNCATE and RESET all database tables? All orders, products, shops, and user profiles (except Superadmin) will be deleted.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                { 
+                  text: 'Reset Database', 
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      setIsLoading(true);
+                      const res = await fetch(`${API_BASE_URL}/api/admin/truncate?adminUserId=${user?.id || 'usr-admin-simulated'}`, {
+                        method: 'POST'
+                      });
+                      setIsLoading(false);
+                      if (res.ok) {
+                        const json = await res.json();
+                        if (json.success) {
+                          Alert.alert('Database Reset', 'All tables have been truncated and default categories re-seeded successfully!');
+                        } else {
+                          Alert.alert('Error', json.message || 'Failed to truncate database');
+                        }
+                      } else {
+                        Alert.alert('Error', 'Failed to connect to server to reset database');
+                      }
+                    } catch (e: any) {
+                      setIsLoading(false);
+                      Alert.alert('Error', 'An error occurred: ' + e.message);
+                    }
+                  }
+                }
+              ]
+            );
+          }}
+        >
+          <View style={styles.optionLeft}>
+            <Trash2 size={16} color="#FF3B30" />
+            <Text style={[styles.optionLabel, { color: '#FF3B30', fontWeight: 'bold' }]}>Truncate All Tables (Reset DB)</Text>
           </View>
         </TouchableOpacity>
       </View>
@@ -505,6 +568,42 @@ export default function AdminProfile() {
                 />
               </View>
 
+              <View style={styles.inputWrapper}>
+                <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Mobile Number</Text>
+                <TextInput
+                  style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
+                  value={phone}
+                  onChangeText={setPhone}
+                  placeholder="Mobile Number"
+                  placeholderTextColor="#888"
+                  keyboardType="phone-pad"
+                />
+              </View>
+
+              <View style={styles.inputWrapper}>
+                <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>UPI Number (e.g. Paytm Number)</Text>
+                <TextInput
+                  style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
+                  value={upiNumber}
+                  onChangeText={setUpiNumber}
+                  placeholder="UPI Mobile Number"
+                  placeholderTextColor="#888"
+                  keyboardType="numeric"
+                />
+              </View>
+
+              <View style={styles.inputWrapper}>
+                <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>UPI ID (e.g. name@paytm)</Text>
+                <TextInput
+                  style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
+                  value={upiId}
+                  onChangeText={setUpiId}
+                  placeholder="UPI ID"
+                  placeholderTextColor="#888"
+                  autoCapitalize="none"
+                />
+              </View>
+
               <TouchableOpacity style={[styles.saveBtn, { backgroundColor: themeColors.primary }]} onPress={handleUpdateProfile} disabled={isLoading}>
                 {isLoading ? <ActivityIndicator size="small" color="#FFF" /> : (
                   <Text style={styles.saveBtnText}>Save Changes</Text>
@@ -521,14 +620,15 @@ export default function AdminProfile() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 50,
   },
   profileHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 24,
-    borderBottomWidth: 1,
+    paddingTop: 50,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
   avatar: {
     width: 60,
@@ -550,11 +650,11 @@ const styles = StyleSheet.create({
   roleTag: {
     fontSize: 9,
     fontWeight: 'bold',
-    color: '#E23744',
     marginTop: 4,
     textTransform: 'uppercase',
   },
   optionGroup: {
+    marginTop: 16,
     marginHorizontal: 16,
     borderWidth: 1,
   },

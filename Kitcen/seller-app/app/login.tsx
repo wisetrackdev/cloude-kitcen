@@ -7,10 +7,12 @@ import {
   TouchableOpacity, 
   Alert,
   ActivityIndicator,
-  ScrollView
+  ScrollView,
+  Linking,
+  Image
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ChefHat, Mail, Key, User, Image as ImageIcon, MapPin, Store, CheckCircle, Camera } from 'lucide-react-native';
+import { ChefHat, Mail, Key, User, Image as ImageIcon, MapPin, Store, CheckCircle, Camera, FileText, QrCode, ArrowLeft, Upload, Smartphone } from 'lucide-react-native';
 import { theme } from '../styles/theme';
 import { useAuthStore } from '../store/useAuthStore';
 import { useKitchenStore } from '../store/useKitchenStore';
@@ -18,7 +20,7 @@ import { API_BASE_URL } from '../store/apiConfig';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 
-type LoginStep = 'email' | 'otp' | 'name' | 'shop_details' | 'pending_approval';
+type LoginStep = 'email' | 'otp' | 'name' | 'shop_details' | 'payment' | 'pending_approval';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -52,9 +54,75 @@ export default function LoginScreen() {
   const [shopAddress, setShopAddress] = useState('');
   const [shopFloor, setShopFloor] = useState('');
   const [shopGaliNumber, setShopGaliNumber] = useState('');
+  const [shopState, setShopState] = useState('');
+  const [shopPincode, setShopPincode] = useState('');
+  const [shopGst, setShopGst] = useState('');
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [locationAddress, setLocationAddress] = useState('Detecting live location...');
+
+  // Payment Step Inputs
+  const [adminUpiNumber, setAdminUpiNumber] = useState('9999900000');
+  const [adminUpiId, setAdminUpiId] = useState('admin@paytm');
+  const [utrNumber, setUtrNumber] = useState('');
+  const [paymentScreenshot, setPaymentScreenshot] = useState('');
+
+  const capturePaymentScreenshot = async (source: 'camera' | 'gallery') => {
+    try {
+      const permissionResult = source === 'camera' 
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (permissionResult.status !== 'granted') {
+        Alert.alert('Permission Denied', 'Permission is required to select payment proof.');
+        return;
+      }
+
+      const pickerResult = source === 'camera'
+        ? await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 0.8 })
+        : await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, quality: 0.8 });
+
+      if (!pickerResult.canceled && pickerResult.assets && pickerResult.assets.length > 0) {
+        setIsLoading(true);
+        const localUri = pickerResult.assets[0].uri;
+        const uploadedUrl = await uploadImageToServer(localUri);
+        setIsLoading(false);
+        if (uploadedUrl) {
+          setPaymentScreenshot(uploadedUrl);
+          Alert.alert('Uploaded', 'Payment proof screenshot uploaded successfully!');
+        }
+      }
+    } catch (err) {
+      setIsLoading(false);
+      Alert.alert('Error', 'Failed to upload payment proof');
+    }
+  };
+
+  const handleProceedToPayment = async () => {
+    if (!shopName.trim() || !shopAddress.trim() || !shopImage || !shopLogo || !shopState.trim() || !shopPincode.trim() || !shopGst.trim()) {
+      Alert.alert('Error', 'Shop Name, Street Address, State, Pin Code, GST Number, Logo, and Banner Image are all mandatory.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/users`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          const admin = json.data.find((u: any) => u.role === 'superadmin');
+          if (admin) {
+            setAdminUpiNumber(admin.upiNumber || '9999900000');
+            setAdminUpiId(admin.upiId || 'admin@paytm');
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Could not fetch admin UPI, using default');
+    }
+    setIsLoading(false);
+    setStep('payment');
+  };
 
   // Auto-detect live location on entering shop details step
   useEffect(() => {
@@ -223,7 +291,7 @@ export default function LoginScreen() {
           role: 'vendor',
           rewardPoints: 10
         });
-        Alert.alert('Welcome Partner', 'Login successful!', [{ text: 'OK', onPress: () => router.replace('/') }]);
+        Alert.alert('Welcome Partner', 'Login successful!', [{ text: 'OK', onPress: () => router.replace('/fingerprint') }]);
       }
       return;
     }
@@ -276,14 +344,8 @@ export default function LoginScreen() {
           // No kitchen found -> go directly to Shop Details registration to fill form
           setIsLoading(false);
           setStep('shop_details');
-        } else if (userKitchen.isApproved !== 'approved') {
-          // Kitchen found but pending/rejected -> go to Pending Approval screen
-          setIsLoading(false);
-          setKitchenId(userKitchen.id);
-          setKitchenStatus(userKitchen.isApproved === 'rejected' ? 'rejected' : 'pending');
-          setStep('pending_approval');
         } else {
-          // Approved! Log in successfully!
+          // Log in and route to fingerprint, dashboard will handle pending/rejected view dynamically
           setAuth(token, tempRefreshToken || 'mock_refresh', {
             id: user.id,
             name: user.name,
@@ -294,7 +356,7 @@ export default function LoginScreen() {
             rewardPoints: user.rewardPoints
           });
           setIsLoading(false);
-          Alert.alert('Welcome Partner', 'Login successful!', [{ text: 'OK', onPress: () => router.replace('/') }]);
+          Alert.alert('Welcome Partner', 'Login successful!', [{ text: 'OK', onPress: () => router.replace('/fingerprint') }]);
         }
       } else {
         setIsLoading(false);
@@ -314,8 +376,8 @@ export default function LoginScreen() {
 
   // Step 3: Name Registration (POST complete-profile)
   const handleRegisterName = async () => {
-    if (!firstName.trim() || !lastName.trim()) {
-      Alert.alert('Error', 'Please enter your first and last name');
+    if (!firstName.trim() || !lastName.trim() || !profileImage) {
+      Alert.alert('Error', 'First Name, Last Name, and Profile Photo are mandatory.');
       return;
     }
 
@@ -356,13 +418,17 @@ export default function LoginScreen() {
 
   // Step 4: Register Shop Details (Submits pending request)
   const handleRegisterShop = async () => {
-    if (!shopName.trim() || !shopAddress.trim()) {
-      Alert.alert('Error', 'Shop Name and Street Address are required.');
+    if (!utrNumber.trim()) {
+      Alert.alert('Error', 'Please enter the transaction UTR number.');
+      return;
+    }
+    if (!paymentScreenshot) {
+      Alert.alert('Error', 'Please upload or capture a payment screenshot proof.');
       return;
     }
 
     setIsLoading(true);
-    const completeAddress = `${shopAddress.trim()}, Floor: ${shopFloor.trim()}, Gali/Office: ${shopGaliNumber.trim()}`;
+    const completeAddress = `${shopAddress.trim()}, Floor: ${shopFloor.trim()}, Gali/Office: ${shopGaliNumber.trim()}, State: ${shopState.trim()}, PinCode: ${shopPincode.trim()} | GST: ${shopGst.trim()}`;
     
     try {
       // POST new kitchen request to backend (initially pending, is_live=false)
@@ -380,14 +446,16 @@ export default function LoginScreen() {
           time: '30 mins',
           distance: '1.0 km',
           offer: 'Freshly Cooked Homestyle Food',
-          image: shopImage || 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=600&auto=format&fit=crop&q=80',
-          logoUrl: shopLogo || 'https://images.unsplash.com/photo-1595152772835-219674b2a8a6?w=150&auto=format&fit=crop&q=80',
+          image: shopImage,
+          logoUrl: shopLogo,
           address: completeAddress,
           floor: shopFloor,
           officeGaliNumber: shopGaliNumber,
           latitude: latitude || 19.0760,
           longitude: longitude || 72.8777,
-          isApproved: 'pending'
+          isApproved: 'pending',
+          utrNumber: utrNumber.trim(),
+          paymentScreenshot: paymentScreenshot
         })
       });
 
@@ -397,17 +465,39 @@ export default function LoginScreen() {
       if (json.success) {
         setKitchenId(json.data.id);
         setKitchenStatus('pending');
-        setStep('pending_approval');
-        Alert.alert('Onboarding Submitted', 'Your shop has been registered and is pending approval by the Admin.');
+        // Log in immediately and redirect to fingerprint setup
+        setAuth(tempToken, tempRefreshToken || 'mock_refresh', {
+          id: tempUser.id,
+          name: tempUser.name || `${firstName.trim()} ${lastName.trim()}`,
+          email: tempUser.email,
+          phone: tempUser.phone || '',
+          avatar: tempUser.avatar || profileImage || '',
+          role: 'vendor',
+          rewardPoints: tempUser.rewardPoints || 0
+        });
+        Alert.alert('Registration Successful', 'Your shop has been registered and is pending approval by the Admin.', [
+          { text: 'OK', onPress: () => router.replace('/fingerprint') }
+        ]);
       } else {
         Alert.alert('Error', json.message || 'Failed to submit shop registration details');
       }
     } catch (err: any) {
-      console.error('Shop registration failed:', err);
+      console.error('Shop registration failed, doing offline fallback:', err);
       setIsLoading(false);
       // Demo fallback
       setKitchenStatus('pending');
-      setStep('pending_approval');
+      setAuth(tempToken || 'mock_token', tempRefreshToken || 'mock_refresh', {
+        id: tempUser?.id || 'usr-chef-9281',
+        name: tempUser?.name || `${firstName.trim()} ${lastName.trim()}`,
+        email: email,
+        phone: '',
+        avatar: profileImage || '',
+        role: 'vendor',
+        rewardPoints: 10
+      });
+      Alert.alert('Registration Submitted (Offline)', 'Shop registered offline and pending admin approval.', [
+        { text: 'OK', onPress: () => router.replace('/fingerprint') }
+      ]);
     }
   };
 
@@ -615,8 +705,155 @@ export default function LoginScreen() {
               </View>
             </View>
 
+            <View style={styles.row}>
+              <View style={[styles.inputWrapper, { flex: 1, marginRight: 8 }]}>
+                <TextInput
+                  placeholder="State"
+                  placeholderTextColor="#888"
+                  value={shopState}
+                  onChangeText={setShopState}
+                  style={styles.inputField}
+                />
+              </View>
+
+              <View style={[styles.inputWrapper, { flex: 1 }]}>
+                <TextInput
+                  placeholder="Pin Code"
+                  placeholderTextColor="#888"
+                  keyboardType="numeric"
+                  value={shopPincode}
+                  onChangeText={setShopPincode}
+                  style={styles.inputField}
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputWrapper}>
+              <FileText size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />
+              <TextInput
+                placeholder="GSTIN Number (GST is manually input)"
+                placeholderTextColor="#888"
+                autoCapitalize="characters"
+                value={shopGst}
+                onChangeText={setShopGst}
+                style={styles.inputField}
+              />
+            </View>
+
+            <TouchableOpacity style={styles.loginBtn} onPress={handleProceedToPayment}>
+              <Text style={styles.loginBtnText}>Proceed to Payment (Next)</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* PAYMENT STEP: Pay Platform Activation Fee */}
+        {step === 'payment' && (
+          <View style={styles.form}>
+            {/* Back Header */}
+            <TouchableOpacity 
+              style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}
+              onPress={() => setStep('shop_details')}
+            >
+              <ArrowLeft size={16} color={theme.colors.primary} style={{ marginRight: 6 }} />
+              <Text style={{ fontSize: 13, fontWeight: 'bold', color: theme.colors.primary }}>Go Back to Shop Details</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.stepTitle}>Step 5: Platform Activation Fee</Text>
+            
+            <Text style={{ fontSize: 12, color: '#333', textAlign: 'center', lineHeight: 18, marginBottom: 16 }}>
+              To activate your store, please pay a one-time platform activation fee of <Text style={{ fontWeight: 'bold', color: '#000' }}>₹1.00</Text>.
+            </Text>
+
+            {/* UPI details & Paytm App redirection */}
+            <View style={{ backgroundColor: '#F0F2F4', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#EAEAEA', alignItems: 'center', marginBottom: 16 }}>
+              <Smartphone size={28} color="#002E6E" style={{ marginBottom: 8 }} />
+              <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#1E2022' }}>Direct App Payment</Text>
+              <Text style={{ fontSize: 11, color: '#686E73', textAlign: 'center', marginTop: 4, marginBottom: 12 }}>
+                Click below to pay ₹1.00 directly via Paytm or other UPI apps on this phone.
+              </Text>
+              <TouchableOpacity 
+                style={{ backgroundColor: '#002E6E', paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8 }}
+                onPress={() => {
+                  const upiUrl = `upi://pay?pa=${adminUpiId}&pn=CloudeKitchenAdmin&am=1.00&cu=INR&tn=PlatformFee`;
+                  Linking.openURL(upiUrl).catch(() => {
+                    Alert.alert('App Redirection Error', 'Could not open UPI apps directly. Please scan the QR code instead.');
+                  });
+                }}
+              >
+                <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold' }}>Pay via Paytm App</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* QR Scanner option */}
+            <View style={{ backgroundColor: '#FFFFFF', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#EAEAEA', alignItems: 'center', marginBottom: 16 }}>
+              <QrCode size={28} color="#FF6B00" style={{ marginBottom: 8 }} />
+              <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#1E2022' }}>Scan Paytm QR Code</Text>
+              <Text style={{ fontSize: 11, color: '#686E73', textAlign: 'center', marginTop: 4, marginBottom: 12 }}>
+                Or scan this QR Code using Paytm or any UPI scanner to make the payment:
+              </Text>
+              
+              <Image 
+                source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`upi://pay?pa=${adminUpiId}&pn=CloudeKitchenAdmin&am=1.00&cu=INR`)}` }}
+                style={{ width: 180, height: 180, borderRadius: 8, borderWidth: 1, borderColor: '#EAEAEA', backgroundColor: '#FFF' }}
+              />
+              <Text style={{ fontSize: 10, color: '#FF6B00', fontWeight: 'bold', marginTop: 10 }}>UPI ID: {adminUpiId}</Text>
+              {adminUpiNumber ? <Text style={{ fontSize: 10, color: '#686E73', marginTop: 2 }}>UPI Phone: {adminUpiNumber}</Text> : null}
+            </View>
+
+            {/* Proof Submission */}
+            <Text style={[styles.stepTitle, { textAlign: 'left', fontSize: 13, marginBottom: 8 }]}>Submit Payment Proof</Text>
+
+            {/* UTR Input */}
+            <View style={styles.inputWrapper}>
+              <FileText size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />
+              <TextInput
+                placeholder="Enter 12-Digit UTR / Transaction No."
+                placeholderTextColor="#888"
+                keyboardType="numeric"
+                value={utrNumber}
+                onChangeText={setUtrNumber}
+                style={styles.inputField}
+              />
+            </View>
+
+            {/* Screenshot Capture / upload */}
+            <View style={styles.captureContainer}>
+              <View style={styles.imagePlaceholder}>
+                <Text style={styles.imagePlaceholderText}>Payment Screenshot</Text>
+                {paymentScreenshot ? (
+                  <Text style={styles.imagePlaceholderSubText} numberOfLines={1}>✓ Selected: {paymentScreenshot.substring(paymentScreenshot.lastIndexOf('/') + 1)}</Text>
+                ) : (
+                  <Text style={styles.imagePlaceholderSubText}>Capture photo or select receipt</Text>
+                )}
+              </View>
+              <View style={{ flexDirection: 'row' }}>
+                <TouchableOpacity 
+                  style={[styles.captureBtn, { marginRight: 6 }]} 
+                  onPress={() => capturePaymentScreenshot('camera')}
+                >
+                  <Camera size={12} color={theme.colors.primary} style={{ marginRight: 4 }} />
+                  <Text style={[styles.captureBtnText, { fontSize: 10 }]}>Camera</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.captureBtn} 
+                  onPress={() => capturePaymentScreenshot('gallery')}
+                >
+                  <Upload size={12} color={theme.colors.primary} style={{ marginRight: 4 }} />
+                  <Text style={[styles.captureBtnText, { fontSize: 10 }]}>Gallery</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {paymentScreenshot ? (
+              <Image 
+                source={{ uri: paymentScreenshot }}
+                style={{ width: '100%', height: 160, borderRadius: 12, marginBottom: 16, borderWidth: 1, borderColor: '#EAEAEA' }}
+                resizeMode="contain"
+              />
+            ) : null}
+
             <TouchableOpacity style={styles.loginBtn} onPress={handleRegisterShop}>
-              <Text style={styles.loginBtnText}>Submit Shop Registration</Text>
+              <Text style={styles.loginBtnText}>Save & Submit Registration</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -671,13 +908,18 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: '#F5F6F8', // Premium Light background
+    backgroundColor: '#F5F6F8',
     justifyContent: 'center',
     padding: 24,
     paddingTop: 50,
   },
   card: {
     width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: '#EAEAEA',
   },
   header: {
     alignItems: 'center',
@@ -686,12 +928,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1E2022', // Dark text
+    color: '#1E2022',
     marginTop: 16,
   },
   subtitle: {
     fontSize: 12,
-    color: '#686E73', // Secondary text
+    color: theme.colors.textSecondary,
     marginTop: 4,
     textAlign: 'center',
   },
@@ -708,7 +950,7 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF', // White card style
+    backgroundColor: '#F0F2F4',
     borderWidth: 1,
     borderColor: '#EAEAEA',
     borderRadius: 12,
@@ -731,9 +973,9 @@ const styles = StyleSheet.create({
   locationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,179,0,0.05)',
+    backgroundColor: 'rgba(255,107,0,0.05)',
     borderWidth: 1,
-    borderColor: 'rgba(255,179,0,0.1)',
+    borderColor: 'rgba(255,107,0,0.1)',
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -781,7 +1023,7 @@ const styles = StyleSheet.create({
   approvalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#FF9500',
+    color: theme.colors.warning,
     marginBottom: 12,
   },
   approvalText: {
@@ -793,7 +1035,7 @@ const styles = StyleSheet.create({
   },
   approvalSubtext: {
     fontSize: 11,
-    color: '#686E73',
+    color: theme.colors.textSecondary,
     textAlign: 'center',
     lineHeight: 18,
     marginBottom: 30,
@@ -803,7 +1045,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F0F2F4',
     borderWidth: 1,
     borderColor: '#EAEAEA',
     borderRadius: 12,
@@ -820,13 +1062,13 @@ const styles = StyleSheet.create({
   },
   imagePlaceholderSubText: {
     fontSize: 10,
-    color: '#686E73',
+    color: theme.colors.textSecondary,
     marginTop: 2,
   },
   captureBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,179,0,0.1)',
+    backgroundColor: 'rgba(255,107,0,0.1)',
     borderWidth: 1,
     borderColor: theme.colors.primary,
     paddingVertical: 8,

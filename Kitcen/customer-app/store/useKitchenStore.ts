@@ -163,8 +163,8 @@ const initialProducts: Record<string, ProductItem[]> = {
 
 export const useKitchenStore = create<KitchenState>((set, get) => ({
   role: 'customer',
-  kitchens: initialKitchens,
-  products: initialProducts,
+  kitchens: [],
+  products: {},
   orders: [],
   allProducts: [],
   isLoading: false,
@@ -206,8 +206,8 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
         throw new Error(json.message);
       }
     } catch (err: any) {
-      console.warn('API Error, falling back to mock kitchens:', err.message);
-      set({ kitchens: initialKitchens, isLoading: false, error: err.message });
+      console.warn('API Error, setting empty kitchens:', err.message);
+      set({ kitchens: [], isLoading: false, error: err.message });
     }
   },
 
@@ -267,18 +267,8 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
         throw new Error(json.message);
       }
     } catch (err: any) {
-      console.warn('API Error, falling back to mock products:', err.message);
-      const fallbacks = [
-        { id: 'p1', name: 'Spicy Chicken Tikka Roll', price: 299, desc: '22g protein • 377 kcal', category: 'Rolls', isVeg: false, image: 'https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?w=300', customizable: false, kitchenId: 'shp-seed-10', kitchenName: 'Rumali By Enoki' },
-        { id: 'p2', name: 'Butter Chicken Roll', price: 299, desc: '20g protein • 325 kcal', category: 'Rolls', isVeg: false, image: 'https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?w=300', customizable: false, kitchenId: 'shp-seed-10', kitchenName: 'Rumali By Enoki' },
-        { id: 'p3', name: 'Margherita Pizza', price: 99, desc: 'Classic cheese pizza', category: 'Pizza', isVeg: true, image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300', customizable: true, kitchenId: 'shp-seed-2', kitchenName: 'Pizza Hut' },
-        { id: 'p4', name: 'Classic Corn Pizza', price: 79, desc: 'Loaded with sweet corn', category: 'Pizza', isVeg: true, image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300', customizable: true, kitchenId: 'shp-seed-2', kitchenName: 'Pizza Hut' },
-        { id: 'p5', name: 'Crispy Chicken Burger', price: 79, desc: 'Crunchy chicken patty burger', category: 'Burger', isVeg: false, image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=300', customizable: false, kitchenId: 'shp-seed-1', kitchenName: 'Burger King' },
-        { id: 'p6', name: 'Swiss Fine Chocolate', price: 169, desc: '5(1) rating • 15 MIN SCOOPS', category: 'Rolls', isVeg: true, image: 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=300', customizable: false, kitchenId: 'shp-seed-10', kitchenName: 'GLOBO Ice Cream' },
-        { id: 'p7', name: 'London Almond Butter', price: 169, desc: '2.5(3) rating • 15 MIN SCOOPS', category: 'Rolls', isVeg: true, image: 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=300', customizable: false, kitchenId: 'shp-seed-10', kitchenName: 'GLOBO Ice Cream' },
-        { id: 'p8', name: 'Colombian Coffee Mocha', price: 169, desc: '3.1(3) rating • 15 MIN SCOOPS', category: 'Rolls', isVeg: true, image: 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=300', customizable: false, kitchenId: 'shp-seed-10', kitchenName: 'GLOBO Ice Cream' }
-      ];
-      set({ allProducts: fallbacks, isLoading: false });
+      console.warn('API Error, setting empty products:', err.message);
+      set({ allProducts: [], isLoading: false });
     }
   },
 

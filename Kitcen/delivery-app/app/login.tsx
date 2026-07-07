@@ -156,7 +156,7 @@ export default function RiderLoginScreen() {
         });
 
         setIsLoading(false);
-        Alert.alert('Welcome Rider', 'Profile completed successfully!', [{ text: 'OK', onPress: () => router.replace('/') }]);
+        Alert.alert('Welcome Rider', 'Profile completed successfully!', [{ text: 'OK', onPress: () => router.replace('/fingerprint') }]);
       } else {
         setIsLoading(false);
         Alert.alert('Error', json.message || 'Failed to complete profile');
@@ -174,7 +174,7 @@ export default function RiderLoginScreen() {
         role: 'rider',
         rewardPoints: 10
       });
-      Alert.alert('Welcome Rider (Offline)', 'Profile Setup Completed offline!', [{ text: 'OK', onPress: () => router.replace('/') }]);
+      Alert.alert('Welcome Rider (Offline)', 'Profile Setup Completed offline!', [{ text: 'OK', onPress: () => router.replace('/fingerprint') }]);
     }
   };
 
@@ -241,7 +241,7 @@ export default function RiderLoginScreen() {
           });
           
           setIsLoading(false);
-          Alert.alert('Welcome Rider', 'Login successful!', [{ text: 'OK', onPress: () => router.replace('/') }]);
+          Alert.alert('Welcome Rider', 'Login successful!', [{ text: 'OK', onPress: () => router.replace('/fingerprint') }]);
         }
       } else {
         setIsLoading(false);
@@ -279,7 +279,7 @@ export default function RiderLoginScreen() {
             role: 'rider',
             rewardPoints: 10
           });
-          Alert.alert('Welcome (Offline)', 'Offline Rider Login Successful!', [{ text: 'OK', onPress: () => router.replace('/') }]);
+          Alert.alert('Welcome (Offline)', 'Offline Rider Login Successful!', [{ text: 'OK', onPress: () => router.replace('/fingerprint') }]);
         }
       } else {
         Alert.alert('Error', 'Invalid OTP code. Try "123456"');

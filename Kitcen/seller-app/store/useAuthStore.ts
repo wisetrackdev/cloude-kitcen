@@ -40,6 +40,8 @@ interface UserProfile {
   firstName?: string;
   lastName?: string;
   gender?: string;
+  upiNumber?: string;
+  upiId?: string;
 }
 
 interface LocationCoords {

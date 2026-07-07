@@ -115,7 +115,12 @@ export default function StoresScreen() {
         ListEmptyComponent={
           <View style={styles.emptyResults}>
             <Store size={44} color="#555" style={{ marginBottom: 12 }} />
-            <Text style={[styles.emptyText, { color: themeColors.textSecondary }]}>No store matches your filter criteria.</Text>
+            <Text style={[styles.emptyText, { color: themeColors.textSecondary }]}>
+              {kitchens.length === 0 
+                ? 'No stores available at the moment.' 
+                : 'No store matches your filter criteria.'
+              }
+            </Text>
           </View>
         }
         renderItem={({ item }) => (
