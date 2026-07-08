@@ -236,18 +236,23 @@ export default function SellerMenuScreen() {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: themeColors.background }]} showsVerticalScrollIndicator={false}>
-      <View style={styles.headerRow}>
-        <Text style={[styles.title, { color: themeColors.text }]}>Menu Catalog</Text>
-        <TouchableOpacity 
-          style={styles.addDishBtn}
-          onPress={() => setShowAddDishModal(true)}
-        >
-          <Plus size={14} color="#000" />
-          <Text style={styles.addDishBtnText}>Add Item</Text>
-        </TouchableOpacity>
+      <View style={styles.header}>
+        <View style={styles.headerRow}>
+          <View style={{ flex: 1, marginRight: 8 }}>
+            <Text style={[styles.subtitle, { color: 'rgba(255, 255, 255, 0.85)', marginBottom: 2 }]}>Manage available items for {kitchenInfo.name}</Text>
+            <Text style={[styles.title, { color: '#FFF' }]}>Menu Catalog</Text>
+          </View>
+          <TouchableOpacity 
+            style={styles.addDishBtn}
+            onPress={() => setShowAddDishModal(true)}
+          >
+            <Plus size={14} color="#000" />
+            <Text style={styles.addDishBtnText}>Add Item</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
-      <Text style={[styles.subtitle, { color: themeColors.textSecondary }]}>Manage available items for {kitchenInfo.name}</Text>
+      <View style={{ paddingHorizontal: 16 }}>
 
       {/* Shop Categories Section with Delete option */}
       <View style={styles.shopCategoriesSection}>
@@ -308,6 +313,7 @@ export default function SellerMenuScreen() {
           </Text>
         )}
       </View>
+    </View>
 
       {/* Add item Modal */}
       <Modal
@@ -440,30 +446,37 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
+  },
+  header: {
+    backgroundColor: '#FFCC00',
     paddingTop: 50,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    marginBottom: 20,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
   },
   title: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#FFF',
   },
   subtitle: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-    marginBottom: 20,
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: 'rgba(255, 255, 255, 0.85)',
+    textTransform: 'uppercase',
   },
   addDishBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.primary,
-    paddingVertical: 6,
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
   },

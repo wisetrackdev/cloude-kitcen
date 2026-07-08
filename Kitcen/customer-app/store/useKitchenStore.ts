@@ -40,6 +40,7 @@ export interface Kitchen {
   officeGaliNumber?: string;
   latitude?: number;
   longitude?: number;
+  isLive?: boolean;
 }
 
 export interface OrderItem {
@@ -199,7 +200,8 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
           coverImageUrl: k.coverImageUrl,
           bankName: k.bankName,
           accountNumber: k.accountNumber,
-          ifscCode: k.ifscCode
+          ifscCode: k.ifscCode,
+          isLive: k.isLive
         }));
         set({ kitchens: mappedKitchens, isLoading: false });
       } else {

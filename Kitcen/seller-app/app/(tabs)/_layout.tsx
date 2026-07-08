@@ -6,6 +6,15 @@ import { useAuthStore } from '../../store/useAuthStore';
 
 export default function TabLayout() {
   const token = useAuthStore(state => state.token);
+  const isDarkMode = useAuthStore(state => state.isDarkMode);
+
+  const themeColors = {
+    card: isDarkMode ? '#121212' : '#FFFFFF',
+    border: isDarkMode ? '#1F1F1F' : '#EAEAEA',
+    text: isDarkMode ? '#FFFFFF' : '#1E2022',
+    textSecondary: isDarkMode ? '#8E8E93' : '#686E73',
+    primary: '#FFB300',
+  };
 
   if (!token) {
     return <Redirect href="/login" />;
@@ -15,11 +24,11 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: theme.colors.textSecondary,
+        tabBarActiveTintColor: themeColors.primary,
+        tabBarInactiveTintColor: themeColors.textSecondary,
         tabBarStyle: {
-          backgroundColor: '#FFB300',
-          borderTopColor: '#FFB300',
+          backgroundColor: themeColors.card,
+          borderTopColor: themeColors.border,
           borderTopWidth: 1,
           height: 60,
           paddingBottom: 8,

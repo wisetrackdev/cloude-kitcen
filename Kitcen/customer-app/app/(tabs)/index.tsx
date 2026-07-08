@@ -96,6 +96,13 @@ export default function HomeScreen() {
   // Filter products dynamically
   const getFilteredDishes = () => {
     let list = allProducts || [];
+    
+    // Filter out products belonging to offline or unapproved kitchens
+    list = list.filter(p => {
+      const k = kitchens.find(store => store.id === p.kitchenId);
+      return k && k.isApproved === 'approved' && k.isLive !== false;
+    });
+
     if (selectedCategory) {
       list = list.filter(p => p.category?.toLowerCase() === selectedCategory.toLowerCase());
     }
@@ -157,7 +164,11 @@ export default function HomeScreen() {
 
   const getBestSellers = () => {
     if (allProducts && allProducts.length > 0) {
-      return allProducts.slice(0, 4);
+      const activeProds = allProducts.filter(p => {
+        const k = kitchens.find(store => store.id === p.kitchenId);
+        return k && k.isApproved === 'approved' && k.isLive !== false;
+      });
+      return activeProds.slice(0, 4);
     }
     return [];
   };

@@ -58,6 +58,7 @@ namespace CloudeKicten.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public string? UtrNumber { get; set; }
         public string? PaymentScreenshot { get; set; }
+        public bool IsLive { get; set; } = true;
     }
 
     public class ProductDb
@@ -242,6 +243,7 @@ namespace CloudeKicten.Models
         public string? IfscCode { get; set; }
         public string? UtrNumber { get; set; }
         public string? PaymentScreenshot { get; set; }
+        public bool IsLive { get; set; } = true;
     }
 
     public class KitchenUpdateDto
@@ -267,6 +269,7 @@ namespace CloudeKicten.Models
         public string? IfscCode { get; set; }
         public string? UtrNumber { get; set; }
         public string? PaymentScreenshot { get; set; }
+        public bool IsLive { get; set; } = true;
     }
 
     public class ProductCreateDto

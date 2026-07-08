@@ -25,6 +25,8 @@ import { theme } from '../../styles/theme';
 import { useKitchenStore } from '../../store/useKitchenStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { alertService } from '../../store/alertService';
+import { API_BASE_URL } from '../../store/apiConfig';
+import { Alert } from 'react-native';
 
 const ZOMATO_RED = '#E23744';
 
@@ -33,6 +35,7 @@ type OrderTabFilter = 'live' | 'history';
 export default function SellerDashboard() {
   const router = useRouter();
   const user = useAuthStore(state => state.user);
+  const token = useAuthStore(state => state.token);
   const kitchens = useKitchenStore(state => state.kitchens);
   const products = useKitchenStore(state => state.products);
   const orders = useKitchenStore(state => state.orders);
@@ -59,6 +62,64 @@ export default function SellerDashboard() {
   const myKitchen = kitchens.find(k => k.owner === user?.id) || kitchens[0];
   const selectedKitchenId = myKitchen?.id || 'k3';
   const isApproved = myKitchen?.isApproved === 'approved';
+
+  // State for online status
+  const [isLiveState, setIsLiveState] = useState(myKitchen?.isLive !== false);
+  const [isTogglingLive, setIsTogglingLive] = useState(false);
+
+  useEffect(() => {
+    if (myKitchen) {
+      setIsLiveState(myKitchen.isLive !== false);
+    }
+  }, [myKitchen]);
+
+  const toggleOnlineStatus = async () => {
+    if (!myKitchen?.id) return;
+    const nextLiveState = !isLiveState;
+    setIsTogglingLive(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/kitchens/${myKitchen.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          id: myKitchen.id,
+          name: myKitchen.name,
+          ownerId: user?.id,
+          type: myKitchen.type,
+          cuisines: myKitchen.cuisines || 'Indian',
+          time: myKitchen.time,
+          distance: myKitchen.distance,
+          offer: myKitchen.offer,
+          image: myKitchen.image,
+          logoUrl: myKitchen.logoUrl,
+          coverImageUrl: myKitchen.coverImageUrl,
+          address: myKitchen.address,
+          bankName: myKitchen.bankName,
+          accountNumber: myKitchen.accountNumber,
+          ifscCode: myKitchen.ifscCode,
+          isLive: nextLiveState,
+          isApproved: myKitchen.isApproved
+        })
+      });
+      const json = await res.json();
+      setIsTogglingLive(false);
+      if (json.success) {
+        setIsLiveState(nextLiveState);
+        fetchKitchens(); // refresh store
+        Alert.alert('Status Updated', `You are now ${nextLiveState ? 'ONLINE' : 'OFFLINE'}.`);
+      } else {
+        Alert.alert('Error', json.message || 'Failed to update online status');
+      }
+    } catch (err) {
+      setIsTogglingLive(false);
+      // Offline mode fallback
+      setIsLiveState(nextLiveState);
+      Alert.alert('Offline Mode', `Status updated locally to ${nextLiveState ? 'ONLINE' : 'OFFLINE'}.`);
+    }
+  };
 
   // Alert when a new order is received for the seller's kitchen
   const prevPlacedOrderIds = useRef<string[]>([]);
@@ -159,15 +220,28 @@ export default function SellerDashboard() {
   return (
     <ScrollView style={[styles.container, { backgroundColor: themeColors.background }]} showsVerticalScrollIndicator={false}>
       {/* Brand Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: '#FFCC00' }]}>
         <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerSub}>Zomato Partner Workspace</Text>
-          <Text style={[styles.headerMain, { color: themeColors.text }]}>{kitchenInfo.name}</Text>
+          <Text style={[styles.headerSub, { color: 'rgba(255, 255, 255, 0.85)' }]}>Zomato Partner Workspace</Text>
+          <Text style={[styles.headerMain, { color: '#FFFFFF' }]}>{kitchenInfo.name}</Text>
         </View>
-        <View style={styles.onlineIndicator}>
-          <View style={styles.pulseDot} />
-          <Text style={styles.onlineText}>ONLINE</Text>
-        </View>
+        <TouchableOpacity 
+          style={[
+            styles.onlineIndicator, 
+            !isLiveState && { backgroundColor: 'rgba(255, 59, 48, 0.2)', borderColor: 'rgba(255, 59, 48, 0.3)' }
+          ]}
+          onPress={toggleOnlineStatus}
+          disabled={isTogglingLive}
+        >
+          {isTogglingLive ? (
+            <ActivityIndicator size="small" color="#FFF" />
+          ) : (
+            <>
+              <View style={[styles.pulseDot, !isLiveState && { backgroundColor: '#FF3B30' }]} />
+              <Text style={styles.onlineText}>{isLiveState ? 'ONLINE' : 'OFFLINE'}</Text>
+            </>
+          )}
+        </TouchableOpacity>
       </View>
 
       {/* KPI Stats Panel */}
@@ -384,13 +458,17 @@ export default function SellerDashboard() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 50,
   },
   header: {
+    backgroundColor: '#FFCC00',
+    paddingTop: 50,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
     marginBottom: 20,
   },
   headerTitleContainer: {
@@ -399,20 +477,21 @@ const styles = StyleSheet.create({
   headerSub: {
     fontSize: 9,
     fontWeight: 'bold',
-    color: ZOMATO_RED,
+    color: 'rgba(255, 255, 255, 0.85)',
     textTransform: 'uppercase',
   },
   headerMain: {
     fontSize: 22,
     fontWeight: 'bold',
+    color: '#FFFFFF',
     marginTop: 2,
   },
   onlineIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(52,199,89,0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     borderWidth: 1,
-    borderColor: 'rgba(52,199,89,0.2)',
+    borderColor: 'rgba(255, 255, 255, 0.35)',
     paddingVertical: 4,
     paddingHorizontal: 8,
     borderRadius: 8,
@@ -421,13 +500,13 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#34C759',
+    backgroundColor: '#FFFFFF',
     marginRight: 6,
   },
   onlineText: {
     fontSize: 9,
     fontWeight: 'bold',
-    color: '#34C759',
+    color: '#FFFFFF',
   },
   kpiContainer: {
     flexDirection: 'row',

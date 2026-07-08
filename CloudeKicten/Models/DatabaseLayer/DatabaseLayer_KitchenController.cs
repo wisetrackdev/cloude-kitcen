@@ -87,14 +87,14 @@ namespace CloudeKicten.Models.DatabaseLayer
             cmd.Parameters.AddWithValue("@Latitude", (object?)kitchen.Latitude ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@Longitude", (object?)kitchen.Longitude ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@IsApproved", kitchen.IsApproved ?? "pending");
-            cmd.Parameters.AddWithValue("@BankAccount", (object?)kitchen.BankAccount ?? "SBI A/C 30948576291");
+            cmd.Parameters.AddWithValue("@BankAccount", (object?)kitchen.BankAccount ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@CoverImageUrl", (object?)kitchen.CoverImageUrl ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@BankName", (object?)kitchen.BankName ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@AccountNumber", (object?)kitchen.AccountNumber ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@IfscCode", (object?)kitchen.IfscCode ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@UtrNumber", (object?)kitchen.UtrNumber ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@PaymentScreenshot", (object?)kitchen.PaymentScreenshot ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("@IsLive", true);
+            cmd.Parameters.AddWithValue("@IsLive", kitchen.IsLive);
 
             var result = await cmd.ExecuteNonQueryAsync();
             return result > 0;
@@ -120,14 +120,14 @@ namespace CloudeKicten.Models.DatabaseLayer
             cmd.Parameters.AddWithValue("@Latitude", (object?)kitchen.Latitude ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@Longitude", (object?)kitchen.Longitude ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@IsApproved", kitchen.IsApproved ?? "pending");
-            cmd.Parameters.AddWithValue("@BankAccount", (object?)kitchen.BankAccount ?? "SBI A/C 30948576291");
+            cmd.Parameters.AddWithValue("@BankAccount", (object?)kitchen.BankAccount ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@CoverImageUrl", (object?)kitchen.CoverImageUrl ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@BankName", (object?)kitchen.BankName ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@AccountNumber", (object?)kitchen.AccountNumber ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@IfscCode", (object?)kitchen.IfscCode ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@UtrNumber", (object?)kitchen.UtrNumber ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@PaymentScreenshot", (object?)kitchen.PaymentScreenshot ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("@IsLive", true);
+            cmd.Parameters.AddWithValue("@IsLive", kitchen.IsLive);
 
             var result = await cmd.ExecuteNonQueryAsync();
             return result > 0;
@@ -181,7 +181,7 @@ namespace CloudeKicten.Models.DatabaseLayer
                 Longitude = r.IsDBNull(r.GetOrdinal("longitude")) ? null : r.GetDecimal(r.GetOrdinal("longitude")),
                 IsApproved = r.IsDBNull(r.GetOrdinal("is_approved")) ? "pending" : r.GetString(r.GetOrdinal("is_approved")),
                 OwnerName = r.IsDBNull(r.GetOrdinal("owner_name")) ? "Housewife Partner" : r.GetString(r.GetOrdinal("owner_name")),
-                BankAccount = r.IsDBNull(r.GetOrdinal("bank_account")) ? "SBI A/C 30948576291" : r.GetString(r.GetOrdinal("bank_account")),
+                BankAccount = r.IsDBNull(r.GetOrdinal("bank_account")) ? "" : r.GetString(r.GetOrdinal("bank_account")),
                 CoverImageUrl = r.IsDBNull(r.GetOrdinal("cover_image_url")) ? null : r.GetString(r.GetOrdinal("cover_image_url")),
                 BankName = r.IsDBNull(r.GetOrdinal("bank_name")) ? null : r.GetString(r.GetOrdinal("bank_name")),
                 AccountNumber = r.IsDBNull(r.GetOrdinal("account_number")) ? null : r.GetString(r.GetOrdinal("account_number")),
@@ -189,7 +189,8 @@ namespace CloudeKicten.Models.DatabaseLayer
                 OwnerPhone = r.IsDBNull(r.GetOrdinal("owner_phone")) ? null : r.GetString(r.GetOrdinal("owner_phone")),
                 CreatedAt = r.GetDateTime(r.GetOrdinal("created_at")),
                 UtrNumber = r.IsDBNull(r.GetOrdinal("utr_number")) ? null : r.GetString(r.GetOrdinal("utr_number")),
-                PaymentScreenshot = r.IsDBNull(r.GetOrdinal("payment_screenshot")) ? null : r.GetString(r.GetOrdinal("payment_screenshot"))
+                PaymentScreenshot = r.IsDBNull(r.GetOrdinal("payment_screenshot")) ? null : r.GetString(r.GetOrdinal("payment_screenshot")),
+                IsLive = r.IsDBNull(r.GetOrdinal("is_live")) ? true : r.GetBoolean(r.GetOrdinal("is_live"))
             };
         }
 

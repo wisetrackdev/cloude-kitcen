@@ -40,7 +40,8 @@ export default function StoresScreen() {
   };
 
   const getFilteredKitchens = () => {
-    let list = kitchens;
+    // Only show kitchens that are approved AND are live (isLive !== false)
+    let list = kitchens.filter(k => k.isApproved === 'approved' && k.isLive !== false);
     
     // Type Filter
     if (activeFilter !== 'all') {
