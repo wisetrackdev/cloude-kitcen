@@ -715,9 +715,14 @@ export default function LoginScreen() {
                   <TouchableOpacity 
                     style={{ backgroundColor: '#002E6E', paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8 }}
                     onPress={() => {
-                      const upiUrl = `upi://pay?pa=${adminUpiId}&pn=${encodeURIComponent('Dev Kumar')}&am=1.00&cu=INR&tn=PlatformFee`;
-                      Linking.openURL(upiUrl).catch(() => {
-                        Alert.alert('App Redirection Error', 'Could not open UPI apps directly. Please scan the QR code instead.');
+                      // Attempt to open Paytm directly using paytmmp URL scheme with the admin's UPI number
+                      const paytmUrl = `paytmmp://pay?pa=${adminUpiNumber}@paytm&pn=Admin&am=1.00&cu=INR&tn=PlatformFee`;
+                      const upiUrl = `upi://pay?pa=${adminUpiNumber}@paytm&pn=Admin&am=1.00&cu=INR&tn=PlatformFee`;
+                      
+                      Linking.openURL(paytmUrl).catch(() => {
+                        Linking.openURL(upiUrl).catch(() => {
+                          Alert.alert('App Redirection Error', 'Could not open Paytm or UPI apps directly. Please scan the QR code instead.');
+                        });
                       });
                     }}
                   >
@@ -734,10 +739,10 @@ export default function LoginScreen() {
                   </Text>
                   
                   <Image 
-                    source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`upi://pay?pa=${adminUpiId}&pn=${encodeURIComponent('Dev Kumar')}&am=1.00&cu=INR`)}` }}
+                    source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`upi://pay?pa=${adminUpiNumber}@paytm&pn=${encodeURIComponent('Cloud Kitchen Admin')}&am=1.00&cu=INR`)}` }}
                     style={{ width: 180, height: 180, borderRadius: 8, borderWidth: 1, borderColor: '#EAEAEA', backgroundColor: '#FFF' }}
                   />
-                  <Text style={{ fontSize: 10, color: '#FF6B00', fontWeight: 'bold', marginTop: 10 }}>UPI ID: {adminUpiId}</Text>
+                  <Text style={{ fontSize: 10, color: '#FF6B00', fontWeight: 'bold', marginTop: 10 }}>UPI ID: {adminUpiNumber}@paytm</Text>
                   {adminUpiNumber ? <Text style={{ fontSize: 10, color: '#686E73', marginTop: 2 }}>UPI Phone: {adminUpiNumber}</Text> : null}
                 </View>
 

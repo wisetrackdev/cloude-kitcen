@@ -79,9 +79,7 @@ export default function SellerProfile() {
   const [ifscCode, setIfscCode] = useState(myKitchen?.ifscCode || '');
 
   // Payout Option & UPI states
-  const [payoutOption, setPayoutOption] = useState<'bank' | 'upi'>(
-    (user?.upiNumber || user?.upiId) ? 'upi' : 'bank'
-  );
+  const [payoutOption, setPayoutOption] = useState<'bank' | 'upi'>('upi');
   const [upiNumber, setUpiNumber] = useState(user?.upiNumber || '');
   const [upiId, setUpiId] = useState(user?.upiId || '');
 
@@ -91,6 +89,7 @@ export default function SellerProfile() {
   const [isUploadingPromo, setIsUploadingPromo] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const themeColors = {
     background: isDarkMode ? '#0B0B0C' : '#F5F6F8',
@@ -105,8 +104,9 @@ export default function SellerProfile() {
     fetchKitchens();
   }, []);
 
+  // Initialize form details once
   useEffect(() => {
-    if (myKitchen) {
+    if (!isInitialized && myKitchen && user) {
       setShopName(myKitchen.name || '');
       setShopAddress(myKitchen.address || '');
       setCuisines(myKitchen.cuisines || '');
@@ -115,13 +115,71 @@ export default function SellerProfile() {
       setBankName(myKitchen.bankName || '');
       setAccountNumber(myKitchen.accountNumber || '');
       setIfscCode(myKitchen.ifscCode || '');
-    }
-    if (user) {
       setUpiNumber(user.upiNumber || '');
       setUpiId(user.upiId || '');
-      setPayoutOption(user.upiNumber || user.upiId ? 'upi' : 'bank');
+      setPayoutOption((user.upiNumber || user.upiId) ? 'upi' : 'bank');
+      setIsInitialized(true);
     }
-  }, [kitchens, user]);
+  }, [myKitchen, user, isInitialized]);
+
+  // Image Selection Handlers (Camera & Gallery)
+  const handleSelectImage = async (type: 'logo' | 'cover', source: 'camera' | 'gallery') => {
+    try {
+      const { status } = source === 'camera'
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Permission is required to choose a photo.');
+        return;
+      }
+
+      const result = source === 'camera'
+        ? await ImagePicker.launchCameraAsync({
+            allowsEditing: true,
+            aspect: type === 'cover' ? [16, 9] : [1, 1],
+            quality: 0.8,
+          })
+        : await ImagePicker.launchImageLibraryAsync({
+            allowsEditing: true,
+            aspect: type === 'cover' ? [16, 9] : [1, 1],
+            quality: 0.8,
+          });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setIsLoading(true);
+        const localUri = result.assets[0].uri;
+        const uploadedUrl = await uploadImageToServer(localUri);
+        setIsLoading(false);
+        if (uploadedUrl) {
+          if (type === 'logo') {
+            setLogoUrl(uploadedUrl);
+          } else {
+            setCoverImageUrl(uploadedUrl);
+          }
+          Alert.alert('Success', 'Image uploaded successfully!');
+        } else {
+          Alert.alert('Error', 'Failed to upload image to server.');
+        }
+      }
+    } catch (err) {
+      setIsLoading(false);
+      console.warn('Image selection failed:', err);
+      Alert.alert('Error', 'Failed to select and upload image.');
+    }
+  };
+
+  const requestPhotoSource = (type: 'logo' | 'cover') => {
+    Alert.alert(
+      'Upload Photo',
+      'Select source:',
+      [
+        { text: 'Camera', onPress: () => handleSelectImage(type, 'camera') },
+        { text: 'Gallery', onPress: () => handleSelectImage(type, 'gallery') },
+        { text: 'Cancel', style: 'cancel' }
+      ]
+    );
+  };
 
   const handlePublishShopBanner = async () => {
     if (!newPromoBannerUrl.trim()) {
@@ -520,21 +578,59 @@ export default function SellerProfile() {
 
               <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Shop Logo URL</Text>
               <TextInput
-                style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
+                style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border, marginBottom: 8 }]}
                 value={logoUrl}
                 onChangeText={setLogoUrl}
                 placeholder="https://example.com/logo.jpg"
                 placeholderTextColor="#888"
               />
+              {logoUrl ? (
+                <Image source={{ uri: logoUrl }} style={{ width: 60, height: 60, borderRadius: 30, marginBottom: 8, borderWidth: 1, borderColor: themeColors.border }} />
+              ) : null}
+              <TouchableOpacity 
+                style={{ 
+                  flexDirection: 'row', 
+                  alignItems: 'center', 
+                  backgroundColor: '#2c2c2c', 
+                  paddingHorizontal: 12, 
+                  paddingVertical: 8, 
+                  borderRadius: 8,
+                  marginBottom: 16,
+                  alignSelf: 'flex-start'
+                }} 
+                onPress={() => requestPhotoSource('logo')}
+              >
+                <Camera size={12} color="#FFF" style={{ marginRight: 6 }} />
+                <Text style={{ color: '#FFF', fontSize: 11, fontWeight: 'bold' }}>Choose Logo (Camera/Gallery)</Text>
+              </TouchableOpacity>
 
               <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Shop Cover/Banner URL</Text>
               <TextInput
-                style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
+                style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border, marginBottom: 8 }]}
                 value={coverImageUrl}
                 onChangeText={setCoverImageUrl}
                 placeholder="https://example.com/cover.jpg"
                 placeholderTextColor="#888"
               />
+              {coverImageUrl ? (
+                <Image source={{ uri: coverImageUrl }} style={{ width: '100%', height: 100, borderRadius: 8, marginBottom: 8, borderWidth: 1, borderColor: themeColors.border }} resizeMode="cover" />
+              ) : null}
+              <TouchableOpacity 
+                style={{ 
+                  flexDirection: 'row', 
+                  alignItems: 'center', 
+                  backgroundColor: '#2c2c2c', 
+                  paddingHorizontal: 12, 
+                  paddingVertical: 8, 
+                  borderRadius: 8,
+                  marginBottom: 16,
+                  alignSelf: 'flex-start'
+                }} 
+                onPress={() => requestPhotoSource('cover')}
+              >
+                <Camera size={12} color="#FFF" style={{ marginRight: 6 }} />
+                <Text style={{ color: '#FFF', fontSize: 11, fontWeight: 'bold' }}>Choose Banner (Camera/Gallery)</Text>
+              </TouchableOpacity>
 
               <TouchableOpacity style={styles.primaryBtn} onPress={handleUpdateAll} disabled={isLoading}>
                 {isLoading ? <ActivityIndicator color="#000" /> : <Text style={styles.primaryBtnText}>Save Kitchen Details</Text>}

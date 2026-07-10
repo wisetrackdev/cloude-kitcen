@@ -236,30 +236,54 @@ export default function KitchenDetailScreen() {
           )}
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Regulatory & Bank Info</Text>
+        {/* Regulatory Info */}
+        {gstNumber && gstNumber !== 'Not Provided' && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Regulatory Info</Text>
+            <View style={styles.infoRow}>
+              <FileText size={18} color="#FFB300" style={styles.infoIcon} />
+              <View>
+                <Text style={styles.infoLabel}>GSTIN / Tax ID</Text>
+                <Text style={[styles.infoValue, { fontWeight: 'bold', color: '#FFB300' }]}>{gstNumber}</Text>
+              </View>
+            </View>
+          </View>
+        )}
 
-          <View style={styles.infoRow}>
-            <FileText size={18} color="#FFB300" style={styles.infoIcon} />
-            <View>
-              <Text style={styles.infoLabel}>GSTIN / Tax ID</Text>
-              <Text style={[styles.infoValue, { fontWeight: 'bold', color: '#FFB300' }]}>{gstNumber}</Text>
-            </View>
+        {/* Payout & Settlements Details (Only show when filled by vendor) */}
+        {((kitchen.bankName && kitchen.accountNumber) || kitchen.upiNumber || kitchen.upiId) ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Payout Account Details</Text>
+
+            {kitchen.bankName && kitchen.accountNumber ? (
+              <View style={styles.infoRow}>
+                <CreditCard size={18} color="#FFB300" style={styles.infoIcon} />
+                <View>
+                  <Text style={styles.infoLabel}>Bank Transfer Account</Text>
+                  <Text style={styles.infoValue}>{kitchen.bankName} - A/C {kitchen.accountNumber}</Text>
+                  {kitchen.ifscCode ? (
+                    <Text style={styles.bankSubtext}>IFSC Code: {kitchen.ifscCode}</Text>
+                  ) : null}
+                </View>
+              </View>
+            ) : null}
+
+            {kitchen.upiNumber || kitchen.upiId ? (
+              <View style={styles.infoRow}>
+                <CreditCard size={18} color="#FFB300" style={styles.infoIcon} />
+                <View>
+                  <Text style={styles.infoLabel}>UPI Settlement Account</Text>
+                  {kitchen.upiNumber ? (
+                    <Text style={styles.infoValue}>UPI Number: {kitchen.upiNumber}</Text>
+                  ) : null}
+                  {kitchen.upiId ? (
+                    <Text style={styles.infoValue}>UPI ID (VPA): {kitchen.upiId}</Text>
+                  ) : null}
+                </View>
+              </View>
+            ) : null}
           </View>
-          
-          <View style={styles.infoRow}>
-            <CreditCard size={18} color="#FFB300" style={styles.infoIcon} />
-            <View>
-              <Text style={styles.infoLabel}>Bank Account Details</Text>
-              <Text style={styles.infoValue}>
-                {kitchen.bankName ? `${kitchen.bankName} - A/C ${kitchen.accountNumber}` : 'SBI A/C 30948576291'}
-              </Text>
-              <Text style={styles.bankSubtext}>
-                IFSC: {kitchen.ifscCode || 'SBIN0001043'}
-              </Text>
-            </View>
-          </View>
-        </View>
+        ) : null}
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Platform Fee Payment Proof</Text>
