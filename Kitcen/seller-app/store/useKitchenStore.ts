@@ -42,6 +42,8 @@ export interface Kitchen {
   utrNumber?: string;
   paymentScreenshot?: string;
   isLive?: boolean;
+  upiNumber?: string;
+  upiId?: string;
 }
 
 export interface OrderItem {
@@ -157,7 +159,9 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
           ifscCode: k.ifscCode,
           utrNumber: k.utrNumber,
           paymentScreenshot: k.paymentScreenshot,
-          isLive: k.isLive
+          isLive: k.isLive,
+          upiNumber: k.upiNumber,
+          upiId: k.upiId
         }));
         set({ kitchens: mappedKitchens, isLoading: false });
       } else {

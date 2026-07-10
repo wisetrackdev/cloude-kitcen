@@ -59,6 +59,8 @@ namespace CloudeKicten.Models
         public string? UtrNumber { get; set; }
         public string? PaymentScreenshot { get; set; }
         public bool IsLive { get; set; } = true;
+        public string? UpiNumber { get; set; }
+        public string? UpiId { get; set; }
     }
 
     public class ProductDb
@@ -177,6 +179,9 @@ namespace CloudeKicten.Models
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
         public string? Avatar { get; set; }
+        public string? Gender { get; set; }
+        public string? Phone { get; set; }
+        public string? Role { get; set; }
     }
 
     public class UserDto

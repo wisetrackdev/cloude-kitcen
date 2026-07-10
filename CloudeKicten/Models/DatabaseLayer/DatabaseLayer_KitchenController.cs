@@ -190,7 +190,9 @@ namespace CloudeKicten.Models.DatabaseLayer
                 CreatedAt = r.GetDateTime(r.GetOrdinal("created_at")),
                 UtrNumber = r.IsDBNull(r.GetOrdinal("utr_number")) ? null : r.GetString(r.GetOrdinal("utr_number")),
                 PaymentScreenshot = r.IsDBNull(r.GetOrdinal("payment_screenshot")) ? null : r.GetString(r.GetOrdinal("payment_screenshot")),
-                IsLive = r.IsDBNull(r.GetOrdinal("is_live")) ? true : r.GetBoolean(r.GetOrdinal("is_live"))
+                IsLive = r.IsDBNull(r.GetOrdinal("is_live")) ? true : r.GetBoolean(r.GetOrdinal("is_live")),
+                UpiNumber = r.IsDBNull(r.GetOrdinal("upi_number")) ? null : r.GetString(r.GetOrdinal("upi_number")),
+                UpiId = r.IsDBNull(r.GetOrdinal("upi_id")) ? null : r.GetString(r.GetOrdinal("upi_id"))
             };
         }
 

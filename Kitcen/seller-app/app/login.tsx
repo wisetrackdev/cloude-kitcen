@@ -26,8 +26,6 @@ type LoginStep = 'email' | 'otp' | 'name' | 'shop_details' | 'payment' | 'pendin
 export default function LoginScreen() {
   const router = useRouter();
   const setAuth = useAuthStore(state => state.setAuth);
-  const fetchKitchens = useKitchenStore(state => state.fetchKitchens);
-  const kitchens = useKitchenStore(state => state.kitchens);
 
   // Flow State
   const [step, setStep] = useState<LoginStep>('email');
@@ -35,8 +33,6 @@ export default function LoginScreen() {
   const [tempToken, setTempToken] = useState('');
   const [tempRefreshToken, setTempRefreshToken] = useState('');
   const [tempUser, setTempUser] = useState<any>(null);
-  const [kitchenStatus, setKitchenStatus] = useState<'pending' | 'rejected'>('pending');
-  const [kitchenId, setKitchenId] = useState('');
   const [showCompleteProfile, setShowCompleteProfile] = useState(false);
 
   // Step Inputs
@@ -47,6 +43,8 @@ export default function LoginScreen() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [profileImage, setProfileImage] = useState('');
+  const [gender, setGender] = useState('Male');
+  const [phoneNumber, setPhoneNumber] = useState('');
 
   // Shop Details Step Inputs
   const [shopName, setShopName] = useState('');
@@ -68,20 +66,29 @@ export default function LoginScreen() {
   const [utrNumber, setUtrNumber] = useState('');
   const [paymentScreenshot, setPaymentScreenshot] = useState('');
 
-  const capturePaymentScreenshot = async (source: 'camera' | 'gallery') => {
+  // Generic Image Selection and Upload Handler
+  const selectImage = async (type: 'profile' | 'banner' | 'logo' | 'payment', source: 'camera' | 'gallery') => {
     try {
       const permissionResult = source === 'camera' 
         ? await ImagePicker.requestCameraPermissionsAsync()
         : await ImagePicker.requestMediaLibraryPermissionsAsync();
 
       if (permissionResult.status !== 'granted') {
-        Alert.alert('Permission Denied', 'Permission is required to select payment proof.');
+        Alert.alert('Permission Denied', 'Permission is required to select photos.');
         return;
       }
 
       const pickerResult = source === 'camera'
-        ? await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 0.8 })
-        : await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, quality: 0.8 });
+        ? await ImagePicker.launchCameraAsync({
+            allowsEditing: true,
+            aspect: type === 'banner' ? [16, 9] : [1, 1],
+            quality: 0.8,
+          })
+        : await ImagePicker.launchImageLibraryAsync({
+            allowsEditing: true,
+            aspect: type === 'banner' ? [16, 9] : [1, 1],
+            quality: 0.8,
+          });
 
       if (!pickerResult.canceled && pickerResult.assets && pickerResult.assets.length > 0) {
         setIsLoading(true);
@@ -89,14 +96,37 @@ export default function LoginScreen() {
         const uploadedUrl = await uploadImageToServer(localUri);
         setIsLoading(false);
         if (uploadedUrl) {
-          setPaymentScreenshot(uploadedUrl);
-          Alert.alert('Uploaded', 'Payment proof screenshot uploaded successfully!');
+          if (type === 'profile') {
+            setProfileImage(uploadedUrl);
+          } else if (type === 'banner') {
+            setShopImage(uploadedUrl);
+          } else if (type === 'logo') {
+            setShopLogo(uploadedUrl);
+          } else if (type === 'payment') {
+            setPaymentScreenshot(uploadedUrl);
+          }
+          Alert.alert('Uploaded', 'Image uploaded successfully!');
+        } else {
+          Alert.alert('Error', 'Image upload failed. Please try again.');
         }
       }
     } catch (err) {
       setIsLoading(false);
-      Alert.alert('Error', 'Failed to upload payment proof');
+      console.warn('Image selection failed:', err);
+      Alert.alert('Error', 'Failed to pick or upload image.');
     }
+  };
+
+  const requestImageSource = (type: 'profile' | 'banner' | 'logo' | 'payment') => {
+    Alert.alert(
+      'Upload Photo',
+      'Select source:',
+      [
+        { text: 'Camera', onPress: () => selectImage(type, 'camera') },
+        { text: 'Gallery', onPress: () => selectImage(type, 'gallery') },
+        { text: 'Cancel', style: 'cancel' }
+      ]
+    );
   };
 
   const handleProceedToPayment = async () => {
@@ -113,8 +143,8 @@ export default function LoginScreen() {
         if (json.success && Array.isArray(json.data)) {
           const admin = json.data.find((u: any) => u.role === 'superadmin');
           if (admin) {
-            setAdminUpiNumber(admin.upiNumber || '9999900000');
-            setAdminUpiId(admin.upiId || 'admin@paytm');
+            setAdminUpiNumber(admin.upiNumber || '8527430152');
+            setAdminUpiId(admin.upiId || '8527430152@slc');
           }
         }
       }
@@ -168,59 +198,6 @@ export default function LoginScreen() {
     } catch (err: any) {
       console.warn('Location detection failed:', err.message);
       setLocationAddress('Failed to detect location. Tap to retry.');
-    }
-  };
-
-  // Capture Image/Logo via Camera
-  const captureImage = async (type: 'banner' | 'logo') => {
-    try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Camera permissions are required to take a picture of your shop.');
-        return;
-      }
-
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: type === 'banner' ? [16, 9] : [1, 1],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const localUri = result.assets[0].uri;
-        if (type === 'banner') {
-          setShopImage(localUri);
-        } else {
-          setShopLogo(localUri);
-        }
-      }
-    } catch (err) {
-      console.warn('Camera failed:', err);
-      Alert.alert('Camera Error', 'Could not open camera.');
-    }
-  };
-
-  // Capture Profile Image via Camera
-  const captureProfileImage = async () => {
-    try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Camera permissions are required to take a profile picture.');
-        return;
-      }
-
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        setProfileImage(result.assets[0].uri);
-      }
-    } catch (err) {
-      console.warn('Camera failed:', err);
-      Alert.alert('Camera Error', 'Could not open camera.');
     }
   };
 
@@ -342,11 +319,9 @@ export default function LoginScreen() {
         );
         
         if (!userKitchen) {
-          // No kitchen found -> go directly to Shop Details registration to fill form
           setIsLoading(false);
           setStep('shop_details');
         } else {
-          // Log in and route to fingerprint, dashboard will handle pending/rejected view dynamically
           setAuth(token, tempRefreshToken || 'mock_refresh', {
             id: user.id,
             name: user.name,
@@ -367,18 +342,17 @@ export default function LoginScreen() {
       console.error('Failed to check user kitchen status:', err);
       setIsLoading(false);
       if (token === 'mock_token') {
-        setKitchenStatus('pending');
-        setStep('pending_approval');
+        setStep('shop_details');
       } else {
         setStep('shop_details');
       }
     }
   };
 
-  // Step 3: Name Registration (POST complete-profile)
+  // Step 3: Name & Basic Profile Registration (POST complete-profile)
   const handleRegisterName = async () => {
-    if (!firstName.trim() || !lastName.trim() || !profileImage) {
-      Alert.alert('Error', 'First Name, Last Name, and Profile Photo are mandatory.');
+    if (!firstName.trim() || !lastName.trim() || !profileImage || !phoneNumber.trim()) {
+      Alert.alert('Error', 'First Name, Last Name, Gender, Mobile Number, and Profile Photo are all mandatory.');
       return;
     }
 
@@ -391,14 +365,16 @@ export default function LoginScreen() {
           userId: tempUser.id,
           firstName: firstName.trim(),
           lastName: lastName.trim(),
-          avatar: profileImage || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'
+          avatar: profileImage,
+          gender: gender,
+          phone: phoneNumber.trim(),
+          role: 'vendor'
         })
       });
       const json = await res.json();
       if (json.success) {
         const updatedUser = json.data;
         setTempUser(updatedUser);
-        // Proceed to check kitchen onboarding
         await checkUserKitchen(tempToken, updatedUser);
       } else {
         setIsLoading(false);
@@ -410,7 +386,10 @@ export default function LoginScreen() {
       const updatedUser = { 
         ...tempUser, 
         name: `${firstName.trim()} ${lastName.trim()}`, 
-        avatar: profileImage || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80' 
+        avatar: profileImage,
+        phone: phoneNumber.trim(),
+        gender: gender,
+        role: 'vendor'
       };
       setTempUser(updatedUser);
       await checkUserKitchen(tempToken, updatedUser);
@@ -424,13 +403,13 @@ export default function LoginScreen() {
       return;
     }
     if (!paymentScreenshot) {
-      Alert.alert('Error', 'Please upload or capture a payment screenshot proof.');
+      Alert.alert('Error', 'Please upload or select a payment screenshot proof.');
       return;
     }
 
     setIsLoading(true);
     try {
-      // 1. Verify Platform Fee Payment via backend
+      // 1. Verify Platform Fee Payment via backend (Must confirm)
       const verifyRes = await fetch(`${API_BASE_URL}/api/wallet/payments/verify`, {
         method: 'POST',
         headers: {
@@ -445,21 +424,23 @@ export default function LoginScreen() {
         })
       });
 
-      if (!verifyRes.ok) {
-        const verifyJson = await verifyRes.json();
+      const verifyJson = await verifyRes.json();
+      if (!verifyRes.ok || !verifyJson.success) {
         setIsLoading(false);
-        Alert.alert('Payment Verification Failed', verifyJson.message || 'The entered UTR number could not be verified.');
+        Alert.alert('Payment Not Confirmed', 'Payment is not confirmed. Please check your transaction UTR number and try again.');
         return;
       }
     } catch (verifyErr: any) {
-      console.warn('Verify payment offline fallback:', verifyErr);
-      // Fallback in case backend is offline
+      console.warn('Verify payment failed:', verifyErr);
+      setIsLoading(false);
+      Alert.alert('Payment Not Confirmed', 'Could not confirm payment verification. Please try again.');
+      return;
     }
 
     const completeAddress = `${shopAddress.trim()}, Floor: ${shopFloor.trim()}, Gali/Office: ${shopGaliNumber.trim()}, State: ${shopState.trim()}, PinCode: ${shopPincode.trim()} | GST: ${shopGst.trim()}`;
     
     try {
-      // POST new kitchen request to backend (initially pending, is_live=false)
+      // POST new kitchen request to backend (initially pending)
       const res = await fetch(`${API_BASE_URL}/api/kitchens`, {
         method: 'POST',
         headers: { 
@@ -491,14 +472,12 @@ export default function LoginScreen() {
       setIsLoading(false);
 
       if (json.success) {
-        setKitchenId(json.data.id);
-        setKitchenStatus('pending');
         // Log in immediately and redirect to fingerprint setup
         setAuth(tempToken, tempRefreshToken || 'mock_refresh', {
           id: tempUser.id,
           name: tempUser.name || `${firstName.trim()} ${lastName.trim()}`,
           email: tempUser.email,
-          phone: tempUser.phone || '',
+          phone: tempUser.phone || phoneNumber.trim() || '',
           avatar: tempUser.avatar || profileImage || '',
           role: 'vendor',
           rewardPoints: tempUser.rewardPoints || 0
@@ -513,12 +492,11 @@ export default function LoginScreen() {
       console.error('Shop registration failed, doing offline fallback:', err);
       setIsLoading(false);
       // Demo fallback
-      setKitchenStatus('pending');
       setAuth(tempToken || 'mock_token', tempRefreshToken || 'mock_refresh', {
         id: tempUser?.id || 'usr-chef-9281',
         name: tempUser?.name || `${firstName.trim()} ${lastName.trim()}`,
         email: email,
-        phone: '',
+        phone: phoneNumber.trim(),
         avatar: profileImage || '',
         role: 'vendor',
         rewardPoints: 10
@@ -533,7 +511,7 @@ export default function LoginScreen() {
 
   if (isFormStep) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#F5F6F8' }}>
+      <View style={{ flex: 1, backgroundColor: '#F5F5F7' }}>
         {/* Fixed Header */}
         <View style={{ 
           backgroundColor: '#FFCC00', 
@@ -556,10 +534,10 @@ export default function LoginScreen() {
             <ChefHat size={28} color="#000" style={{ marginRight: 10 }} />
             <View>
               <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#000' }}>
-                {step === 'shop_details' ? 'Shop Registration' : 'Platform Payment'}
+                {step === 'shop_details' ? 'Shop Details' : 'Platform Payment'}
               </Text>
               <Text style={{ fontSize: 11, color: 'rgba(0,0,0,0.6)' }}>
-                {step === 'shop_details' ? 'Enter your kitchen outlet info' : 'Pay platform activation fee'}
+                {step === 'shop_details' ? 'Enter shop outlet information' : 'Pay platform onboarding fee'}
               </Text>
             </View>
           </View>
@@ -605,14 +583,14 @@ export default function LoginScreen() {
                   <View style={styles.imagePlaceholder}>
                     <Text style={styles.imagePlaceholderText}>Shop Banner Image</Text>
                     {shopImage ? (
-                      <Text style={styles.imagePlaceholderSubText} numberOfLines={1}>✓ Clicked: {shopImage.substring(shopImage.lastIndexOf('/') + 1)}</Text>
+                      <Text style={styles.imagePlaceholderSubText} numberOfLines={1}>✓ Uploaded: {shopImage.substring(shopImage.lastIndexOf('/') + 1)}</Text>
                     ) : (
-                      <Text style={styles.imagePlaceholderSubText}>No photo captured</Text>
+                      <Text style={styles.imagePlaceholderSubText}>No banner uploaded</Text>
                     )}
                   </View>
-                  <TouchableOpacity style={styles.captureBtn} onPress={() => captureImage('banner')}>
+                  <TouchableOpacity style={styles.captureBtn} onPress={() => requestImageSource('banner')}>
                     <Camera size={14} color={theme.colors.primary} style={{ marginRight: 6 }} />
-                    <Text style={styles.captureBtnText}>Open Camera</Text>
+                    <Text style={styles.captureBtnText}>Select Banner</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -621,14 +599,14 @@ export default function LoginScreen() {
                   <View style={styles.imagePlaceholder}>
                     <Text style={styles.imagePlaceholderText}>Shop Logo / Avatar</Text>
                     {shopLogo ? (
-                      <Text style={styles.imagePlaceholderSubText} numberOfLines={1}>✓ Clicked: {shopLogo.substring(shopLogo.lastIndexOf('/') + 1)}</Text>
+                      <Text style={styles.imagePlaceholderSubText} numberOfLines={1}>✓ Uploaded: {shopLogo.substring(shopLogo.lastIndexOf('/') + 1)}</Text>
                     ) : (
-                      <Text style={styles.imagePlaceholderSubText}>No photo captured</Text>
+                      <Text style={styles.imagePlaceholderSubText}>No logo uploaded</Text>
                     )}
                   </View>
-                  <TouchableOpacity style={styles.captureBtn} onPress={() => captureImage('logo')}>
+                  <TouchableOpacity style={styles.captureBtn} onPress={() => requestImageSource('logo')}>
                     <Camera size={14} color={theme.colors.primary} style={{ marginRight: 6 }} />
-                    <Text style={styles.captureBtnText}>Open Camera</Text>
+                    <Text style={styles.captureBtnText}>Select Logo</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -712,8 +690,8 @@ export default function LoginScreen() {
                   />
                 </View>
 
-                <TouchableOpacity style={styles.loginBtn} onPress={handleProceedToPayment}>
-                  <Text style={styles.loginBtnText}>Proceed to Payment (Next)</Text>
+                <TouchableOpacity style={styles.primaryBtn} onPress={handleProceedToPayment}>
+                  <Text style={styles.primaryBtnText}>Proceed to Payment (Next)</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -789,22 +767,10 @@ export default function LoginScreen() {
                       <Text style={styles.imagePlaceholderSubText}>Capture photo or select receipt</Text>
                     )}
                   </View>
-                  <View style={{ flexDirection: 'row' }}>
-                    <TouchableOpacity 
-                      style={[styles.captureBtn, { marginRight: 6 }]} 
-                      onPress={() => capturePaymentScreenshot('camera')}
-                    >
-                      <Camera size={12} color={theme.colors.primary} style={{ marginRight: 4 }} />
-                      <Text style={[styles.captureBtnText, { fontSize: 10 }]}>Camera</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={styles.captureBtn} 
-                      onPress={() => capturePaymentScreenshot('gallery')}
-                    >
-                      <Upload size={12} color={theme.colors.primary} style={{ marginRight: 4 }} />
-                      <Text style={[styles.captureBtnText, { fontSize: 10 }]}>Gallery</Text>
-                    </TouchableOpacity>
-                  </View>
+                  <TouchableOpacity style={styles.captureBtn} onPress={() => requestImageSource('payment')}>
+                    <Camera size={14} color={theme.colors.primary} style={{ marginRight: 6 }} />
+                    <Text style={styles.captureBtnText}>Upload Proof</Text>
+                  </TouchableOpacity>
                 </View>
 
                 {paymentScreenshot ? (
@@ -815,8 +781,8 @@ export default function LoginScreen() {
                   />
                 ) : null}
 
-                <TouchableOpacity style={styles.loginBtn} onPress={handleRegisterShop}>
-                  <Text style={styles.loginBtnText}>Save & Submit Registration</Text>
+                <TouchableOpacity style={styles.primaryBtn} onPress={handleRegisterShop}>
+                  <Text style={styles.primaryBtnText}>Save & Submit Registration</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -826,15 +792,20 @@ export default function LoginScreen() {
     );
   }
 
-  // Otherwise, default centered layout for email / otp / pending_approval
+  // Otherwise, default matching customer app login style
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-      <View style={styles.card}>
-        <View style={styles.header}>
-          <ChefHat size={48} color={theme.colors.primary} />
-          <Text style={styles.title}>Clude Partner</Text>
-          <Text style={styles.subtitle}>Kitchen & Housewife Tiffin Workspace</Text>
-        </View>
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.replace('/')}>
+          <ArrowLeft size={20} color="#FFF" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Partner Account</Text>
+        <View style={{ width: 36 }} />
+      </View>
+
+      <View style={styles.formContainer}>
+        <Text style={styles.title}>Clude Partner</Text>
+        <Text style={styles.subtitle}>Log in to manage kitchen and thali orders</Text>
 
         {isLoading && (
           <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginBottom: 20 }} />
@@ -842,9 +813,9 @@ export default function LoginScreen() {
 
         {/* STEP 1: Enter Email */}
         {step === 'email' && (
-          <View style={styles.form}>
+          <View style={styles.fieldSection}>
             <View style={styles.inputWrapper}>
-              <Mail size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />
+              <Mail size={16} color={theme.colors.textSecondary} />
               <TextInput
                 placeholder="Partner Email Address"
                 placeholderTextColor="#888"
@@ -852,21 +823,21 @@ export default function LoginScreen() {
                 keyboardType="email-address"
                 value={email}
                 onChangeText={setEmail}
-                style={styles.inputField}
+                style={styles.input}
               />
             </View>
 
-            <TouchableOpacity style={styles.loginBtn} onPress={handleRequestOtp}>
-              <Text style={styles.loginBtnText}>Send OTP via Email</Text>
+            <TouchableOpacity style={styles.primaryBtn} onPress={handleRequestOtp}>
+              <Text style={styles.primaryBtnText}>Send OTP via Email</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        {/* STEP 2: Enter OTP */}
+        {/* STEP 2: Enter OTP / Complete Profile */}
         {step === 'otp' && (
-          <View style={styles.form}>
+          <View style={styles.fieldSection}>
             <View style={styles.inputWrapper}>
-              <Key size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />
+              <Key size={16} color={theme.colors.textSecondary} />
               <TextInput
                 placeholder="Enter 6-digit OTP code"
                 placeholderTextColor="#888"
@@ -874,60 +845,115 @@ export default function LoginScreen() {
                 value={otpCode}
                 onChangeText={setOtpCode}
                 editable={!showCompleteProfile}
-                style={[styles.inputField, showCompleteProfile && { opacity: 0.6 }]}
+                style={[styles.input, showCompleteProfile && { opacity: 0.6 }]}
               />
             </View>
 
             {showCompleteProfile ? (
-              <View style={{ width: '100%', marginTop: 15 }}>
-                <Text style={styles.stepTitle}>Let's set up your profile</Text>
+              <ScrollView style={{ width: '100%', maxHeight: 380, marginTop: 10 }} showsVerticalScrollIndicator={false}>
+                <Text style={{ color: theme.colors.primary, fontWeight: 'bold', fontSize: 16, marginBottom: 12 }}>
+                  Complete Profile
+                </Text>
                 
                 <View style={styles.inputWrapper}>
-                  <User size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />
+                  <User size={16} color={theme.colors.textSecondary} />
                   <TextInput
                     placeholder="First Name"
                     placeholderTextColor="#888"
                     value={firstName}
                     onChangeText={setFirstName}
-                    style={styles.inputField}
+                    style={styles.input}
                   />
                 </View>
 
                 <View style={styles.inputWrapper}>
-                  <User size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />
+                  <User size={16} color={theme.colors.textSecondary} />
                   <TextInput
                     placeholder="Last Name"
                     placeholderTextColor="#888"
                     value={lastName}
                     onChangeText={setLastName}
-                    style={styles.inputField}
+                    style={styles.input}
                   />
                 </View>
 
-                {/* Profile Photo Capture */}
-                <View style={styles.captureContainer}>
-                  <View style={styles.imagePlaceholder}>
-                    <Text style={styles.imagePlaceholderText}>Profile Photo</Text>
-                    {profileImage ? (
-                      <Text style={styles.imagePlaceholderSubText} numberOfLines={1}>✓ Clicked: {profileImage.substring(profileImage.lastIndexOf('/') + 1)}</Text>
-                    ) : (
-                      <Text style={styles.imagePlaceholderSubText}>No photo captured</Text>
-                    )}
-                  </View>
-                  <TouchableOpacity style={styles.captureBtn} onPress={captureProfileImage}>
-                    <Camera size={14} color={theme.colors.primary} style={{ marginRight: 6 }} />
-                    <Text style={styles.captureBtnText}>Open Camera</Text>
+                {/* Mobile Phone Number */}
+                <View style={styles.inputWrapper}>
+                  <Smartphone size={16} color={theme.colors.textSecondary} />
+                  <TextInput
+                    placeholder="Mobile Number"
+                    placeholderTextColor="#888"
+                    keyboardType="phone-pad"
+                    value={phoneNumber}
+                    onChangeText={setPhoneNumber}
+                    style={styles.input}
+                  />
+                </View>
+
+                {/* Gender selection */}
+                <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#666', marginBottom: 8, paddingHorizontal: 4 }}>
+                  Gender
+                </Text>
+                <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16, paddingHorizontal: 4 }}>
+                  {['Male', 'Female'].map((g) => (
+                    <TouchableOpacity
+                      key={g}
+                      onPress={() => setGender(g)}
+                      style={{
+                        flex: 1,
+                        paddingVertical: 10,
+                        backgroundColor: gender === g ? '#FFB300' : '#FFF',
+                        borderWidth: 1,
+                        borderColor: gender === g ? '#FFB300' : '#EAEAEA',
+                        borderRadius: 10,
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text style={{ fontSize: 12, fontWeight: 'bold', color: gender === g ? '#FFF' : '#333' }}>
+                        {g}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {/* Profile Photo Selector */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginVertical: 10, paddingHorizontal: 4 }}>
+                  {profileImage ? (
+                    <Text style={{ color: '#2ecc71', fontSize: 13, fontWeight: 'bold' }}>✓ Profile Photo Selected</Text>
+                  ) : (
+                    <Text style={{ color: '#888', fontSize: 13 }}>No photo selected</Text>
+                  )}
+                  <TouchableOpacity 
+                    style={{ 
+                      flexDirection: 'row', 
+                      alignItems: 'center', 
+                      backgroundColor: '#2c2c2c', 
+                      paddingHorizontal: 12, 
+                      paddingVertical: 8, 
+                      borderRadius: 8
+                    }} 
+                    onPress={() => requestImageSource('profile')}
+                  >
+                    <Camera size={14} color="#FFF" style={{ marginRight: 6 }} />
+                    <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold' }}>Select Photo</Text>
                   </TouchableOpacity>
                 </View>
 
-                <TouchableOpacity style={[styles.loginBtn, { marginTop: 15 }]} onPress={handleRegisterName}>
-                  <Text style={styles.loginBtnText}>Continue to Shop Details</Text>
+                {profileImage ? (
+                  <Image 
+                    source={{ uri: profileImage }}
+                    style={{ width: 80, height: 80, borderRadius: 40, alignSelf: 'center', marginVertical: 8, borderWidth: 1, borderColor: '#EAEAEA' }}
+                  />
+                ) : null}
+
+                <TouchableOpacity style={[styles.primaryBtn, { marginTop: 15 }]} onPress={handleRegisterName}>
+                  <Text style={styles.primaryBtnText}>Continue to Shop Details</Text>
                 </TouchableOpacity>
-              </View>
+              </ScrollView>
             ) : (
               <>
-                <TouchableOpacity style={styles.loginBtn} onPress={handleVerifyOtp}>
-                  <Text style={styles.loginBtnText}>Verify & Log In</Text>
+                <TouchableOpacity style={styles.primaryBtn} onPress={handleVerifyOtp}>
+                  <Text style={styles.primaryBtnText}>Verify & Log In</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity onPress={() => { setStep('email'); setOtpCode(''); }}>
@@ -938,41 +964,66 @@ export default function LoginScreen() {
           </View>
         )}
       </View>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
-    backgroundColor: '#F5F6F8',
+    flex: 1,
+    backgroundColor: '#FFCC00', // Gold-yellow top header background
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 35,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    alignItems: 'center',
     justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFF',
+  },
+  formContainer: {
+    flex: 1,
+    backgroundColor: '#F5F5F7', // Rounded white body card
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
     padding: 24,
-    paddingTop: 50,
+    paddingTop: 40,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#FFB300', // Primary orange theme
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 13,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 8,
+    marginBottom: 30,
+  },
+  fieldSection: {
   },
   card: {
     width: '100%',
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 24,
+    padding: 20,
     borderWidth: 1,
     borderColor: '#EAEAEA',
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1E2022',
-    marginTop: 16,
-  },
-  subtitle: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-    marginTop: 4,
-    textAlign: 'center',
   },
   form: {
     width: '100%',
@@ -987,25 +1038,36 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F0F2F4',
+    backgroundColor: '#FFF',
     borderWidth: 1,
     borderColor: '#EAEAEA',
-    borderRadius: 12,
+    borderRadius: 14,
     paddingHorizontal: 16,
+    paddingVertical: 12,
     marginBottom: 16,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.02,
+    shadowRadius: 2,
+    elevation: 1,
   },
   inputIcon: {
     marginRight: 12,
   },
+  input: {
+    flex: 1,
+    color: '#333',
+    fontSize: 13,
+    marginLeft: 12,
+  },
   inputField: {
     flex: 1,
-    paddingVertical: 16,
     color: '#1E2022',
     fontSize: 13,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   locationContainer: {
     flexDirection: 'row',
@@ -1034,49 +1096,29 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 8,
   },
-  loginBtn: {
-    backgroundColor: theme.colors.primary,
-    borderRadius: 12,
-    paddingVertical: 16,
+  primaryBtn: {
+    backgroundColor: '#FFB300', // Primary orange theme button
+    borderRadius: 14,
+    paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 8,
+    marginVertical: 12,
+    shadowColor: '#FFB300',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    elevation: 3,
   },
-  loginBtnText: {
-    fontSize: 13,
+  primaryBtnText: {
+    fontSize: 14,
     fontWeight: 'bold',
-    color: '#000',
+    color: '#FFF',
   },
   toggleText: {
     fontSize: 12,
-    color: theme.colors.primary,
+    color: '#FFB300',
     fontWeight: 'bold',
     textAlign: 'center',
-    marginTop: 16,
-  },
-  approvalSection: {
-    alignItems: 'center',
-    paddingVertical: 20,
-  },
-  approvalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: theme.colors.warning,
-    marginBottom: 12,
-  },
-  approvalText: {
-    fontSize: 13,
-    color: '#1E2022',
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 10,
-  },
-  approvalSubtext: {
-    fontSize: 11,
-    color: theme.colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 18,
-    marginBottom: 30,
-    paddingHorizontal: 10,
+    marginTop: 10,
   },
   captureContainer: {
     flexDirection: 'row',

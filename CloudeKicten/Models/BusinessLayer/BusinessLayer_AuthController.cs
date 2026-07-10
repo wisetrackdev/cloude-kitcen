@@ -205,6 +205,22 @@ namespace CloudeKicten.Models.BusinessLayer
             {
                 user.Avatar = dto.Avatar;
             }
+            if (!string.IsNullOrEmpty(dto.Gender))
+            {
+                user.Gender = dto.Gender;
+            }
+            if (!string.IsNullOrEmpty(dto.Phone))
+            {
+                user.Phone = dto.Phone;
+                // Also set UPI number/ID initially to mobile/UPI if not set
+                if (string.IsNullOrEmpty(user.UpiNumber)) user.UpiNumber = dto.Phone;
+                if (string.IsNullOrEmpty(user.UpiId)) user.UpiId = dto.Phone + "@paytm";
+            }
+            if (!string.IsNullOrEmpty(dto.Role))
+            {
+                user.Role = dto.Role;
+            }
+            user.IsVerified = true;
 
             // Mark as verified on the database
             await _databaseLayer.ClearUserOtpAsync(user.Email);

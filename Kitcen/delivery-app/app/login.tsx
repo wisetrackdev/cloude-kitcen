@@ -6,21 +6,26 @@ import {
   TextInput, 
   TouchableOpacity, 
   Alert,
-  ActivityIndicator 
+  ActivityIndicator,
+  ScrollView,
+  Image
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Navigation, Mail, Key, Camera, User, MapPin } from 'lucide-react-native';
+import { Mail, Key, Camera, User, MapPin, ArrowLeft } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { theme } from '../styles/theme';
 import { useAuthStore } from '../store/useAuthStore';
 import { API_BASE_URL } from '../store/apiConfig';
+import { uploadImageToServer } from '../store/uploadHelper';
+
+type LoginStep = 'email' | 'otp';
 
 export default function RiderLoginScreen() {
   const router = useRouter();
   const setAuth = useAuthStore(state => state.setAuth);
 
   const [email, setEmail] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
+  const [step, setStep] = useState<LoginStep>('email');
   const [otpCode, setOtpCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -33,6 +38,52 @@ export default function RiderLoginScreen() {
   const [tempToken, setTempToken] = useState('');
   const [tempRefreshToken, setTempRefreshToken] = useState('');
   const [tempUser, setTempUser] = useState<any>(null);
+
+  // Select Image (Camera or Gallery)
+  const selectProfileImage = async (source: 'camera' | 'gallery') => {
+    try {
+      const permissionResult = source === 'camera' 
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (permissionResult.status !== 'granted') {
+        Alert.alert('Permission Denied', 'Permission is required to choose a profile photo.');
+        return;
+      }
+
+      const pickerResult = source === 'camera'
+        ? await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [1, 1], quality: 0.8 })
+        : await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, aspect: [1, 1], quality: 0.8 });
+
+      if (!pickerResult.canceled && pickerResult.assets && pickerResult.assets.length > 0) {
+        setIsLoading(true);
+        const localUri = pickerResult.assets[0].uri;
+        const uploadedUrl = await uploadImageToServer(localUri);
+        setIsLoading(false);
+        if (uploadedUrl) {
+          setAvatar(uploadedUrl);
+          Alert.alert('Uploaded', 'Profile photo uploaded successfully!');
+        } else {
+          Alert.alert('Error', 'Image upload failed. Please try again.');
+        }
+      }
+    } catch (err) {
+      setIsLoading(false);
+      Alert.alert('Error', 'Failed to pick or upload profile picture.');
+    }
+  };
+
+  const requestProfileImage = () => {
+    Alert.alert(
+      'Profile Photo Source',
+      'Select source:',
+      [
+        { text: 'Camera', onPress: () => selectProfileImage('camera') },
+        { text: 'Gallery', onPress: () => selectProfileImage('gallery') },
+        { text: 'Cancel', style: 'cancel' }
+      ]
+    );
+  };
 
   // Email OTP - Requesting OTP code
   const handleRequestOtp = async () => {
@@ -53,7 +104,7 @@ export default function RiderLoginScreen() {
       setIsLoading(false);
 
       if (json.success) {
-        setOtpSent(true);
+        setStep('otp');
         Alert.alert('OTP Sent', json.message);
       } else {
         Alert.alert('Error', json.message || 'Failed to request OTP');
@@ -63,32 +114,8 @@ export default function RiderLoginScreen() {
       setIsLoading(false);
       
       // Fallback behavior
-      setOtpSent(true);
+      setStep('otp');
       Alert.alert('Offline Mode', 'API offline. Using simulated OTP: "123456"');
-    }
-  };
-
-  // Capture Profile Image via Camera
-  const captureProfileImage = async () => {
-    try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Camera permissions are required to take a profile picture.');
-        return;
-      }
-
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        setAvatar(result.assets[0].uri);
-      }
-    } catch (err) {
-      console.warn('Camera failed:', err);
-      Alert.alert('Camera Error', 'Could not open camera.');
     }
   };
 
@@ -290,20 +317,25 @@ export default function RiderLoginScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Navigation size={48} color={theme.colors.primary} />
-        <Text style={styles.title}>Clude Rider</Text>
-        <Text style={styles.subtitle}>Delivery Partner Workspace</Text>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.replace('/')}>
+          <ArrowLeft size={20} color="#FFF" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Rider Login</Text>
+        <View style={{ width: 36 }} />
       </View>
 
-      <View style={styles.form}>
+      <View style={styles.formContainer}>
+        <Text style={styles.title}>Clude Rider</Text>
+        <Text style={styles.subtitle}>Delivery Partner Workspace Panel</Text>
+
         {isLoading && (
           <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginBottom: 20 }} />
         )}
 
-        {!otpSent ? (
-          <>
+        {step === 'email' && (
+          <View style={styles.fieldSection}>
             <View style={styles.inputWrapper}>
-              <Mail size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />
+              <Mail size={16} color={theme.colors.textSecondary} />
               <TextInput
                 placeholder="Rider Email Address"
                 placeholderTextColor="#888"
@@ -311,116 +343,115 @@ export default function RiderLoginScreen() {
                 keyboardType="email-address"
                 value={email}
                 onChangeText={setEmail}
-                style={styles.inputField}
+                style={styles.input}
               />
             </View>
 
-            <TouchableOpacity style={styles.loginBtn} onPress={handleRequestOtp}>
-              <Text style={styles.loginBtnText}>Send OTP via Email</Text>
+            <TouchableOpacity style={styles.primaryBtn} onPress={handleRequestOtp}>
+              <Text style={styles.primaryBtnText}>Send OTP via Email</Text>
             </TouchableOpacity>
-          </>
-        ) : showCompleteProfile ? (
-          <>
+          </View>
+        )}
+
+        {step === 'otp' && (
+          <View style={styles.fieldSection}>
             <View style={styles.inputWrapper}>
-              <Key size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />
-              <TextInput
-                placeholder="Enter 6-digit OTP code"
-                placeholderTextColor="#888"
-                keyboardType="numeric"
-                value={otpCode}
-                editable={false}
-                style={[styles.inputField, { opacity: 0.6 }]}
-              />
-            </View>
-
-            {/* Profile Completion Form (Expands below OTP input) */}
-            <View style={{ width: '100%', marginTop: 10 }}>
-              <Text style={{ color: theme.colors.primary, fontWeight: 'bold', fontSize: 16, marginBottom: 12 }}>
-                Complete Rider Profile
-              </Text>
-              
-              <View style={styles.inputWrapper}>
-                <User size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />
-                <TextInput
-                  placeholder="First Name"
-                  placeholderTextColor="#888"
-                  value={firstName}
-                  onChangeText={setFirstName}
-                  style={styles.inputField}
-                />
-              </View>
-
-              <View style={styles.inputWrapper}>
-                <User size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />
-                <TextInput
-                  placeholder="Last Name"
-                  placeholderTextColor="#888"
-                  value={lastName}
-                  onChangeText={setLastName}
-                  style={styles.inputField}
-                />
-              </View>
-
-              <View style={styles.inputWrapper}>
-                <MapPin size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />
-                <TextInput
-                  placeholder="Preferred Delivery Zone (e.g. Bandra, Andheri)"
-                  placeholderTextColor="#888"
-                  value={deliveryZone}
-                  onChangeText={setDeliveryZone}
-                  style={styles.inputField}
-                />
-              </View>
-
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginVertical: 10, paddingHorizontal: 4 }}>
-                {avatar ? (
-                  <Text style={{ color: '#2ecc71', fontSize: 13, fontWeight: 'bold' }}>✓ Profile Photo Captured</Text>
-                ) : (
-                  <Text style={{ color: '#888', fontSize: 13 }}>No photo captured</Text>
-                )}
-                <TouchableOpacity 
-                  style={{ 
-                    flexDirection: 'row', 
-                    alignItems: 'center', 
-                    backgroundColor: '#2c2c2c', 
-                    paddingHorizontal: 12, 
-                    paddingVertical: 8, 
-                    borderRadius: 6 
-                  }} 
-                  onPress={captureProfileImage}
-                >
-                  <Camera size={14} color="#FFF" style={{ marginRight: 6 }} />
-                  <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold' }}>Click Photo</Text>
-                </TouchableOpacity>
-              </View>
-
-              <TouchableOpacity style={[styles.loginBtn, { marginTop: 10 }]} onPress={handleCompleteProfile}>
-                <Text style={styles.loginBtnText}>Complete Profile & Register</Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        ) : (
-          <>
-            <View style={styles.inputWrapper}>
-              <Key size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />
+              <Key size={16} color={theme.colors.textSecondary} />
               <TextInput
                 placeholder="Enter 6-digit OTP code"
                 placeholderTextColor="#888"
                 keyboardType="numeric"
                 value={otpCode}
                 onChangeText={setOtpCode}
-                style={styles.inputField}
+                editable={!showCompleteProfile}
+                style={[styles.input, showCompleteProfile && { opacity: 0.6 }]}
               />
             </View>
 
-            <TouchableOpacity style={styles.loginBtn} onPress={handleVerifyOtp}>
-              <Text style={styles.loginBtnText}>Verify & Log In</Text>
-            </TouchableOpacity>
+            {showCompleteProfile ? (
+              <ScrollView style={{ width: '100%', maxHeight: 380, marginTop: 10 }} showsVerticalScrollIndicator={false}>
+                <Text style={{ color: theme.colors.primary, fontWeight: 'bold', fontSize: 16, marginBottom: 12 }}>
+                  Complete Rider Profile
+                </Text>
+                
+                <View style={styles.inputWrapper}>
+                  <User size={16} color={theme.colors.textSecondary} />
+                  <TextInput
+                    placeholder="First Name"
+                    placeholderTextColor="#888"
+                    value={firstName}
+                    onChangeText={setFirstName}
+                    style={styles.input}
+                  />
+                </View>
 
-            <TouchableOpacity onPress={() => { setOtpSent(false); setOtpCode(''); }}>
-              <Text style={styles.toggleText}>Resend OTP / Change Email</Text>
-            </TouchableOpacity>
-          </>
+                <View style={styles.inputWrapper}>
+                  <User size={16} color={theme.colors.textSecondary} />
+                  <TextInput
+                    placeholder="Last Name"
+                    placeholderTextColor="#888"
+                    value={lastName}
+                    onChangeText={setLastName}
+                    style={styles.input}
+                  />
+                </View>
+
+                <View style={styles.inputWrapper}>
+                  <MapPin size={16} color={theme.colors.textSecondary} />
+                  <TextInput
+                    placeholder="Preferred Delivery Zone (e.g. Noida)"
+                    placeholderTextColor="#888"
+                    value={deliveryZone}
+                    onChangeText={setDeliveryZone}
+                    style={styles.input}
+                  />
+                </View>
+
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginVertical: 10, paddingHorizontal: 4 }}>
+                  {avatar ? (
+                    <Text style={{ color: '#2ecc71', fontSize: 13, fontWeight: 'bold' }}>✓ Profile Photo Uploaded</Text>
+                  ) : (
+                    <Text style={{ color: '#888', fontSize: 13 }}>No photo selected</Text>
+                  )}
+                  <TouchableOpacity 
+                    style={{ 
+                      flexDirection: 'row', 
+                      alignItems: 'center', 
+                      backgroundColor: '#2c2c2c', 
+                      paddingHorizontal: 12, 
+                      paddingVertical: 8, 
+                      borderRadius: 8
+                    }} 
+                    onPress={requestProfileImage}
+                  >
+                    <Camera size={14} color="#FFF" style={{ marginRight: 6 }} />
+                    <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold' }}>Select Photo</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {avatar ? (
+                  <Image 
+                    source={{ uri: avatar }}
+                    style={{ width: 80, height: 80, borderRadius: 40, alignSelf: 'center', marginVertical: 8, borderWidth: 1, borderColor: '#EAEAEA' }}
+                  />
+                ) : null}
+
+                <TouchableOpacity style={[styles.primaryBtn, { marginTop: 15 }]} onPress={handleCompleteProfile}>
+                  <Text style={styles.primaryBtnText}>Complete Profile & Register</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            ) : (
+              <>
+                <TouchableOpacity style={styles.primaryBtn} onPress={handleVerifyOtp}>
+                  <Text style={styles.primaryBtnText}>Verify & Log In</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={() => { setStep('email'); setOtpCode(''); }}>
+                  <Text style={styles.toggleText}>Resend OTP / Change Email</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
         )}
       </View>
     </View>
@@ -430,65 +461,96 @@ export default function RiderLoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A0A0A',
-    justifyContent: 'center',
-    padding: 24,
+    backgroundColor: '#FFCC00', // Gold-yellow top header background
   },
   header: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 40,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 35,
   },
-  title: {
-    fontSize: 24,
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#FFF',
-    marginTop: 16,
   },
-  subtitle: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-    marginTop: 4,
+  formContainer: {
+    flex: 1,
+    backgroundColor: '#F5F5F7', // Rounded white body card
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    padding: 24,
+    paddingTop: 40,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#FFB300', // Primary orange theme
     textAlign: 'center',
   },
-  form: {
-    width: '100%',
+  subtitle: {
+    fontSize: 13,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 8,
+    marginBottom: 30,
+  },
+  fieldSection: {
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#121212',
+    backgroundColor: '#FFF',
     borderWidth: 1,
-    borderColor: '#1F1F1F',
-    borderRadius: 12,
+    borderColor: '#EAEAEA',
+    borderRadius: 14,
     paddingHorizontal: 16,
+    paddingVertical: 12,
     marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.02,
+    shadowRadius: 2,
+    elevation: 1,
   },
-  inputIcon: {
-    marginRight: 12,
-  },
-  inputField: {
+  input: {
     flex: 1,
-    paddingVertical: 16,
-    color: '#FFF',
+    color: '#333',
     fontSize: 13,
+    marginLeft: 12,
   },
-  loginBtn: {
-    backgroundColor: theme.colors.primary,
-    borderRadius: 12,
-    paddingVertical: 16,
+  primaryBtn: {
+    backgroundColor: '#FFB300', // Primary orange theme button
+    borderRadius: 14,
+    paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 8,
+    marginVertical: 12,
+    shadowColor: '#FFB300',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    elevation: 3,
   },
-  loginBtnText: {
-    fontSize: 13,
+  primaryBtnText: {
+    fontSize: 14,
     fontWeight: 'bold',
-    color: '#000',
+    color: '#FFF',
   },
   toggleText: {
     fontSize: 12,
-    color: theme.colors.primary,
+    color: '#FFB300',
     fontWeight: 'bold',
     textAlign: 'center',
-    marginTop: 16,
+    marginTop: 10,
   }
 });

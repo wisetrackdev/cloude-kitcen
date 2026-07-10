@@ -121,7 +121,7 @@ export default function KitchenDetailScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.headerBackBtn} onPress={() => router.back()}>
-          <ArrowLeft size={20} color="#FFF" />
+          <ArrowLeft size={20} color="#1E2022" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Shop Verification</Text>
         <View style={{ width: 40 }} />
@@ -186,8 +186,17 @@ export default function KitchenDetailScreen() {
           <View style={styles.infoRow}>
             <Phone size={18} color="#FFB300" style={styles.infoIcon} />
             <View>
-              <Text style={styles.infoLabel}>Owner Phone</Text>
+              <Text style={styles.infoLabel}>Owner Phone / Mobile Number</Text>
               <Text style={styles.infoValue}>{kitchen.ownerPhone || 'Not Provided'}</Text>
+            </View>
+          </View>
+
+          <View style={styles.infoRow}>
+            <CreditCard size={18} color="#FFB300" style={styles.infoIcon} />
+            <View>
+              <Text style={styles.infoLabel}>Owner UPI Details</Text>
+              <Text style={styles.infoValue}>UPI Number: {kitchen.upiNumber || 'Not Provided'}</Text>
+              <Text style={styles.bankSubtext}>UPI ID: {kitchen.upiId || 'Not Provided'}</Text>
             </View>
           </View>
         </View>
@@ -270,7 +279,7 @@ export default function KitchenDetailScreen() {
               <Text style={[styles.infoLabel, { marginBottom: 8 }]}>Payment Screenshot / Proof</Text>
               <Image 
                 source={{ uri: kitchen.paymentScreenshot }} 
-                style={{ width: '100%', height: 260, borderRadius: 12, borderWidth: 1, borderColor: '#1F1F22', backgroundColor: '#111' }}
+                style={{ width: '100%', height: 260, borderRadius: 12, borderWidth: 1, borderColor: '#EAEAEA', backgroundColor: '#FFF' }}
                 resizeMode="contain"
               />
             </View>
@@ -298,7 +307,7 @@ export default function KitchenDetailScreen() {
               style={[styles.actionBtn, styles.rejectBtn]} 
               onPress={handleReject}
             >
-              <XCircle size={18} color="#FFF" style={{ marginRight: 8 }} />
+              <XCircle size={18} color="#FF3B30" style={{ marginRight: 8 }} />
               <Text style={styles.rejectBtnText}>Reject Request</Text>
             </TouchableOpacity>
           </View>
@@ -311,11 +320,11 @@ export default function KitchenDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A0A0A',
+    backgroundColor: '#F5F6F8', // Light background
   },
   errorContainer: {
     flex: 1,
-    backgroundColor: '#0A0A0A',
+    backgroundColor: '#F5F6F8',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
@@ -344,7 +353,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 15,
     borderBottomWidth: 1,
-    borderColor: '#1F1F1F',
+    borderColor: '#EAEAEA',
+    backgroundColor: '#FFFFFF',
   },
   headerBackBtn: {
     width: 40,
@@ -352,12 +362,12 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#1A1A1A',
+    backgroundColor: '#F0F2F4',
   },
   headerTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: '#1E2022',
   },
   scrollContent: {
     paddingBottom: 40,
@@ -380,14 +390,14 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     borderWidth: 3,
-    borderColor: '#0A0A0A',
-    backgroundColor: '#121212',
+    borderColor: '#FFFFFF',
+    backgroundColor: '#FFFFFF',
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.1,
     shadowRadius: 6,
-    elevation: 6,
+    elevation: 4,
   },
   logoImage: {
     width: '100%',
@@ -400,11 +410,11 @@ const styles = StyleSheet.create({
   shopName: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: '#1E2022',
   },
   cuisines: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: '#686E73',
     marginTop: 4,
   },
   statusBadge: {
@@ -429,9 +439,9 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#1F1F1F',
+    borderColor: '#EAEAEA',
     borderRadius: 12,
     padding: 12,
     alignItems: 'center',
@@ -439,18 +449,18 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 15,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: '#1E2022',
     marginTop: 6,
   },
   statLabel: {
     fontSize: 10,
-    color: '#8E8E93',
+    color: '#686E73',
     marginTop: 2,
   },
   section: {
-    backgroundColor: '#121212',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#1F1F1F',
+    borderColor: '#EAEAEA',
     borderRadius: 16,
     padding: 16,
     marginHorizontal: 20,
@@ -459,10 +469,10 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: '#1E2022',
     marginBottom: 16,
     borderBottomWidth: 1,
-    borderColor: '#1F1F1F',
+    borderColor: '#EAEAEA',
     paddingBottom: 8,
   },
   infoRow: {
@@ -475,17 +485,17 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 11,
-    color: '#8E8E93',
+    color: '#686E73',
   },
   infoValue: {
     fontSize: 14,
-    color: '#FFF',
+    color: '#1E2022',
     marginTop: 2,
     lineHeight: 18,
   },
   bankSubtext: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: '#686E73',
     marginTop: 2,
   },
   row: {
