@@ -41,6 +41,9 @@ interface UserProfile {
   lastName?: string;
   upiNumber?: string;
   upiId?: string;
+  bankName?: string;
+  accountNumber?: string;
+  ifscCode?: string;
 }
 
 interface LocationCoords {

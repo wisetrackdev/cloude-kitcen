@@ -114,7 +114,10 @@ namespace CloudeKicten.Models.BusinessLayer
                 Role = user.Role,
                 RewardPoints = user.RewardPoints,
                 UpiNumber = user.UpiNumber,
-                UpiId = user.UpiId
+                UpiId = user.UpiId,
+                BankName = user.BankName,
+                AccountNumber = user.AccountNumber,
+                IfscCode = user.IfscCode
             };
 
             var authResponse = new AuthResponseDto
@@ -146,7 +149,10 @@ namespace CloudeKicten.Models.BusinessLayer
                 Role = user.Role,
                 RewardPoints = user.RewardPoints,
                 UpiNumber = user.UpiNumber,
-                UpiId = user.UpiId
+                UpiId = user.UpiId,
+                BankName = user.BankName,
+                AccountNumber = user.AccountNumber,
+                IfscCode = user.IfscCode
             };
 
             return ApiResponse<UserDto>.Ok(dto);
@@ -174,6 +180,9 @@ namespace CloudeKicten.Models.BusinessLayer
             user.Gender = dto.Gender ?? user.Gender;
             user.UpiNumber = dto.UpiNumber ?? user.UpiNumber;
             user.UpiId = dto.UpiId ?? user.UpiId;
+            user.BankName = dto.BankName ?? user.BankName;
+            user.AccountNumber = dto.AccountNumber ?? user.AccountNumber;
+            user.IfscCode = dto.IfscCode ?? user.IfscCode;
             if (!string.IsNullOrEmpty(dto.Role))
             {
                 user.Role = dto.Role;
@@ -187,6 +196,9 @@ namespace CloudeKicten.Models.BusinessLayer
             dto.LastName = user.LastName;
             dto.UpiNumber = user.UpiNumber;
             dto.UpiId = user.UpiId;
+            dto.BankName = user.BankName;
+            dto.AccountNumber = user.AccountNumber;
+            dto.IfscCode = user.IfscCode;
             return ApiResponse<UserDto>.Ok(dto, "Profile updated successfully.");
         }
 
@@ -239,7 +251,10 @@ namespace CloudeKicten.Models.BusinessLayer
                 Role = user.Role,
                 RewardPoints = user.RewardPoints,
                 UpiNumber = user.UpiNumber,
-                UpiId = user.UpiId
+                UpiId = user.UpiId,
+                BankName = user.BankName,
+                AccountNumber = user.AccountNumber,
+                IfscCode = user.IfscCode
             };
 
             return ApiResponse<UserDto>.Ok(userDto, "Profile completed successfully.");

@@ -148,6 +148,8 @@ namespace CloudeKicten.Models.DatabaseLayer
                 Console.WriteLine($"[DB MIGRATION WARNING] Failed to alter shops table: {ex.Message}");
             }
 
+            // Seeding disabled: no automatic database inserts on startup. All data will be managed manually or through the frontend.
+            /*
             try
             {
                 await SeedMockStoresAsync(cmd);
@@ -156,6 +158,7 @@ namespace CloudeKicten.Models.DatabaseLayer
             {
                 Console.WriteLine($"[DB SEED ERROR] Failed to seed mock stores: {ex.Message}");
             }
+            */
         }
 
         private async Task SeedMockStoresAsync(NpgsqlCommand cmd)
@@ -477,6 +480,9 @@ namespace CloudeKicten.Models.DatabaseLayer
             cmd.Parameters.AddWithValue("@RewardPoints", user.RewardPoints);
             cmd.Parameters.AddWithValue("@UpiNumber", (object?)user.UpiNumber ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@UpiId", (object?)user.UpiId ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@BankName", (object?)user.BankName ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@AccountNumber", (object?)user.AccountNumber ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@IfscCode", (object?)user.IfscCode ?? DBNull.Value);
 
             var result = await cmd.ExecuteNonQueryAsync();
             return result > 0;
@@ -500,7 +506,10 @@ namespace CloudeKicten.Models.DatabaseLayer
                 IsVerified = r.IsDBNull(r.GetOrdinal("is_verified")) ? false : r.GetBoolean(r.GetOrdinal("is_verified")),
                 CreatedAt = r.GetDateTime(r.GetOrdinal("created_at")),
                 UpiNumber = r.IsDBNull(r.GetOrdinal("upi_number")) ? null : r.GetString(r.GetOrdinal("upi_number")),
-                UpiId = r.IsDBNull(r.GetOrdinal("upi_id")) ? null : r.GetString(r.GetOrdinal("upi_id"))
+                UpiId = r.IsDBNull(r.GetOrdinal("upi_id")) ? null : r.GetString(r.GetOrdinal("upi_id")),
+                BankName = r.IsDBNull(r.GetOrdinal("bank_name")) ? null : r.GetString(r.GetOrdinal("bank_name")),
+                AccountNumber = r.IsDBNull(r.GetOrdinal("account_number")) ? null : r.GetString(r.GetOrdinal("account_number")),
+                IfscCode = r.IsDBNull(r.GetOrdinal("ifsc_code")) ? null : r.GetString(r.GetOrdinal("ifsc_code"))
             };
         }
 

@@ -42,6 +42,9 @@ interface UserProfile {
   gender?: string;
   upiNumber?: string;
   upiId?: string;
+  bankName?: string;
+  accountNumber?: string;
+  ifscCode?: string;
 }
 
 interface LocationCoords {

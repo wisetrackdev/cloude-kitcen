@@ -194,7 +194,7 @@ export default function SellerProfile() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           imageUrl: newPromoBannerUrl.trim(),
-          linkUrl: newPromoBannerLink.trim() || myKitchen?.name || 'shop_promo',
+          linkUrl: newPromoBannerLink.trim() || `restaurant/${myKitchen?.id || ''}`,
           isActive: true
         })
       });

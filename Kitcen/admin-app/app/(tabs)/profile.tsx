@@ -50,6 +50,9 @@ export default function AdminProfile() {
   const [phone, setPhone] = useState(user?.phone || '');
   const [upiNumber, setUpiNumber] = useState(user?.upiNumber || '');
   const [upiId, setUpiId] = useState(user?.upiId || '');
+  const [bankName, setBankName] = useState(user?.bankName || '');
+  const [accountNumber, setAccountNumber] = useState(user?.accountNumber || '');
+  const [ifscCode, setIfscCode] = useState(user?.ifscCode || '');
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -60,6 +63,9 @@ export default function AdminProfile() {
       setPhone(user.phone || '');
       setUpiNumber(user.upiNumber || '');
       setUpiId(user.upiId || '');
+      setBankName(user.bankName || '');
+      setAccountNumber(user.accountNumber || '');
+      setIfscCode(user.ifscCode || '');
     }
   }, [showProfileModal, user]);
 
@@ -341,7 +347,10 @@ export default function AdminProfile() {
           role: user.role,
           phone: phone.trim(),
           upiNumber: upiNumber.trim(),
-          upiId: upiId.trim()
+          upiId: upiId.trim(),
+          bankName: bankName.trim(),
+          accountNumber: accountNumber.trim(),
+          ifscCode: ifscCode.trim()
         })
       });
 
@@ -365,7 +374,10 @@ export default function AdminProfile() {
         email: email.trim() || user.email,
         phone: phone.trim(),
         upiNumber: upiNumber.trim(),
-        upiId: upiId.trim()
+        upiId: upiId.trim(),
+        bankName: bankName.trim(),
+        accountNumber: accountNumber.trim(),
+        ifscCode: ifscCode.trim()
       });
       Alert.alert('Offline Mode', 'Profile settings updated locally.');
       setShowProfileModal(false);
@@ -399,6 +411,45 @@ export default function AdminProfile() {
       </TouchableOpacity>
 
 
+
+      {/* Payout & UPI Configurations */}
+      <View style={[styles.optionGroup, { backgroundColor: themeColors.card, borderColor: themeColors.border, padding: 16, borderRadius: 18, marginTop: 16 }]}>
+        <Text style={[styles.groupHeader, { color: themeColors.text, fontWeight: 'bold', fontSize: 14, marginBottom: 12 }]}>Payout & UPI Configuration</Text>
+        
+        <View style={{ gap: 10 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 8, borderBottomWidth: 0.5, borderBottomColor: themeColors.border }}>
+            <Text style={{ fontSize: 12, color: themeColors.textSecondary }}>UPI ID:</Text>
+            <Text style={{ fontSize: 12, fontWeight: 'bold', color: themeColors.text }}>{user?.upiId || 'Not Configured'}</Text>
+          </View>
+          
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 8, borderBottomWidth: 0.5, borderBottomColor: themeColors.border }}>
+            <Text style={{ fontSize: 12, color: themeColors.textSecondary }}>UPI Phone:</Text>
+            <Text style={{ fontSize: 12, fontWeight: 'bold', color: themeColors.text }}>{user?.upiNumber || 'Not Configured'}</Text>
+          </View>
+
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 8, borderBottomWidth: 0.5, borderBottomColor: themeColors.border }}>
+            <Text style={{ fontSize: 12, color: themeColors.textSecondary }}>Bank Name:</Text>
+            <Text style={{ fontSize: 12, fontWeight: 'bold', color: themeColors.text }}>{user?.bankName || 'Not Configured'}</Text>
+          </View>
+
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 8, borderBottomWidth: 0.5, borderBottomColor: themeColors.border }}>
+            <Text style={{ fontSize: 12, color: themeColors.textSecondary }}>Account Number:</Text>
+            <Text style={{ fontSize: 12, fontWeight: 'bold', color: themeColors.text }}>{user?.accountNumber || 'Not Configured'}</Text>
+          </View>
+
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <Text style={{ fontSize: 12, color: themeColors.textSecondary }}>IFSC Code:</Text>
+            <Text style={{ fontSize: 12, fontWeight: 'bold', color: themeColors.text }}>{user?.ifscCode || 'Not Configured'}</Text>
+          </View>
+        </View>
+
+        <TouchableOpacity 
+          style={{ backgroundColor: themeColors.primary, borderRadius: 8, paddingVertical: 8, alignItems: 'center', marginTop: 14 }}
+          onPress={() => setShowProfileModal(true)}
+        >
+          <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 12 }}>Edit Payment Settings</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Theme Settings switcher & Management */}
       <View style={[styles.optionGroup, { backgroundColor: themeColors.card, borderColor: themeColors.border, padding: 16, borderRadius: 18, marginTop: 16 }]}>
@@ -601,6 +652,41 @@ export default function AdminProfile() {
                   placeholder="UPI ID"
                   placeholderTextColor="#888"
                   autoCapitalize="none"
+                />
+              </View>
+
+              <View style={styles.inputWrapper}>
+                <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Bank Name</Text>
+                <TextInput
+                  style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
+                  value={bankName}
+                  onChangeText={setBankName}
+                  placeholder="e.g. State Bank of India"
+                  placeholderTextColor="#888"
+                />
+              </View>
+
+              <View style={styles.inputWrapper}>
+                <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Bank Account Number</Text>
+                <TextInput
+                  style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
+                  value={accountNumber}
+                  onChangeText={setAccountNumber}
+                  placeholder="e.g. 30948576291"
+                  placeholderTextColor="#888"
+                  keyboardType="numeric"
+                />
+              </View>
+
+              <View style={styles.inputWrapper}>
+                <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>IFSC Code</Text>
+                <TextInput
+                  style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
+                  value={ifscCode}
+                  onChangeText={setIfscCode}
+                  placeholder="e.g. SBIN0001043"
+                  placeholderTextColor="#888"
+                  autoCapitalize="characters"
                 />
               </View>
 

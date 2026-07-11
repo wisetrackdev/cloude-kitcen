@@ -63,8 +63,13 @@ export default function LoginScreen() {
   // Payment Step Inputs
   const [adminUpiNumber, setAdminUpiNumber] = useState('8527430152');
   const [adminUpiId, setAdminUpiId] = useState('8527430152@slc');
+  const [adminBankName, setAdminBankName] = useState('State Bank of India');
+  const [adminAccountNumber, setAdminAccountNumber] = useState('30948576291');
+  const [adminIfscCode, setAdminIfscCode] = useState('SBIN0001043');
   const [utrNumber, setUtrNumber] = useState('');
   const [paymentScreenshot, setPaymentScreenshot] = useState('');
+
+  const finalUpiId = adminUpiId ? adminUpiId : (adminUpiNumber ? `${adminUpiNumber}@paytm` : '8527430152@slc');
 
   // Generic Image Selection and Upload Handler
   const selectImage = async (type: 'profile' | 'banner' | 'logo' | 'payment', source: 'camera' | 'gallery') => {
@@ -145,6 +150,9 @@ export default function LoginScreen() {
           if (admin) {
             setAdminUpiNumber(admin.upiNumber || '8527430152');
             setAdminUpiId(admin.upiId || '8527430152@slc');
+            setAdminBankName(admin.bankName || 'State Bank of India');
+            setAdminAccountNumber(admin.accountNumber || '30948576291');
+            setAdminIfscCode(admin.ifscCode || 'SBIN0001043');
           }
         }
       }
@@ -715,9 +723,9 @@ export default function LoginScreen() {
                   <TouchableOpacity 
                     style={{ backgroundColor: '#002E6E', paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8 }}
                     onPress={() => {
-                      // Attempt to open Paytm directly using paytmmp URL scheme with the admin's UPI number
-                      const paytmUrl = `paytmmp://pay?pa=${adminUpiNumber}@paytm&pn=Admin&am=1.00&cu=INR&tn=PlatformFee`;
-                      const upiUrl = `upi://pay?pa=${adminUpiNumber}@paytm&pn=Admin&am=1.00&cu=INR&tn=PlatformFee`;
+                      // Attempt to open Paytm or generic UPI directly using the admin's saved UPI ID
+                      const paytmUrl = `paytmmp://pay?pa=${finalUpiId}&pn=${encodeURIComponent('Cloud Kitchen Admin')}&am=1.00&cu=INR&tn=${encodeURIComponent('Platform Activation Fee')}`;
+                      const upiUrl = `upi://pay?pa=${finalUpiId}&pn=${encodeURIComponent('Cloud Kitchen Admin')}&am=1.00&cu=INR&tn=${encodeURIComponent('Platform Activation Fee')}`;
                       
                       Linking.openURL(paytmUrl).catch(() => {
                         Linking.openURL(upiUrl).catch(() => {
@@ -739,11 +747,44 @@ export default function LoginScreen() {
                   </Text>
                   
                   <Image 
-                    source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`upi://pay?pa=${adminUpiNumber}@paytm&pn=${encodeURIComponent('Cloud Kitchen Admin')}&am=1.00&cu=INR`)}` }}
+                    source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`upi://pay?pa=${finalUpiId}&pn=${encodeURIComponent('Cloud Kitchen Admin')}&am=1.00&cu=INR&tn=${encodeURIComponent('Platform Activation Fee')}`)}` }}
                     style={{ width: 180, height: 180, borderRadius: 8, borderWidth: 1, borderColor: '#EAEAEA', backgroundColor: '#FFF' }}
                   />
-                  <Text style={{ fontSize: 10, color: '#FF6B00', fontWeight: 'bold', marginTop: 10 }}>UPI ID: {adminUpiNumber}@paytm</Text>
-                  {adminUpiNumber ? <Text style={{ fontSize: 10, color: '#686E73', marginTop: 2 }}>UPI Phone: {adminUpiNumber}</Text> : null}
+                  <Text style={{ fontSize: 11, color: '#FF6B00', fontWeight: 'bold', marginTop: 10 }}>UPI ID: {finalUpiId}</Text>
+                  {adminUpiNumber ? <Text style={{ fontSize: 10, color: '#686E73', marginTop: 2 }}>UPI Phone / Mobile: {adminUpiNumber}</Text> : null}
+                </View>
+
+                {/* Bank Account Details Option */}
+                <View style={{ backgroundColor: '#F8F9FA', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#EAEAEA', marginBottom: 16 }}>
+                  <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#1E2022', marginBottom: 8, textAlign: 'center' }}>Alternative: Bank Account Details</Text>
+                  <Text style={{ fontSize: 11, color: '#686E73', textAlign: 'center', marginBottom: 12 }}>
+                    If you prefer bank transfer, you can pay ₹1.00 directly to the admin bank account:
+                  </Text>
+                  
+                  <View style={{ width: '100%' }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4, borderBottomWidth: 0.5, borderBottomColor: '#EAEAEA' }}>
+                      <Text style={{ fontSize: 11, color: '#686E73' }}>Bank Name:</Text>
+                      <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#333' }}>{adminBankName}</Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4, borderBottomWidth: 0.5, borderBottomColor: '#EAEAEA' }}>
+                      <Text style={{ fontSize: 11, color: '#686E73' }}>Account Name:</Text>
+                      <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#333' }}>Cloud Kitchen Admin</Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4, borderBottomWidth: 0.5, borderBottomColor: '#EAEAEA' }}>
+                      <Text style={{ fontSize: 11, color: '#686E73' }}>Account Number:</Text>
+                      <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#333' }}>{adminAccountNumber}</Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4, borderBottomWidth: 0.5, borderBottomColor: '#EAEAEA' }}>
+                      <Text style={{ fontSize: 11, color: '#686E73' }}>IFSC Code:</Text>
+                      <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#333' }}>{adminIfscCode}</Text>
+                    </View>
+                    {adminUpiNumber ? (
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
+                        <Text style={{ fontSize: 11, color: '#686E73' }}>Contact Mobile:</Text>
+                        <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#333' }}>{adminUpiNumber}</Text>
+                      </View>
+                    ) : null}
+                  </View>
                 </View>
 
                 {/* Proof Submission */}

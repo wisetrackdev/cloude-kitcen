@@ -115,6 +115,9 @@ namespace CloudeKicten
             ALTER TABLE user_register ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'active';
             ALTER TABLE user_register ADD COLUMN IF NOT EXISTS upi_number VARCHAR(50) NULL;
             ALTER TABLE user_register ADD COLUMN IF NOT EXISTS upi_id VARCHAR(100) NULL;
+            ALTER TABLE user_register ADD COLUMN IF NOT EXISTS bank_name VARCHAR(150) NULL;
+            ALTER TABLE user_register ADD COLUMN IF NOT EXISTS account_number VARCHAR(100) NULL;
+            ALTER TABLE user_register ADD COLUMN IF NOT EXISTS ifsc_code VARCHAR(50) NULL;
 
             ALTER TABLE shops ADD COLUMN IF NOT EXISTS category_id VARCHAR(50) NULL;
             ALTER TABLE shops ADD COLUMN IF NOT EXISTS utr_number VARCHAR(100) NULL;
@@ -527,13 +530,13 @@ namespace CloudeKicten
         ";
 
         public const string GetUserByEmail = @"
-            SELECT id, email, first_name, last_name, phone_number, avatar, gender, role, reward_points, otp, otp_expires_at, is_verified, created_at, upi_number, upi_id
+            SELECT id, email, first_name, last_name, phone_number, avatar, gender, role, reward_points, otp, otp_expires_at, is_verified, created_at, upi_number, upi_id, bank_name, account_number, ifsc_code
             FROM user_register 
             WHERE LOWER(email) = LOWER(@Email);
         ";
 
         public const string GetUserById = @"
-            SELECT id, email, first_name, last_name, phone_number, avatar, gender, role, reward_points, otp, otp_expires_at, is_verified, created_at, upi_number, upi_id
+            SELECT id, email, first_name, last_name, phone_number, avatar, gender, role, reward_points, otp, otp_expires_at, is_verified, created_at, upi_number, upi_id, bank_name, account_number, ifsc_code
             FROM user_register 
             WHERE id = @Id;
         ";
@@ -552,7 +555,7 @@ namespace CloudeKicten
 
         public const string UpdateUserProfile = @"
             UPDATE user_register
-            SET first_name = @FirstName, last_name = @LastName, phone_number = @Phone, avatar = @Avatar, gender = @Gender, role = @Role, reward_points = @RewardPoints, upi_number = @UpiNumber, upi_id = @UpiId
+            SET first_name = @FirstName, last_name = @LastName, phone_number = @Phone, avatar = @Avatar, gender = @Gender, role = @Role, reward_points = @RewardPoints, upi_number = @UpiNumber, upi_id = @UpiId, bank_name = @BankName, account_number = @AccountNumber, ifsc_code = @IfscCode
             WHERE id = @Id;
         ";
 

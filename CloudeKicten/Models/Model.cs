@@ -24,6 +24,9 @@ namespace CloudeKicten.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public string? UpiNumber { get; set; }
         public string? UpiId { get; set; }
+        public string? BankName { get; set; }
+        public string? AccountNumber { get; set; }
+        public string? IfscCode { get; set; }
     }
 
     public class KitchenDb
@@ -198,6 +201,9 @@ namespace CloudeKicten.Models
         public int RewardPoints { get; set; }
         public string? UpiNumber { get; set; }
         public string? UpiId { get; set; }
+        public string? BankName { get; set; }
+        public string? AccountNumber { get; set; }
+        public string? IfscCode { get; set; }
     }
 
     public class AuthResponseDto

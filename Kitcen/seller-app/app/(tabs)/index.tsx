@@ -6,7 +6,10 @@ import {
   ScrollView, 
   TouchableOpacity, 
   ActivityIndicator,
-  Linking
+  Linking,
+  Modal,
+  TextInput,
+  Image
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { 
@@ -19,7 +22,14 @@ import {
   UtensilsCrossed,
   MapPin,
   MessageSquare,
-  Phone
+  Phone,
+  Menu,
+  X,
+  Plus,
+  Trash2,
+  Ticket,
+  Image as ImageIcon,
+  Sparkles
 } from 'lucide-react-native';
 import { theme } from '../../styles/theme';
 import { useKitchenStore } from '../../store/useKitchenStore';
@@ -118,7 +128,229 @@ export default function SellerDashboard() {
       // Offline mode fallback
       setIsLiveState(nextLiveState);
       Alert.alert('Offline Mode', `Status updated locally to ${nextLiveState ? 'ONLINE' : 'OFFLINE'}.`);
+  };
+
+  // Hamburger Drawer & Management states
+  const [showDrawer, setShowDrawer] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showCouponModal, setShowCouponModal] = useState(false);
+  const [showBannerModal, setShowBannerModal] = useState(false);
+
+  // Categories list & inputs
+  const [categories, setCategories] = useState<any[]>([]);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryImage, setNewCategoryImage] = useState('');
+  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+
+  // Coupons list & inputs
+  const [coupons, setCoupons] = useState<any[]>([]);
+  const [newCouponCode, setNewCouponCode] = useState('');
+  const [newCouponDiscountType, setNewCouponDiscountType] = useState<'percentage' | 'fixed'>('percentage');
+  const [newCouponValue, setNewCouponValue] = useState('');
+  const [newCouponMinOrder, setNewCouponMinOrder] = useState('');
+  const [newCouponMaxDiscount, setNewCouponMaxDiscount] = useState('');
+  const [newCouponExpiryDays, setNewCouponExpiryDays] = useState('30');
+  const [isLoadingCoupons, setIsLoadingCoupons] = useState(false);
+
+  // Banners list & inputs
+  const [banners, setBanners] = useState<any[]>([]);
+  const [newBannerImage, setNewBannerImage] = useState('');
+  const [isLoadingBanners, setIsLoadingBanners] = useState(false);
+
+  // Category functions
+  const fetchCategories = async () => {
+    setIsLoadingCategories(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/categories`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success) setCategories(json.data);
+      }
+    } catch (err) {
+      console.warn('Failed to load categories', err);
     }
+    setIsLoadingCategories(false);
+  };
+
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) {
+      Alert.alert('Error', 'Please enter category name');
+      return;
+    }
+    const id = 'cat-' + newCategoryName.toLowerCase().replace(/ /g, '-');
+    const image = newCategoryImage.trim() || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=120';
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/categories`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, name: newCategoryName.trim(), image, isActive: true })
+      });
+      const json = await res.json();
+      if (json.success) {
+        Alert.alert('Success', 'Category tag added!');
+        setNewCategoryName('');
+        setNewCategoryImage('');
+        fetchCategories();
+      } else {
+        Alert.alert('Error', json.message || 'Failed to add category');
+      }
+    } catch (err) {
+      setCategories([...categories, { id, name: newCategoryName.trim(), image }]);
+      setNewCategoryName('');
+      setNewCategoryImage('');
+      Alert.alert('Offline Mode', 'Category tag added locally.');
+    }
+  };
+
+  const handleDeleteCategory = async (catId: string) => {
+    Alert.alert('Delete Category', 'Are you sure you want to delete this category?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            const res = await fetch(`${API_BASE_URL}/api/categories/${catId}`, {
+              method: 'DELETE'
+            });
+            const json = await res.json();
+            if (json.success) {
+              Alert.alert('Success', 'Category deleted');
+              fetchCategories();
+            } else {
+              Alert.alert('Error', json.message || 'Failed to delete category');
+            }
+          } catch (err) {
+            setCategories(categories.filter(c => c.id !== catId));
+            Alert.alert('Offline Mode', 'Category deleted locally.');
+          }
+        }
+      }
+    ]);
+  };
+
+  // Coupon functions
+  const fetchCoupons = async () => {
+    setIsLoadingCoupons(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/coupons`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success) setCoupons(json.data);
+      }
+    } catch (err) {
+      console.warn('Failed to load coupons', err);
+    }
+    setIsLoadingCoupons(false);
+  };
+
+  const handleCreateCoupon = async () => {
+    if (!newCouponCode.trim() || !newCouponValue.trim()) {
+      Alert.alert('Error', 'Please fill in Coupon Code and Value');
+      return;
+    }
+    const days = parseInt(newCouponExpiryDays) || 30;
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + days);
+
+    const payload = {
+      code: newCouponCode.trim().toUpperCase(),
+      discountType: newCouponDiscountType,
+      discountValue: parseFloat(newCouponValue) || 0,
+      minOrder: parseFloat(newCouponMinOrder) || 0,
+      maxDiscount: parseFloat(newCouponMaxDiscount) || 0,
+      expiryDate: expiryDate.toISOString(),
+      isActive: true
+    };
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/coupons`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const json = await res.json();
+      if (json.success) {
+        Alert.alert('Success', 'Promo Coupon Code created!');
+        setNewCouponCode('');
+        setNewCouponValue('');
+        setNewCouponMinOrder('');
+        setNewCouponMaxDiscount('');
+        fetchCoupons();
+      } else {
+        Alert.alert('Error', json.message || 'Failed to create coupon');
+      }
+    } catch (err) {
+      setCoupons([...coupons, { id: 'CPN-' + Math.floor(Math.random()*10000), ...payload }]);
+      setNewCouponCode('');
+      setNewCouponValue('');
+      setNewCouponMinOrder('');
+      setNewCouponMaxDiscount('');
+      Alert.alert('Offline Mode', 'Coupon created locally.');
+    }
+  };
+
+  // Banner functions
+  const fetchBanners = async () => {
+    setIsLoadingBanners(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/banners`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success) {
+          const filtered = json.data.filter((b: any) => b.linkUrl === `restaurant/${selectedKitchenId}` || b.link_url === `restaurant/${selectedKitchenId}`);
+          setBanners(filtered);
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to load banners', err);
+    }
+    setIsLoadingBanners(false);
+  };
+
+  const handleCreateBanner = async () => {
+    if (!newBannerImage.trim()) {
+      Alert.alert('Error', 'Please enter banner image URL');
+      return;
+    }
+    const payload = {
+      imageUrl: newBannerImage.trim(),
+      linkUrl: `restaurant/${selectedKitchenId}`,
+      isActive: true
+    };
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/banners?adminUserId=${user?.id || 'usr-seller-simulated'}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const json = await res.json();
+      if (json.success) {
+        Alert.alert('Success', 'Promotion Banner published! Clicking it will redirect customers to your kitchen.');
+        setNewBannerImage('');
+        fetchBanners();
+      } else {
+        Alert.alert('Error', json.message || 'Failed to publish banner');
+      }
+    } catch (err) {
+      setBanners([...banners, { id: 'ban-' + Math.floor(Math.random()*10000), ...payload }]);
+      setNewBannerImage('');
+      Alert.alert('Offline Mode', 'Banner simulated locally.');
+    }
+  };
+
+  const handleDeleteBanner = (bannerId: string) => {
+    Alert.alert('Delete Banner', 'Are you sure you want to delete this promotion banner?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => {
+          setBanners(banners.filter(b => b.id !== bannerId));
+          Alert.alert('Success', 'Banner deleted successfully.');
+        }
+      }
+    ]);
   };
 
   // Alert when a new order is received for the seller's kitchen
@@ -221,6 +453,9 @@ export default function SellerDashboard() {
     <ScrollView style={[styles.container, { backgroundColor: themeColors.background }]} showsVerticalScrollIndicator={false}>
       {/* Brand Header */}
       <View style={[styles.header, { backgroundColor: '#FFCC00' }]}>
+        <TouchableOpacity onPress={() => setShowDrawer(true)} style={{ marginRight: 12 }}>
+          <Menu size={24} color="#FFF" />
+        </TouchableOpacity>
         <View style={styles.headerTitleContainer}>
           <Text style={[styles.headerSub, { color: 'rgba(255, 255, 255, 0.85)' }]}>Zomato Partner Workspace</Text>
           <Text style={[styles.headerMain, { color: '#FFFFFF' }]}>{kitchenInfo.name}</Text>
@@ -452,6 +687,305 @@ export default function SellerDashboard() {
       </View>
       <View style={{ height: 60 }} />
     </ScrollView>
+
+      {/* HAMBURGER SIDE DRAWER MODAL */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showDrawer}
+        onRequestClose={() => setShowDrawer(false)}
+      >
+        <View style={styles.drawerOverlay}>
+          <View style={[styles.drawerContent, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+            <View style={[styles.drawerHeader, { borderBottomColor: themeColors.border }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Sparkles size={20} color={ZOMATO_RED} style={{ marginRight: 8 }} />
+                <Text style={[styles.drawerTitle, { color: themeColors.text }]}>Seller Workspace</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowDrawer(false)} style={[styles.closeBtn, { backgroundColor: themeColors.border }]}>
+                <X size={18} color={themeColors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView contentContainerStyle={styles.drawerScrollBody} showsVerticalScrollIndicator={false}>
+              <View style={styles.drawerSection}>
+                {/* Button 1: Manage Categories */}
+                <TouchableOpacity 
+                  style={[styles.drawerNavBtn, { backgroundColor: themeColors.inputBg }]} 
+                  onPress={() => {
+                    setShowDrawer(false);
+                    setShowCategoryModal(true);
+                    fetchCategories();
+                  }}
+                >
+                  <UtensilsCrossed size={20} color={ZOMATO_RED} style={{ marginRight: 12 }} />
+                  <Text style={[styles.drawerNavText, { color: themeColors.text }]}>Category Tag Manager</Text>
+                </TouchableOpacity>
+
+                {/* Button 2: Manage Coupons */}
+                <TouchableOpacity 
+                  style={[styles.drawerNavBtn, { backgroundColor: themeColors.inputBg }]} 
+                  onPress={() => {
+                    setShowDrawer(false);
+                    setShowCouponModal(true);
+                    fetchCoupons();
+                  }}
+                >
+                  <Ticket size={20} color={ZOMATO_RED} style={{ marginRight: 12 }} />
+                  <Text style={[styles.drawerNavText, { color: themeColors.text }]}>Discount Coupons</Text>
+                </TouchableOpacity>
+
+                {/* Button 3: Manage Advertisements */}
+                <TouchableOpacity 
+                  style={[styles.drawerNavBtn, { backgroundColor: themeColors.inputBg }]} 
+                  onPress={() => {
+                    setShowDrawer(false);
+                    setShowBannerModal(true);
+                    fetchBanners();
+                  }}
+                >
+                  <ImageIcon size={20} color={ZOMATO_RED} style={{ marginRight: 12 }} />
+                  <Text style={[styles.drawerNavText, { color: themeColors.text }]}>Shop Promotion Banners</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* CATEGORY MANAGEMENT MODAL */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showCategoryModal}
+        onRequestClose={() => setShowCategoryModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: themeColors.border }]}>
+              <Text style={[styles.modalTitle, { color: themeColors.text }]}>Category Tag Management</Text>
+              <TouchableOpacity onPress={() => setShowCategoryModal(false)} style={[styles.closeBtn, { backgroundColor: themeColors.border }]}>
+                <X size={18} color={themeColors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView contentContainerStyle={{ padding: 20 }} showsVerticalScrollIndicator={false}>
+              <Text style={{ fontSize: 11, color: themeColors.textSecondary, marginBottom: 12 }}>
+                Categories are shown globally to all customers. Add category tags that describe your food items.
+              </Text>
+
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  placeholder="Category Name (e.g. Punjabi, Fast Food)"
+                  placeholderTextColor="#888"
+                  value={newCategoryName}
+                  onChangeText={setNewCategoryName}
+                  style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border, width: '100%', marginBottom: 10 }]}
+                />
+                <TextInput
+                  placeholder="Image URL (Optional)"
+                  placeholderTextColor="#888"
+                  value={newCategoryImage}
+                  onChangeText={setNewCategoryImage}
+                  style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border, width: '100%' }]}
+                />
+              </View>
+
+              <TouchableOpacity style={[styles.saveBtn, { backgroundColor: ZOMATO_RED, marginTop: 14 }]} onPress={handleCreateCategory}>
+                <Text style={styles.saveBtnText}>Add Category Tag</Text>
+              </TouchableOpacity>
+
+              <Text style={{ fontSize: 13, fontWeight: 'bold', color: themeColors.text, marginTop: 24, marginBottom: 10 }}>Global Categories</Text>
+              {isLoadingCategories ? (
+                <ActivityIndicator size="small" color={ZOMATO_RED} />
+              ) : (
+                categories.map((cat) => (
+                  <View key={cat.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 0.5, borderBottomColor: themeColors.border }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Image source={{ uri: cat.image || cat.imageUrl || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=120' }} style={{ width: 36, height: 36, borderRadius: 18, marginRight: 10 }} />
+                      <Text style={{ fontSize: 13, fontWeight: 'bold', color: themeColors.text }}>{cat.name}</Text>
+                    </View>
+                    <TouchableOpacity onPress={() => handleDeleteCategory(cat.id)}>
+                      <Trash2 size={18} color="#FF3B30" />
+                    </TouchableOpacity>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* COUPON MANAGEMENT MODAL */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showCouponModal}
+        onRequestClose={() => setShowCouponModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: themeColors.border }]}>
+              <Text style={[styles.modalTitle, { color: themeColors.text }]}>Discount Coupons</Text>
+              <TouchableOpacity onPress={() => setShowCouponModal(false)} style={[styles.closeBtn, { backgroundColor: themeColors.border }]}>
+                <X size={18} color={themeColors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView contentContainerStyle={{ padding: 20 }} showsVerticalScrollIndicator={false}>
+              <Text style={{ fontSize: 11, color: themeColors.textSecondary, marginBottom: 12 }}>
+                Create discount coupon codes that customers can apply in their cart.
+              </Text>
+
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  placeholder="Coupon Code (e.g. WELCOME50)"
+                  placeholderTextColor="#888"
+                  value={newCouponCode}
+                  onChangeText={setNewCouponCode}
+                  autoCapitalize="characters"
+                  style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border, width: '100%', marginBottom: 10 }]}
+                />
+                
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+                  <TouchableOpacity 
+                    style={{ flex: 1, paddingVertical: 8, backgroundColor: newCouponDiscountType === 'percentage' ? ZOMATO_RED : themeColors.inputBg, borderRadius: 6, alignItems: 'center', marginRight: 5 }}
+                    onPress={() => setNewCouponDiscountType('percentage')}
+                  >
+                    <Text style={{ color: newCouponDiscountType === 'percentage' ? '#FFF' : themeColors.textSecondary, fontSize: 12, fontWeight: 'bold' }}>Percentage (%)</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={{ flex: 1, paddingVertical: 8, backgroundColor: newCouponDiscountType === 'fixed' ? ZOMATO_RED : themeColors.inputBg, borderRadius: 6, alignItems: 'center', marginLeft: 5 }}
+                    onPress={() => setNewCouponDiscountType('fixed')}
+                  >
+                    <Text style={{ color: newCouponDiscountType === 'fixed' ? '#FFF' : themeColors.textSecondary, fontSize: 12, fontWeight: 'bold' }}>Fixed Amt (₹)</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <TextInput
+                  placeholder={newCouponDiscountType === 'percentage' ? "Discount Value (e.g. 15 for 15%)" : "Discount Value (e.g. 50 for ₹50)"}
+                  placeholderTextColor="#888"
+                  value={newCouponValue}
+                  onChangeText={setNewCouponValue}
+                  keyboardType="numeric"
+                  style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border, width: '100%', marginBottom: 10 }]}
+                />
+                <TextInput
+                  placeholder="Min Order Value Required (₹)"
+                  placeholderTextColor="#888"
+                  value={newCouponMinOrder}
+                  onChangeText={setNewCouponMinOrder}
+                  keyboardType="numeric"
+                  style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border, width: '100%', marginBottom: 10 }]}
+                />
+                <TextInput
+                  placeholder="Max Discount Value (Optional, ₹)"
+                  placeholderTextColor="#888"
+                  value={newCouponMaxDiscount}
+                  onChangeText={setNewCouponMaxDiscount}
+                  keyboardType="numeric"
+                  style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border, width: '100%', marginBottom: 10 }]}
+                />
+                <TextInput
+                  placeholder="Days to Expiry (e.g. 30)"
+                  placeholderTextColor="#888"
+                  value={newCouponExpiryDays}
+                  onChangeText={setNewCouponExpiryDays}
+                  keyboardType="numeric"
+                  style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border, width: '100%' }]}
+                />
+              </View>
+
+              <TouchableOpacity style={[styles.saveBtn, { backgroundColor: ZOMATO_RED, marginTop: 14 }]} onPress={handleCreateCoupon}>
+                <Text style={styles.saveBtnText}>Add Coupon Code</Text>
+              </TouchableOpacity>
+
+              <Text style={{ fontSize: 13, fontWeight: 'bold', color: themeColors.text, marginTop: 24, marginBottom: 10 }}>Active Promo Codes</Text>
+              {isLoadingCoupons ? (
+                <ActivityIndicator size="small" color={ZOMATO_RED} />
+              ) : (
+                coupons.map((c) => (
+                  <View key={c.id} style={{ padding: 12, backgroundColor: themeColors.inputBg, borderRadius: 10, marginVertical: 6, borderWidth: 1, borderColor: themeColors.border }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                      <Text style={{ fontSize: 13, fontWeight: 'bold', color: ZOMATO_RED }}>{c.code}</Text>
+                      <Text style={{ fontSize: 11, fontWeight: 'bold', color: themeColors.textSecondary }}>
+                        {c.discountType === 'percentage' ? `${c.discountValue}% OFF` : `₹${c.discountValue} OFF`}
+                      </Text>
+                    </View>
+                    <Text style={{ fontSize: 10, color: themeColors.textSecondary }}>Min Order: ₹{c.minOrder} • Max Disc: ₹{c.maxDiscount || 'No Limit'}</Text>
+                    <Text style={{ fontSize: 9, color: themeColors.textSecondary, marginTop: 2 }}>Expires: {new Date(c.expiryDate).toLocaleDateString()}</Text>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* BANNER ADVERTISEMENT MODAL */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showBannerModal}
+        onRequestClose={() => setShowBannerModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: themeColors.border }]}>
+              <Text style={[styles.modalTitle, { color: themeColors.text }]}>Shop Promotion Banners</Text>
+              <TouchableOpacity onPress={() => setShowBannerModal(false)} style={[styles.closeBtn, { backgroundColor: themeColors.border }]}>
+                <X size={18} color={themeColors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView contentContainerStyle={{ padding: 20 }} showsVerticalScrollIndicator={false}>
+              <Text style={{ fontSize: 11, color: themeColors.textSecondary, marginBottom: 12, lineHeight: 16 }}>
+                Publish a promotional advertisement banner for your kitchen on the customer app's home screen. Clicking the banner will open your kitchen shop page.
+              </Text>
+
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  placeholder="Banner Image URL"
+                  placeholderTextColor="#888"
+                  value={newBannerImage}
+                  onChangeText={setNewBannerImage}
+                  style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border, width: '100%', marginBottom: 10 }]}
+                />
+                
+                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: themeColors.inputBg, borderRadius: 8, padding: 10, borderWidth: 1, borderColor: themeColors.border }}>
+                  <Text style={{ fontSize: 10, color: themeColors.textSecondary, flex: 1 }}>
+                    Target Link: <Text style={{ fontWeight: 'bold' }}>restaurant/{selectedKitchenId}</Text> (Points directly to your kitchen page)
+                  </Text>
+                </View>
+              </View>
+
+              <TouchableOpacity style={[styles.saveBtn, { backgroundColor: ZOMATO_RED, marginTop: 14 }]} onPress={handleCreateBanner}>
+                <Text style={styles.saveBtnText}>Publish Banner Ad</Text>
+              </TouchableOpacity>
+
+              <Text style={{ fontSize: 13, fontWeight: 'bold', color: themeColors.text, marginTop: 24, marginBottom: 10 }}>Your Published Banners</Text>
+              {isLoadingBanners ? (
+                <ActivityIndicator size="small" color={ZOMATO_RED} />
+              ) : (
+                banners.map((b) => (
+                  <View key={b.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 0.5, borderBottomColor: themeColors.border }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 10 }}>
+                      <Image source={{ uri: b.imageUrl || b.image_url }} style={{ width: 60, height: 35, borderRadius: 4, marginRight: 10 }} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 11, fontWeight: 'bold', color: themeColors.text }} numberOfLines={1}>Ad ID: {b.id}</Text>
+                        <Text style={{ fontSize: 9, color: themeColors.textSecondary }}>Target: {b.linkUrl || b.link_url}</Text>
+                      </View>
+                    </View>
+                    <TouchableOpacity onPress={() => handleDeleteBanner(b.id)}>
+                      <Trash2 size={18} color="#FF3B30" />
+                    </TouchableOpacity>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
   );
 }
 
@@ -711,5 +1245,100 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 11,
     textAlign: 'center',
+  },
+  // Hamburger Drawer & Modal styles
+  drawerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-start',
+    flexDirection: 'row',
+  },
+  drawerContent: {
+    width: '75%',
+    height: '100%',
+    borderRightWidth: 1,
+    paddingTop: 50,
+  },
+  drawerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+  },
+  drawerTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  drawerScrollBody: {
+    padding: 20,
+  },
+  drawerSection: {
+    marginBottom: 20,
+  },
+  drawerNavBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 10,
+  },
+  drawerNavText: {
+    fontSize: 13,
+    fontWeight: 'bold',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    height: '80%',
+    paddingBottom: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  closeBtn: {
+    borderRadius: 16,
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inputWrapper: {
+    marginBottom: 12,
+  },
+  textInput: {
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  saveBtn: {
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  saveBtnText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: 'bold',
   }
 });
