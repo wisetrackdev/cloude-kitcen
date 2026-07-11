@@ -56,6 +56,7 @@ export default function SellerDashboard() {
   const fetchKitchens = useKitchenStore(state => state.fetchKitchens);
   const fetchOrders = useKitchenStore(state => state.fetchOrders);
   const updateOrderStatus = useKitchenStore(state => state.updateOrderStatus);
+  const fetchCategoriesGlobal = useKitchenStore(state => state.fetchCategories);
 
   // Theme states
   const isDarkMode = useAuthStore(state => state.isDarkMode);
@@ -264,11 +265,16 @@ export default function SellerDashboard() {
         setNewCategoryName('');
         setNewCategoryImage('');
         fetchCategories();
+        fetchCategoriesGlobal();
       } else {
         Alert.alert('Error', json.message || 'Failed to add category');
       }
     } catch (err) {
-      setCategories([...categories, { id, name: newCategoryName.trim(), image }]);
+      const newCat = { id, name: newCategoryName.trim(), image };
+      setCategories([...categories, newCat]);
+      useKitchenStore.setState({
+        categories: [...useKitchenStore.getState().categories, newCat]
+      });
       setNewCategoryName('');
       setNewCategoryImage('');
       Alert.alert('Offline Mode', 'Category tag added locally.');
@@ -290,11 +296,15 @@ export default function SellerDashboard() {
             if (json.success) {
               Alert.alert('Success', 'Category deleted');
               fetchCategories();
+              fetchCategoriesGlobal();
             } else {
               Alert.alert('Error', json.message || 'Failed to delete category');
             }
           } catch (err) {
             setCategories(categories.filter(c => c.id !== catId));
+            useKitchenStore.setState({
+              categories: useKitchenStore.getState().categories.filter(c => c.id !== catId)
+            });
             Alert.alert('Offline Mode', 'Category deleted locally.');
           }
         }
