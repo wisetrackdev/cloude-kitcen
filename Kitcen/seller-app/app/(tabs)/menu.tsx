@@ -64,6 +64,21 @@ export default function SellerMenuScreen() {
     }
   }, [selectedKitchenId]);
 
+  useEffect(() => {
+    if (showAddDishModal) {
+      fetchCategories();
+    }
+  }, [showAddDishModal]);
+
+  useEffect(() => {
+    if (showAddDishModal && categories.length > 0) {
+      const exists = categories.some(c => c.name === newDishCat);
+      if (!exists) {
+        setNewDishCat(categories[0].name);
+      }
+    }
+  }, [showAddDishModal, categories]);
+
   // Local Form states
   const [showAddDishModal, setShowAddDishModal] = useState(false);
   const [newDishName, setNewDishName] = useState('');

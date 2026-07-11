@@ -120,7 +120,7 @@ export default function HomeScreen() {
       return k && k.isApproved === 'approved' && k.isLive !== false;
     });
 
-    if (selectedCategory) {
+    if (selectedCategory && selectedCategory.toLowerCase() !== 'all') {
       list = list.filter(p => p.category?.toLowerCase() === selectedCategory.toLowerCase());
     }
     if (searchQuery.trim() !== '') {
@@ -156,6 +156,12 @@ export default function HomeScreen() {
         }
       }
     });
+
+    list.unshift({
+      name: 'All',
+      image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=120'
+    });
+
     return list;
   };
 
@@ -300,12 +306,14 @@ export default function HomeScreen() {
               <View style={styles.categoryContainer}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
                   {categories.map((cat, index) => {
-                    const isSelected = selectedCategory?.toLowerCase() === cat.name.toLowerCase();
+                    const isSelected = selectedCategory 
+                      ? (selectedCategory.toLowerCase() === cat.name.toLowerCase()) 
+                      : (cat.name.toLowerCase() === 'all');
                     return (
                       <TouchableOpacity 
                         key={index} 
                         style={styles.categoryItem}
-                        onPress={() => setSelectedCategory(isSelected ? null : cat.name)}
+                        onPress={() => setSelectedCategory(cat.name.toLowerCase() === 'all' ? null : cat.name)}
                       >
                         <View style={[styles.categoryCircle, isSelected && styles.categoryCircleSelected, { overflow: 'hidden' }]}>
                           <Image 
