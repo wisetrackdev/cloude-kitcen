@@ -305,7 +305,7 @@ export default function HomeScreen() {
             <>
               {/* Categories Horizontal Slider */}
               <View style={styles.categoryContainer}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
+                <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
                   {categories.map((cat, index) => {
                     const isSelected = selectedCategory 
                       ? (selectedCategory.toLowerCase() === cat.name.toLowerCase()) 
@@ -648,6 +648,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   categoryScroll: {
+    flexDirection: 'row',
     paddingHorizontal: 20,
   },
   categoryItem: {
