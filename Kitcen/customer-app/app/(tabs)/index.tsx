@@ -36,6 +36,7 @@ import { useKitchenStore } from '../../store/useKitchenStore';
 import { useCartStore } from '../../store/useCartStore';
 import { useNotificationStore } from '../../store/useNotificationStore';
 import { API_BASE_URL } from '../../store/apiConfig';
+import { FontAwesome } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
@@ -315,12 +316,20 @@ export default function HomeScreen() {
                         style={styles.categoryItem}
                         onPress={() => setSelectedCategory(cat.name.toLowerCase() === 'all' ? null : cat.name)}
                       >
-                        <View style={[styles.categoryCircle, isSelected && styles.categoryCircleSelected, { overflow: 'hidden' }]}>
-                          <Image 
-                            source={{ uri: cat.image }} 
-                            style={{ width: '100%', height: '100%', borderRadius: 29 }} 
-                            resizeMode="cover"
-                          />
+                        <View style={[styles.categoryCircle, isSelected && styles.categoryCircleSelected, { overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }]}>
+                          {cat.name.toLowerCase() === 'all' ? (
+                            <FontAwesome 
+                              name="th-large" 
+                              size={22} 
+                              color={isSelected ? "#FFF" : "#FFB300"} 
+                            />
+                          ) : (
+                            <Image 
+                              source={{ uri: cat.image }} 
+                              style={{ width: '100%', height: '100%', borderRadius: 29 }} 
+                              resizeMode="cover"
+                            />
+                          )}
                         </View>
                         <Text style={[styles.categoryLabel, isSelected && styles.categoryLabelSelected]}>{cat.name}</Text>
                       </TouchableOpacity>
