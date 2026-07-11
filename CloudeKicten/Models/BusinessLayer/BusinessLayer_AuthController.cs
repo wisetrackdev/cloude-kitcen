@@ -224,10 +224,12 @@ namespace CloudeKicten.Models.BusinessLayer
             if (!string.IsNullOrEmpty(dto.Phone))
             {
                 user.Phone = dto.Phone;
-                // Also set UPI number/ID initially to mobile/UPI if not set
-                if (string.IsNullOrEmpty(user.UpiNumber)) user.UpiNumber = dto.Phone;
-                if (string.IsNullOrEmpty(user.UpiId)) user.UpiId = dto.Phone + "@paytm";
             }
+            user.UpiNumber = dto.UpiNumber ?? dto.Phone ?? user.UpiNumber;
+            user.UpiId = dto.UpiId ?? (dto.Phone != null ? dto.Phone + "@paytm" : user.UpiId);
+            user.BankName = dto.BankName ?? user.BankName;
+            user.AccountNumber = dto.AccountNumber ?? user.AccountNumber;
+            user.IfscCode = dto.IfscCode ?? user.IfscCode;
             if (!string.IsNullOrEmpty(dto.Role))
             {
                 user.Role = dto.Role;

@@ -185,6 +185,11 @@ namespace CloudeKicten.Models
         public string? Gender { get; set; }
         public string? Phone { get; set; }
         public string? Role { get; set; }
+        public string? UpiNumber { get; set; }
+        public string? UpiId { get; set; }
+        public string? BankName { get; set; }
+        public string? AccountNumber { get; set; }
+        public string? IfscCode { get; set; }
     }
 
     public class UserDto

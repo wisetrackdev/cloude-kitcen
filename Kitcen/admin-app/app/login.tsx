@@ -10,7 +10,7 @@ import {
   ScrollView
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Mail, Key, User, ArrowLeft } from 'lucide-react-native';
+import { Mail, Key, User, ArrowLeft, Smartphone, Camera, FileText } from 'lucide-react-native';
 import { theme } from '../styles/theme';
 import { useAuthStore } from '../store/useAuthStore';
 import { API_BASE_URL } from '../store/apiConfig';
@@ -25,6 +25,23 @@ export default function AdminLoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [otpCode, setOtpCode] = useState('');
+
+  // Flow State
+  const [tempToken, setTempToken] = useState('');
+  const [tempRefreshToken, setTempRefreshToken] = useState('');
+  const [tempUser, setTempUser] = useState<any>(null);
+  const [showCompleteProfile, setShowCompleteProfile] = useState(false);
+
+  // Profile Inputs
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [profileImage, setProfileImage] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [upiNumber, setUpiNumber] = useState('');
+  const [upiId, setUpiId] = useState('');
+  const [bankName, setBankName] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
+  const [ifscCode, setIfscCode] = useState('');
 
   // Step 1: Send OTP
   const handleRequestOtp = async () => {
@@ -69,16 +86,39 @@ export default function AdminLoginScreen() {
     // Simulated OTP bypass for development
     if (otpCode === '123456') {
       setIsLoading(false);
-      setAuth('mock_token', 'mock_refresh', {
+      const isMockNew = email.includes('new') || email.includes('test');
+      const mockUser = {
         id: 'usr-admin-7711',
-        name: 'Super Admin',
+        name: '',
         email: email,
         role: 'superadmin',
         rewardPoints: 100
-      });
-      Alert.alert('Authentication Successful', 'Welcome SuperAdmin!', [
-        { text: 'OK', onPress: () => router.replace('/fingerprint') }
-      ]);
+      };
+      setTempToken('mock_token');
+      setTempRefreshToken('mock_refresh');
+      setTempUser(mockUser);
+
+      if (isMockNew) {
+        setShowCompleteProfile(true);
+      } else {
+        setAuth('mock_token', 'mock_refresh', {
+          id: 'usr-admin-7711',
+          name: 'Super Admin',
+          email: email,
+          phone: '8527430152',
+          avatar: '',
+          role: 'superadmin',
+          rewardPoints: 100,
+          upiNumber: '8527430152',
+          upiId: '8527430152@slc',
+          bankName: 'State Bank of India',
+          accountNumber: '30948576291',
+          ifscCode: 'SBIN0001043'
+        });
+        Alert.alert('Authentication Successful', 'Welcome SuperAdmin!', [
+          { text: 'OK', onPress: () => router.replace('/fingerprint') }
+        ]);
+      }
       return;
     }
 
@@ -92,21 +132,36 @@ export default function AdminLoginScreen() {
       const json = await res.json();
 
       if (json.success) {
-        const { token, refreshToken, user } = json.data;
-        // Complete login and store session
-        setAuth(token, refreshToken, {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone || '',
-          avatar: user.avatar || '',
-          role: 'superadmin',
-          rewardPoints: user.rewardPoints
-        });
-        setIsLoading(false);
-        Alert.alert('Authentication Successful', 'Welcome SuperAdmin!', [
-          { text: 'OK', onPress: () => router.replace('/fingerprint') }
-        ]);
+        const { token, refreshToken, user, isNewUser } = json.data;
+        setTempToken(token);
+        setTempRefreshToken(refreshToken);
+        setTempUser(user);
+
+        // Force complete profile if user's name or bank details are missing
+        const isProfileIncomplete = !user.firstName || !user.lastName || !user.bankName || !user.accountNumber || !user.upiId;
+        if (isNewUser || isProfileIncomplete) {
+          setIsLoading(false);
+          setShowCompleteProfile(true);
+        } else {
+          setAuth(token, refreshToken, {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            phone: user.phone || '',
+            avatar: user.avatar || '',
+            role: 'superadmin',
+            rewardPoints: user.rewardPoints,
+            upiNumber: user.upiNumber,
+            upiId: user.upiId,
+            bankName: user.bankName,
+            accountNumber: user.accountNumber,
+            ifscCode: user.ifscCode
+          });
+          setIsLoading(false);
+          Alert.alert('Authentication Successful', 'Welcome SuperAdmin!', [
+            { text: 'OK', onPress: () => router.replace('/fingerprint') }
+          ]);
+        }
       } else {
         setIsLoading(false);
         Alert.alert('Error', json.message || 'Verification failed');
@@ -115,6 +170,67 @@ export default function AdminLoginScreen() {
       console.warn('Verify failed, doing fallback:', err.message);
       setIsLoading(false);
       Alert.alert('Error', 'Verification failed and could not connect to server.');
+    }
+  };
+
+  const handleCompleteProfile = async () => {
+    if (!firstName.trim() || !lastName.trim() || !phoneNumber.trim() || !bankName.trim() || !accountNumber.trim() || !ifscCode.trim() || !upiId.trim() || !upiNumber.trim()) {
+      Alert.alert('Error', 'All profile, bank, and UPI details are mandatory.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/complete-profile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: tempUser.id,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          avatar: profileImage.trim() || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120',
+          phone: phoneNumber.trim(),
+          role: 'superadmin',
+          upiNumber: upiNumber.trim(),
+          upiId: upiId.trim(),
+          bankName: bankName.trim(),
+          accountNumber: accountNumber.trim(),
+          ifscCode: ifscCode.trim()
+        })
+      });
+
+      const json = await res.json();
+      setIsLoading(false);
+
+      if (json.success) {
+        const updatedUser = json.data;
+        setAuth(tempToken, tempRefreshToken, updatedUser);
+        Alert.alert('Success', 'Profile completed successfully!', [
+          { text: 'OK', onPress: () => router.replace('/fingerprint') }
+        ]);
+      } else {
+        Alert.alert('Error', json.message || 'Failed to complete profile');
+      }
+    } catch (err) {
+      setIsLoading(false);
+      const mockUpdated = {
+        id: tempUser.id,
+        name: `${firstName.trim()} ${lastName.trim()}`,
+        email: tempUser.email,
+        phone: phoneNumber.trim(),
+        avatar: profileImage.trim() || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120',
+        role: 'superadmin',
+        rewardPoints: 100,
+        upiNumber: upiNumber.trim(),
+        upiId: upiId.trim(),
+        bankName: bankName.trim(),
+        accountNumber: accountNumber.trim(),
+        ifscCode: ifscCode.trim()
+      };
+      setAuth(tempToken, tempRefreshToken, mockUpdated);
+      Alert.alert('Offline Mode', 'Profile completed locally.', [
+        { text: 'OK', onPress: () => router.replace('/fingerprint') }
+      ]);
     }
   };
 
@@ -169,17 +285,131 @@ export default function AdminLoginScreen() {
                 keyboardType="numeric"
                 value={otpCode}
                 onChangeText={setOtpCode}
-                style={styles.input}
+                editable={!showCompleteProfile}
+                style={[styles.input, showCompleteProfile && { opacity: 0.6 }]}
               />
             </View>
 
-            <TouchableOpacity style={styles.primaryBtn} onPress={handleVerifyOtp}>
-              <Text style={styles.primaryBtnText}>Verify & Log In</Text>
-            </TouchableOpacity>
+            {showCompleteProfile ? (
+              <ScrollView style={{ width: '100%', maxHeight: 380, marginTop: 10 }} showsVerticalScrollIndicator={false}>
+                <Text style={{ color: theme.colors.primary, fontWeight: 'bold', fontSize: 16, marginBottom: 12 }}>
+                  Complete Profile
+                </Text>
+                
+                <View style={styles.inputWrapper}>
+                  <User size={16} color={theme.colors.textSecondary} />
+                  <TextInput
+                    placeholder="First Name"
+                    placeholderTextColor="#888"
+                    value={firstName}
+                    onChangeText={setFirstName}
+                    style={styles.input}
+                  />
+                </View>
 
-            <TouchableOpacity onPress={() => { setStep('email'); setOtpCode(''); }}>
-              <Text style={styles.toggleText}>Change Email</Text>
-            </TouchableOpacity>
+                <View style={styles.inputWrapper}>
+                  <User size={16} color={theme.colors.textSecondary} />
+                  <TextInput
+                    placeholder="Last Name"
+                    placeholderTextColor="#888"
+                    value={lastName}
+                    onChangeText={setLastName}
+                    style={styles.input}
+                  />
+                </View>
+
+                {/* Mobile Phone Number */}
+                <View style={styles.inputWrapper}>
+                  <Smartphone size={16} color={theme.colors.textSecondary} />
+                  <TextInput
+                    placeholder="Mobile Number"
+                    placeholderTextColor="#888"
+                    keyboardType="phone-pad"
+                    value={phoneNumber}
+                    onChangeText={setPhoneNumber}
+                    style={styles.input}
+                  />
+                </View>
+
+                {/* UPI Number */}
+                <View style={styles.inputWrapper}>
+                  <Smartphone size={16} color={theme.colors.textSecondary} />
+                  <TextInput
+                    placeholder="UPI Mobile Number"
+                    placeholderTextColor="#888"
+                    keyboardType="numeric"
+                    value={upiNumber}
+                    onChangeText={setUpiNumber}
+                    style={styles.input}
+                  />
+                </View>
+
+                {/* UPI ID */}
+                <View style={styles.inputWrapper}>
+                  <FileText size={16} color={theme.colors.textSecondary} />
+                  <TextInput
+                    placeholder="UPI ID (e.g. name@paytm)"
+                    placeholderTextColor="#888"
+                    autoCapitalize="none"
+                    value={upiId}
+                    onChangeText={setUpiId}
+                    style={styles.input}
+                  />
+                </View>
+
+                {/* Bank Name */}
+                <View style={styles.inputWrapper}>
+                  <FileText size={16} color={theme.colors.textSecondary} />
+                  <TextInput
+                    placeholder="Bank Name (e.g. State Bank of India)"
+                    placeholderTextColor="#888"
+                    value={bankName}
+                    onChangeText={setBankName}
+                    style={styles.input}
+                  />
+                </View>
+
+                {/* Bank Account Number */}
+                <View style={styles.inputWrapper}>
+                  <FileText size={16} color={theme.colors.textSecondary} />
+                  <TextInput
+                    placeholder="Bank Account Number"
+                    placeholderTextColor="#888"
+                    keyboardType="numeric"
+                    value={accountNumber}
+                    onChangeText={setAccountNumber}
+                    style={styles.input}
+                  />
+                </View>
+
+                {/* IFSC Code */}
+                <View style={styles.inputWrapper}>
+                  <FileText size={16} color={theme.colors.textSecondary} />
+                  <TextInput
+                    placeholder="IFSC Code"
+                    placeholderTextColor="#888"
+                    autoCapitalize="characters"
+                    value={ifscCode}
+                    onChangeText={setIfscCode}
+                    style={styles.input}
+                  />
+                </View>
+
+                <TouchableOpacity style={[styles.primaryBtn, { marginTop: 15 }]} onPress={handleCompleteProfile}>
+                  <Text style={styles.primaryBtnText}>Complete Profile Setup</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            ) : (
+              <>
+                <TouchableOpacity style={styles.primaryBtn} onPress={handleVerifyOtp}>
+                  <Text style={styles.primaryBtnText}>Verify & Log In</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={() => { setStep('email'); setOtpCode(''); }}>
+                  <Text style={styles.toggleText}>Change Email</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         )}
       </View>

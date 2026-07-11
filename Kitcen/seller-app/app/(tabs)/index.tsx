@@ -450,7 +450,8 @@ export default function SellerDashboard() {
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: themeColors.background }]} showsVerticalScrollIndicator={false}>
+    <>
+      <ScrollView style={[styles.container, { backgroundColor: themeColors.background }]} showsVerticalScrollIndicator={false}>
       {/* Brand Header */}
       <View style={[styles.header, { backgroundColor: '#FFCC00' }]}>
         <TouchableOpacity onPress={() => setShowDrawer(true)} style={{ marginRight: 12 }}>
@@ -986,6 +987,7 @@ export default function SellerDashboard() {
           </View>
         </View>
       </Modal>
+    </>
   );
 }
 

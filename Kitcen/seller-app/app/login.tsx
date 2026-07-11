@@ -45,6 +45,11 @@ export default function LoginScreen() {
   const [profileImage, setProfileImage] = useState('');
   const [gender, setGender] = useState('Male');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [upiNumber, setUpiNumber] = useState('');
+  const [upiId, setUpiId] = useState('');
+  const [bankName, setBankName] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
+  const [ifscCode, setIfscCode] = useState('');
 
   // Shop Details Step Inputs
   const [shopName, setShopName] = useState('');
@@ -359,8 +364,8 @@ export default function LoginScreen() {
 
   // Step 3: Name & Basic Profile Registration (POST complete-profile)
   const handleRegisterName = async () => {
-    if (!firstName.trim() || !lastName.trim() || !profileImage || !phoneNumber.trim()) {
-      Alert.alert('Error', 'First Name, Last Name, Gender, Mobile Number, and Profile Photo are all mandatory.');
+    if (!firstName.trim() || !lastName.trim() || !profileImage || !phoneNumber.trim() || !bankName.trim() || !accountNumber.trim() || !ifscCode.trim() || !upiId.trim() || !upiNumber.trim()) {
+      Alert.alert('Error', 'First Name, Last Name, Gender, Mobile Number, Profile Photo, Bank details, and UPI details are all mandatory.');
       return;
     }
 
@@ -376,7 +381,12 @@ export default function LoginScreen() {
           avatar: profileImage,
           gender: gender,
           phone: phoneNumber.trim(),
-          role: 'vendor'
+          role: 'vendor',
+          upiNumber: upiNumber.trim(),
+          upiId: upiId.trim(),
+          bankName: bankName.trim(),
+          accountNumber: accountNumber.trim(),
+          ifscCode: ifscCode.trim()
         })
       });
       const json = await res.json();
@@ -397,7 +407,12 @@ export default function LoginScreen() {
         avatar: profileImage,
         phone: phoneNumber.trim(),
         gender: gender,
-        role: 'vendor'
+        role: 'vendor',
+        upiNumber: upiNumber.trim(),
+        upiId: upiId.trim(),
+        bankName: bankName.trim(),
+        accountNumber: accountNumber.trim(),
+        ifscCode: ifscCode.trim()
       };
       setTempUser(updatedUser);
       await checkUserKitchen(tempToken, updatedUser);
@@ -991,6 +1006,70 @@ export default function LoginScreen() {
                     style={{ width: 80, height: 80, borderRadius: 40, alignSelf: 'center', marginVertical: 8, borderWidth: 1, borderColor: '#EAEAEA' }}
                   />
                 ) : null}
+
+                {/* UPI Number */}
+                <View style={styles.inputWrapper}>
+                  <Smartphone size={16} color={theme.colors.textSecondary} />
+                  <TextInput
+                    placeholder="UPI Mobile Number"
+                    placeholderTextColor="#888"
+                    keyboardType="numeric"
+                    value={upiNumber}
+                    onChangeText={setUpiNumber}
+                    style={styles.input}
+                  />
+                </View>
+
+                {/* UPI ID */}
+                <View style={styles.inputWrapper}>
+                  <FileText size={16} color={theme.colors.textSecondary} />
+                  <TextInput
+                    placeholder="UPI ID (e.g. name@paytm)"
+                    placeholderTextColor="#888"
+                    autoCapitalize="none"
+                    value={upiId}
+                    onChangeText={setUpiId}
+                    style={styles.input}
+                  />
+                </View>
+
+                {/* Bank Name */}
+                <View style={styles.inputWrapper}>
+                  <FileText size={16} color={theme.colors.textSecondary} />
+                  <TextInput
+                    placeholder="Bank Name (e.g. State Bank of India)"
+                    placeholderTextColor="#888"
+                    value={bankName}
+                    onChangeText={setBankName}
+                    style={styles.input}
+                  />
+                </View>
+
+                {/* Bank Account Number */}
+                <View style={styles.inputWrapper}>
+                  <FileText size={16} color={theme.colors.textSecondary} />
+                  <TextInput
+                    placeholder="Bank Account Number"
+                    placeholderTextColor="#888"
+                    keyboardType="numeric"
+                    value={accountNumber}
+                    onChangeText={setAccountNumber}
+                    style={styles.input}
+                  />
+                </View>
+
+                {/* IFSC Code */}
+                <View style={styles.inputWrapper}>
+                  <FileText size={16} color={theme.colors.textSecondary} />
+                  <TextInput
+                    placeholder="IFSC Code"
+                    placeholderTextColor="#888"
+                    autoCapitalize="characters"
+                    value={ifscCode}
+                    onChangeText={setIfscCode}
+                    style={styles.input}
+                  />
+                </View>
 
                 <TouchableOpacity style={[styles.primaryBtn, { marginTop: 15 }]} onPress={handleRegisterName}>
                   <Text style={styles.primaryBtnText}>Continue to Shop Details</Text>
