@@ -813,7 +813,7 @@ export default function AdminDashboard() {
                     <View style={[styles.statsRow, { borderBottomColor: themeColors.border }]}>
                       <Text style={[styles.statsLabel, { color: themeColors.textSecondary }]}>Owner Name:</Text>
                       <Text style={[styles.statsVal, { color: themeColors.text }]}>
-                        {selectedSellerForStats.ownerName || 'Housewife Partner'}
+                        {selectedSellerForStats.ownerName || 'Not Provided'}
                       </Text>
                     </View>
                     
@@ -841,21 +841,21 @@ export default function AdminDashboard() {
                     <View style={[styles.statsRow, { borderBottomColor: themeColors.border }]}>
                       <Text style={[styles.statsLabel, { color: themeColors.textSecondary }]}>Bank Name:</Text>
                       <Text style={[styles.statsVal, { color: themeColors.text }]}>
-                        {selectedSellerForStats.bankName || 'State Bank of India'}
+                        {selectedSellerForStats.bankName || 'Not Provided'}
                       </Text>
                     </View>
 
                     <View style={[styles.statsRow, { borderBottomColor: themeColors.border }]}>
                       <Text style={[styles.statsLabel, { color: themeColors.textSecondary }]}>Bank A/C Number:</Text>
                       <Text style={[styles.statsVal, { color: themeColors.text }]}>
-                        {selectedSellerForStats.bankAccount || 'SBI A/C 90812376510'}
+                        {selectedSellerForStats.bankAccount || 'Not Provided'}
                       </Text>
                     </View>
 
                     <View style={[styles.statsRow, { borderBottomColor: themeColors.border }]}>
                       <Text style={[styles.statsLabel, { color: themeColors.textSecondary }]}>IFSC Code:</Text>
                       <Text style={[styles.statsVal, { color: themeColors.text }]}>
-                        {selectedSellerForStats.ifscCode || 'SBIN0001043'}
+                        {selectedSellerForStats.ifscCode || 'Not Provided'}
                       </Text>
                     </View>
 
@@ -864,11 +864,11 @@ export default function AdminDashboard() {
                       <Text style={[styles.statsLabel, { color: themeColors.textSecondary }]}>Mobile Number:</Text>
                       <TouchableOpacity 
                         style={{ flexDirection: 'row', alignItems: 'center' }}
-                        onPress={() => Linking.openURL(`tel:${selectedSellerForStats.phone || '9876543210'}`)}
+                        onPress={() => Linking.openURL(`tel:${selectedSellerForStats.ownerPhone || ''}`)}
                       >
                         <Phone size={13} color={themeColors.primary} style={{ marginRight: 6 }} />
                         <Text style={{ fontSize: 14, fontWeight: 'bold', color: themeColors.primary }}>
-                          {selectedSellerForStats.phone || '+91 9876543210'}
+                          {selectedSellerForStats.ownerPhone || ''}
                         </Text>
                       </TouchableOpacity>
                     </View>
@@ -938,19 +938,19 @@ export default function AdminDashboard() {
                   </View>
                   <View style={[styles.detailRow, { borderBottomColor: themeColors.border }]}>
                     <Text style={[styles.detailLabel, { color: themeColors.textSecondary }]}>Owner Name:</Text>
-                    <Text style={[styles.detailValue, { color: themeColors.text }]}>{selectedKitchen.ownerName || 'Housewife Partner'}</Text>
+                    <Text style={[styles.detailValue, { color: themeColors.text }]}>{selectedKitchen.ownerName || 'Not Provided'}</Text>
                   </View>
                   <View style={[styles.detailRow, { borderBottomColor: themeColors.border }]}>
                     <Text style={[styles.detailLabel, { color: themeColors.textSecondary }]}>Bank Name:</Text>
-                    <Text style={[styles.detailValue, { color: themeColors.text }]}>{selectedKitchen.bankName || 'State Bank of India'}</Text>
+                    <Text style={[styles.detailValue, { color: themeColors.text }]}>{selectedKitchen.bankName || 'Not Provided'}</Text>
                   </View>
                   <View style={[styles.detailRow, { borderBottomColor: themeColors.border }]}>
                     <Text style={[styles.detailLabel, { color: themeColors.textSecondary }]}>Bank Account:</Text>
-                    <Text style={[styles.detailValue, { color: themeColors.text }]}>{selectedKitchen.bankAccount || '30948576291'}</Text>
+                    <Text style={[styles.detailValue, { color: themeColors.text }]}>{selectedKitchen.bankAccount || 'Not Provided'}</Text>
                   </View>
                   <View style={[styles.detailRow, { borderBottomColor: themeColors.border }]}>
                     <Text style={[styles.detailLabel, { color: themeColors.textSecondary }]}>IFSC Code:</Text>
-                    <Text style={[styles.detailValue, { color: themeColors.text }]}>{selectedKitchen.ifscCode || 'SBIN0001043'}</Text>
+                    <Text style={[styles.detailValue, { color: themeColors.text }]}>{selectedKitchen.ifscCode || 'Not Provided'}</Text>
                   </View>
                   <View style={[styles.detailRow, { borderBottomColor: themeColors.border }]}>
                     <Text style={[styles.detailLabel, { color: themeColors.textSecondary }]}>Cuisines:</Text>

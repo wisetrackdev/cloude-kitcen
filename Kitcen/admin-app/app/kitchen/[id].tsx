@@ -179,7 +179,7 @@ export default function KitchenDetailScreen() {
             <User size={18} color="#FFB300" style={styles.infoIcon} />
             <View>
               <Text style={styles.infoLabel}>Owner Name</Text>
-              <Text style={styles.infoValue}>{kitchen.ownerName || 'Housewife Partner'}</Text>
+              <Text style={styles.infoValue}>{kitchen.ownerName || 'Not Provided'}</Text>
             </View>
           </View>
 

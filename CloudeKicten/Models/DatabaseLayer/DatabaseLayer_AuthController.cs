@@ -207,7 +207,8 @@ namespace CloudeKicten.Models.DatabaseLayer
             cmd.Parameters.Clear();
             await cmd.ExecuteNonQueryAsync();
 
-            // 3. Seed 10 Shops
+            // 3. Seed 10 Shops (Disabled: no auto-populating mock sellers)
+            /*
             for (int i = 1; i <= 10; i++)
             {
                 string userId = $"usr-seller-seed-{i}";
@@ -383,6 +384,7 @@ namespace CloudeKicten.Models.DatabaseLayer
                     }
                 }
             }
+            */
         }
 
         public async Task<UserDb?> GetUserByEmailAsync(string email)

@@ -342,7 +342,7 @@ export default function SellerDashboard() {
 
                   <TouchableOpacity 
                     style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(46,204,113,0.1)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#2ecc71' }}
-                    onPress={() => Linking.openURL(`tel:${(order as any).customerPhone || '9876543210'}`)}
+                    onPress={() => Linking.openURL(`tel:${(order as any).customerPhone || ''}`)}
                   >
                     <Phone size={14} color="#2ecc71" />
                   </TouchableOpacity>
@@ -422,7 +422,7 @@ export default function SellerDashboard() {
 
                   <TouchableOpacity 
                     style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(46,204,113,0.05)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(46,204,113,0.3)' }}
-                    onPress={() => Linking.openURL(`tel:${(order as any).customerPhone || '9876543210'}`)}
+                    onPress={() => Linking.openURL(`tel:${(order as any).customerPhone || ''}`)}
                   >
                     <Phone size={12} color="#2ecc71" />
                   </TouchableOpacity>

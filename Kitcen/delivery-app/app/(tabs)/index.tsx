@@ -405,7 +405,7 @@ export default function RiderDashboard() {
 
                               <TouchableOpacity 
                                 style={[styles.mapLinkBtn, { marginLeft: 8, borderColor: 'rgba(52,199,89,0.2)', backgroundColor: 'rgba(52,199,89,0.1)' }]}
-                                onPress={() => Linking.openURL(`tel:${kitchens.find(k => k.id === delivery.kitchenId)?.ownerPhone || '+91 9876543210'}`)}
+                                onPress={() => Linking.openURL(`tel:${kitchens.find(k => k.id === delivery.kitchenId)?.ownerPhone || ''}`)}
                               >
                                 <Text style={[styles.mapLinkText, { color: theme.colors.success }]}>📞 Call Seller</Text>
                               </TouchableOpacity>

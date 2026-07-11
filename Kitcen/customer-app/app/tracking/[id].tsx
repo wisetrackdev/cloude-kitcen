@@ -207,7 +207,7 @@ export default function OrderTrackingScreen() {
           <View style={styles.riderActions}>
             <TouchableOpacity 
               style={styles.actionBtn}
-              onPress={() => Linking.openURL(`tel:${(activeKitchen as any)?.phone || (activeOrder as any)?.kitchenPhone || '9876543210'}`)}
+              onPress={() => Linking.openURL(`tel:${(activeKitchen as any)?.phone || (activeOrder as any)?.kitchenPhone || ''}`)}
             >
               <Phone size={16} color={theme.colors.primary} />
             </TouchableOpacity>
@@ -237,7 +237,7 @@ export default function OrderTrackingScreen() {
               <View style={styles.riderActions}>
                 <TouchableOpacity 
                   style={styles.actionBtn}
-                  onPress={() => Linking.openURL(`tel:${activeOrder?.riderPhone || '9876543210'}`)}
+                  onPress={() => Linking.openURL(`tel:${activeOrder?.riderPhone || ''}`)}
                 >
                   <Phone size={16} color={theme.colors.primary} />
                 </TouchableOpacity>

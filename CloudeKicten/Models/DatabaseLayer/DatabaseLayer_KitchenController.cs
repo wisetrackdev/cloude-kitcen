@@ -180,7 +180,7 @@ namespace CloudeKicten.Models.DatabaseLayer
                 Latitude = r.IsDBNull(r.GetOrdinal("latitude")) ? null : r.GetDecimal(r.GetOrdinal("latitude")),
                 Longitude = r.IsDBNull(r.GetOrdinal("longitude")) ? null : r.GetDecimal(r.GetOrdinal("longitude")),
                 IsApproved = r.IsDBNull(r.GetOrdinal("is_approved")) ? "pending" : r.GetString(r.GetOrdinal("is_approved")),
-                OwnerName = r.IsDBNull(r.GetOrdinal("owner_name")) ? "Housewife Partner" : r.GetString(r.GetOrdinal("owner_name")),
+                OwnerName = r.IsDBNull(r.GetOrdinal("owner_name")) ? "" : r.GetString(r.GetOrdinal("owner_name")),
                 BankAccount = r.IsDBNull(r.GetOrdinal("bank_account")) ? "" : r.GetString(r.GetOrdinal("bank_account")),
                 CoverImageUrl = r.IsDBNull(r.GetOrdinal("cover_image_url")) ? null : r.GetString(r.GetOrdinal("cover_image_url")),
                 BankName = r.IsDBNull(r.GetOrdinal("bank_name")) ? null : r.GetString(r.GetOrdinal("bank_name")),

@@ -134,7 +134,7 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
           id: k.id,
           name: k.name,
           owner: k.ownerId, // Map OwnerId to Owner representation
-          ownerName: k.ownerName || 'Housewife Partner',
+          ownerName: k.ownerName || '',
           ownerPhone: k.ownerPhone,
           type: k.type,
           cuisines: k.cuisines,
