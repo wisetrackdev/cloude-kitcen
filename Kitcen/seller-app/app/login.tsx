@@ -280,7 +280,12 @@ export default function LoginScreen() {
           phone: '',
           avatar: '',
           role: 'vendor',
-          rewardPoints: 10
+          rewardPoints: 10,
+          upiNumber: '9876543210',
+          upiId: 'chef@paytm',
+          bankName: 'State Bank of India',
+          accountNumber: '30948576291',
+          ifscCode: 'SBIN0001043'
         });
         Alert.alert('Welcome Partner', 'Login successful!', [{ text: 'OK', onPress: () => router.replace('/fingerprint') }]);
       }
@@ -342,7 +347,12 @@ export default function LoginScreen() {
             phone: user.phone || '',
             avatar: user.avatar || '',
             role: 'vendor',
-            rewardPoints: user.rewardPoints
+            rewardPoints: user.rewardPoints,
+            upiNumber: user.upiNumber,
+            upiId: user.upiId,
+            bankName: user.bankName,
+            accountNumber: user.accountNumber,
+            ifscCode: user.ifscCode
           });
           setIsLoading(false);
           Alert.alert('Welcome Partner', 'Login successful!', [{ text: 'OK', onPress: () => router.replace('/fingerprint') }]);
@@ -508,7 +518,12 @@ export default function LoginScreen() {
           phone: tempUser.phone || phoneNumber.trim() || '',
           avatar: tempUser.avatar || profileImage || '',
           role: 'vendor',
-          rewardPoints: tempUser.rewardPoints || 0
+          rewardPoints: tempUser.rewardPoints || 0,
+          upiNumber: tempUser.upiNumber || upiNumber.trim(),
+          upiId: tempUser.upiId || upiId.trim(),
+          bankName: tempUser.bankName || bankName.trim(),
+          accountNumber: tempUser.accountNumber || accountNumber.trim(),
+          ifscCode: tempUser.ifscCode || ifscCode.trim()
         });
         Alert.alert('Registration Successful', 'Your shop has been registered and is pending approval by the Admin.', [
           { text: 'OK', onPress: () => router.replace('/fingerprint') }
@@ -527,7 +542,12 @@ export default function LoginScreen() {
         phone: phoneNumber.trim(),
         avatar: profileImage || '',
         role: 'vendor',
-        rewardPoints: 10
+        rewardPoints: 10,
+        upiNumber: upiNumber.trim(),
+        upiId: upiId.trim(),
+        bankName: bankName.trim(),
+        accountNumber: accountNumber.trim(),
+        ifscCode: ifscCode.trim()
       });
       Alert.alert('Registration Submitted (Offline)', 'Shop registered offline and pending admin approval.', [
         { text: 'OK', onPress: () => router.replace('/fingerprint') }
