@@ -71,7 +71,7 @@ export default function SellerProfile() {
   const [shopAddress, setShopAddress] = useState(myKitchen?.address || '');
   const [cuisines, setCuisines] = useState(myKitchen?.cuisines || '');
   const [logoUrl, setLogoUrl] = useState(myKitchen?.logoUrl || '');
-  const [coverImageUrl, setCoverImageUrl] = useState(myKitchen?.coverImageUrl || '');
+  const [coverImageUrl, setCoverImageUrl] = useState(myKitchen?.coverImageUrl || myKitchen?.image || '');
 
   // Bank states
   const [bankName, setBankName] = useState(myKitchen?.bankName || '');
@@ -111,7 +111,7 @@ export default function SellerProfile() {
       setShopAddress(myKitchen.address || '');
       setCuisines(myKitchen.cuisines || '');
       setLogoUrl(myKitchen.logoUrl || '');
-      setCoverImageUrl(myKitchen.coverImageUrl || '');
+      setCoverImageUrl(myKitchen.coverImageUrl || myKitchen.image || '');
       setBankName(myKitchen.bankName || '');
       setAccountNumber(myKitchen.accountNumber || '');
       setIfscCode(myKitchen.ifscCode || '');
@@ -123,7 +123,7 @@ export default function SellerProfile() {
   }, [myKitchen, user, isInitialized]);
 
   // Image Selection Handlers (Camera & Gallery)
-  const handleSelectImage = async (type: 'logo' | 'cover', source: 'camera' | 'gallery') => {
+  const handleSelectImage = async (type: 'logo' | 'cover' | 'promo', source: 'camera' | 'gallery') => {
     try {
       const { status } = source === 'camera'
         ? await ImagePicker.requestCameraPermissionsAsync()
@@ -137,12 +137,12 @@ export default function SellerProfile() {
       const result = source === 'camera'
         ? await ImagePicker.launchCameraAsync({
             allowsEditing: true,
-            aspect: type === 'cover' ? [16, 9] : [1, 1],
+            aspect: type === 'logo' ? [1, 1] : [16, 9],
             quality: 0.8,
           })
         : await ImagePicker.launchImageLibraryAsync({
             allowsEditing: true,
-            aspect: type === 'cover' ? [16, 9] : [1, 1],
+            aspect: type === 'logo' ? [1, 1] : [16, 9],
             quality: 0.8,
           });
 
@@ -154,8 +154,10 @@ export default function SellerProfile() {
         if (uploadedUrl) {
           if (type === 'logo') {
             setLogoUrl(uploadedUrl);
-          } else {
+          } else if (type === 'cover') {
             setCoverImageUrl(uploadedUrl);
+          } else if (type === 'promo') {
+            setNewPromoBannerUrl(uploadedUrl);
           }
           Alert.alert('Success', 'Image uploaded successfully!');
         } else {
@@ -169,7 +171,7 @@ export default function SellerProfile() {
     }
   };
 
-  const requestPhotoSource = (type: 'logo' | 'cover') => {
+  const requestPhotoSource = (type: 'logo' | 'cover' | 'promo') => {
     Alert.alert(
       'Upload Photo',
       'Select source:',
@@ -319,8 +321,8 @@ export default function SellerProfile() {
           gender: gender.trim(),
           avatar: uploadedAvatar,
           role: user.role,
-          upiNumber: payoutOption === 'upi' ? upiNumber.trim() : '',
-          upiId: payoutOption === 'upi' ? upiId.trim() : ''
+          upiNumber: upiNumber.trim(),
+          upiId: upiId.trim()
         })
       });
       const jsonProfile = await resProfile.json();
@@ -345,12 +347,10 @@ export default function SellerProfile() {
             logoUrl: uploadedLogo,
             coverImageUrl: uploadedCover,
             address: shopAddress.trim(),
-            bankName: payoutOption === 'bank' ? bankName.trim() : '',
-            accountNumber: payoutOption === 'bank' ? accountNumber.trim() : '',
-            ifscCode: payoutOption === 'bank' ? ifscCode.trim() : '',
-            bankAccount: payoutOption === 'bank' 
-              ? `${bankName.trim()} A/C ${accountNumber.trim()}` 
-              : `UPI: ${upiNumber.trim() || upiId.trim()}`,
+            bankName: bankName.trim(),
+            accountNumber: accountNumber.trim(),
+            ifscCode: ifscCode.trim(),
+            bankAccount: `${bankName.trim()} A/C ${accountNumber.trim()} | UPI: ${upiId.trim()}`,
             isLive: myKitchen.isLive
           })
         });
@@ -645,12 +645,33 @@ export default function SellerProfile() {
               </Text>
 
               <TextInput
-                style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
+                style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border, marginBottom: 8 }]}
                 placeholder="Promotion Image URL..."
                 placeholderTextColor="#888"
                 value={newPromoBannerUrl}
                 onChangeText={setNewPromoBannerUrl}
               />
+
+              {newPromoBannerUrl ? (
+                <Image source={{ uri: newPromoBannerUrl }} style={{ width: '100%', height: 100, borderRadius: 8, marginBottom: 8, borderWidth: 1, borderColor: themeColors.border }} resizeMode="cover" />
+              ) : null}
+
+              <TouchableOpacity 
+                style={{ 
+                  flexDirection: 'row', 
+                  alignItems: 'center', 
+                  backgroundColor: '#2c2c2c', 
+                  paddingHorizontal: 12, 
+                  paddingVertical: 8, 
+                  borderRadius: 8,
+                  marginBottom: 16,
+                  alignSelf: 'flex-start'
+                }} 
+                onPress={() => requestPhotoSource('promo')}
+              >
+                <Camera size={12} color="#FFF" style={{ marginRight: 6 }} />
+                <Text style={{ color: '#FFF', fontSize: 11, fontWeight: 'bold' }}>Choose Banner Image (Camera/Gallery)</Text>
+              </TouchableOpacity>
 
               <TextInput
                 style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}

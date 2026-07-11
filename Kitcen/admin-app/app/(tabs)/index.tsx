@@ -848,7 +848,7 @@ export default function AdminDashboard() {
                     <View style={[styles.statsRow, { borderBottomColor: themeColors.border }]}>
                       <Text style={[styles.statsLabel, { color: themeColors.textSecondary }]}>Bank A/C Number:</Text>
                       <Text style={[styles.statsVal, { color: themeColors.text }]}>
-                        {selectedSellerForStats.bankAccount || 'Not Provided'}
+                        {selectedSellerForStats.accountNumber || selectedSellerForStats.bankAccount || 'Not Provided'}
                       </Text>
                     </View>
 
@@ -856,6 +856,20 @@ export default function AdminDashboard() {
                       <Text style={[styles.statsLabel, { color: themeColors.textSecondary }]}>IFSC Code:</Text>
                       <Text style={[styles.statsVal, { color: themeColors.text }]}>
                         {selectedSellerForStats.ifscCode || 'Not Provided'}
+                      </Text>
+                    </View>
+
+                    <View style={[styles.statsRow, { borderBottomColor: themeColors.border }]}>
+                      <Text style={[styles.statsLabel, { color: themeColors.textSecondary }]}>UPI Mobile Number:</Text>
+                      <Text style={[styles.statsVal, { color: themeColors.text }]}>
+                        {selectedSellerForStats.upiNumber || 'Not Provided'}
+                      </Text>
+                    </View>
+
+                    <View style={[styles.statsRow, { borderBottomColor: themeColors.border }]}>
+                      <Text style={[styles.statsLabel, { color: themeColors.textSecondary }]}>UPI ID:</Text>
+                      <Text style={[styles.statsVal, { color: themeColors.text }]}>
+                        {selectedSellerForStats.upiId || 'Not Provided'}
                       </Text>
                     </View>
 
@@ -946,11 +960,19 @@ export default function AdminDashboard() {
                   </View>
                   <View style={[styles.detailRow, { borderBottomColor: themeColors.border }]}>
                     <Text style={[styles.detailLabel, { color: themeColors.textSecondary }]}>Bank Account:</Text>
-                    <Text style={[styles.detailValue, { color: themeColors.text }]}>{selectedKitchen.bankAccount || 'Not Provided'}</Text>
+                    <Text style={[styles.detailValue, { color: themeColors.text }]}>{selectedKitchen.accountNumber || selectedKitchen.bankAccount || 'Not Provided'}</Text>
                   </View>
                   <View style={[styles.detailRow, { borderBottomColor: themeColors.border }]}>
                     <Text style={[styles.detailLabel, { color: themeColors.textSecondary }]}>IFSC Code:</Text>
                     <Text style={[styles.detailValue, { color: themeColors.text }]}>{selectedKitchen.ifscCode || 'Not Provided'}</Text>
+                  </View>
+                  <View style={[styles.detailRow, { borderBottomColor: themeColors.border }]}>
+                    <Text style={[styles.detailLabel, { color: themeColors.textSecondary }]}>UPI Mobile Number:</Text>
+                    <Text style={[styles.detailValue, { color: themeColors.text }]}>{selectedKitchen.upiNumber || 'Not Provided'}</Text>
+                  </View>
+                  <View style={[styles.detailRow, { borderBottomColor: themeColors.border }]}>
+                    <Text style={[styles.detailLabel, { color: themeColors.textSecondary }]}>UPI ID:</Text>
+                    <Text style={[styles.detailValue, { color: themeColors.text }]}>{selectedKitchen.upiId || 'Not Provided'}</Text>
                   </View>
                   <View style={[styles.detailRow, { borderBottomColor: themeColors.border }]}>
                     <Text style={[styles.detailLabel, { color: themeColors.textSecondary }]}>Cuisines:</Text>

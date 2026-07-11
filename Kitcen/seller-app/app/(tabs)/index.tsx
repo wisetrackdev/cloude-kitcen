@@ -29,8 +29,11 @@ import {
   Trash2,
   Ticket,
   Image as ImageIcon,
-  Sparkles
+  Sparkles,
+  Camera
 } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { uploadImageToServer } from '../../store/uploadHelper';
 import { theme } from '../../styles/theme';
 import { useKitchenStore } from '../../store/useKitchenStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -128,6 +131,7 @@ export default function SellerDashboard() {
       // Offline mode fallback
       setIsLiveState(nextLiveState);
       Alert.alert('Offline Mode', `Status updated locally to ${nextLiveState ? 'ONLINE' : 'OFFLINE'}.`);
+    }
   };
 
   // Hamburger Drawer & Management states
@@ -306,6 +310,60 @@ export default function SellerDashboard() {
       console.warn('Failed to load banners', err);
     }
     setIsLoadingBanners(false);
+  };
+
+  const handleSelectBannerImage = async (source: 'camera' | 'gallery') => {
+    try {
+      const { status } = source === 'camera'
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Permission is required to choose a photo.');
+        return;
+      }
+
+      const result = source === 'camera'
+        ? await ImagePicker.launchCameraAsync({
+            allowsEditing: true,
+            aspect: [16, 9],
+            quality: 0.8,
+          })
+        : await ImagePicker.launchImageLibraryAsync({
+            allowsEditing: true,
+            aspect: [16, 9],
+            quality: 0.8,
+          });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setIsLoadingBanners(true);
+        const localUri = result.assets[0].uri;
+        const uploadedUrl = await uploadImageToServer(localUri);
+        setIsLoadingBanners(false);
+        if (uploadedUrl) {
+          setNewBannerImage(uploadedUrl);
+          Alert.alert('Success', 'Image uploaded successfully!');
+        } else {
+          Alert.alert('Error', 'Failed to upload image to server.');
+        }
+      }
+    } catch (err) {
+      setIsLoadingBanners(false);
+      console.warn('Image selection failed:', err);
+      Alert.alert('Error', 'Failed to select and upload image.');
+    }
+  };
+
+  const requestBannerPhotoSource = () => {
+    Alert.alert(
+      'Upload Promo Banner',
+      'Select source:',
+      [
+        { text: 'Camera', onPress: () => handleSelectBannerImage('camera') },
+        { text: 'Gallery', onPress: () => handleSelectBannerImage('gallery') },
+        { text: 'Cancel', style: 'cancel' }
+      ]
+    );
   };
 
   const handleCreateBanner = async () => {
@@ -944,7 +1002,6 @@ export default function SellerDashboard() {
                 Publish a promotional advertisement banner for your kitchen on the customer app's home screen. Clicking the banner will open your kitchen shop page.
               </Text>
 
-              <View style={styles.inputWrapper}>
                 <TextInput
                   placeholder="Banner Image URL"
                   placeholderTextColor="#888"
@@ -953,12 +1010,32 @@ export default function SellerDashboard() {
                   style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border, width: '100%', marginBottom: 10 }]}
                 />
                 
+                {newBannerImage ? (
+                  <Image source={{ uri: newBannerImage }} style={{ width: '100%', height: 100, borderRadius: 8, marginBottom: 10, borderWidth: 1, borderColor: themeColors.border }} resizeMode="cover" />
+                ) : null}
+
+                <TouchableOpacity 
+                  style={{ 
+                    flexDirection: 'row', 
+                    alignItems: 'center', 
+                    backgroundColor: '#2c2c2c', 
+                    paddingHorizontal: 12, 
+                    paddingVertical: 8, 
+                    borderRadius: 8,
+                    marginBottom: 10,
+                    alignSelf: 'flex-start'
+                  }} 
+                  onPress={requestBannerPhotoSource}
+                >
+                  <Camera size={12} color="#FFF" style={{ marginRight: 6 }} />
+                  <Text style={{ color: '#FFF', fontSize: 11, fontWeight: 'bold' }}>Choose Banner Image (Camera/Gallery)</Text>
+                </TouchableOpacity>
+                
                 <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: themeColors.inputBg, borderRadius: 8, padding: 10, borderWidth: 1, borderColor: themeColors.border }}>
                   <Text style={{ fontSize: 10, color: themeColors.textSecondary, flex: 1 }}>
                     Target Link: <Text style={{ fontWeight: 'bold' }}>restaurant/{selectedKitchenId}</Text> (Points directly to your kitchen page)
                   </Text>
                 </View>
-              </View>
 
               <TouchableOpacity style={[styles.saveBtn, { backgroundColor: ZOMATO_RED, marginTop: 14 }]} onPress={handleCreateBanner}>
                 <Text style={styles.saveBtnText}>Publish Banner Ad</Text>

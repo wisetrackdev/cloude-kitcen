@@ -480,6 +480,7 @@ export default function LoginScreen() {
           offer: 'Freshly Cooked Homestyle Food',
           image: shopImage,
           logoUrl: shopLogo,
+          coverImageUrl: shopImage,
           address: completeAddress,
           floor: shopFloor,
           officeGaliNumber: shopGaliNumber,
@@ -487,7 +488,11 @@ export default function LoginScreen() {
           longitude: longitude || 72.8777,
           isApproved: 'pending',
           utrNumber: utrNumber.trim(),
-          paymentScreenshot: paymentScreenshot
+          paymentScreenshot: paymentScreenshot,
+          bankName: bankName.trim(),
+          accountNumber: accountNumber.trim(),
+          ifscCode: ifscCode.trim(),
+          bankAccount: `${bankName.trim()} A/C ${accountNumber.trim()} | UPI: ${upiId.trim()}`
         })
       });
 
