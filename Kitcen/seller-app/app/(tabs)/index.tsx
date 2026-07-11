@@ -176,11 +176,80 @@ export default function SellerDashboard() {
     setIsLoadingCategories(false);
   };
 
+  const handleSelectCategoryImage = async (source: 'camera' | 'gallery') => {
+    try {
+      const { status } = source === 'camera'
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Permission is required to choose a photo.');
+        return;
+      }
+
+      const result = source === 'camera'
+        ? await ImagePicker.launchCameraAsync({
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+          })
+        : await ImagePicker.launchImageLibraryAsync({
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+          });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setIsLoadingCategories(true);
+        const localUri = result.assets[0].uri;
+        const uploadedUrl = await uploadImageToServer(localUri);
+        setIsLoadingCategories(false);
+        if (uploadedUrl) {
+          setNewCategoryImage(uploadedUrl);
+          Alert.alert('Success', 'Image uploaded successfully!');
+        } else {
+          Alert.alert('Error', 'Failed to upload image to server.');
+        }
+      }
+    } catch (err) {
+      setIsLoadingCategories(false);
+      console.warn('Failed to pick category image', err);
+    }
+  };
+
+  const requestCategoryImageSource = () => {
+    Alert.alert(
+      'Category Image Source',
+      'Select image upload source:',
+      [
+        {
+          text: 'Camera (Take Photo)',
+          onPress: () => handleSelectCategoryImage('camera')
+        },
+        {
+          text: 'Gallery (Choose from Library)',
+          onPress: () => handleSelectCategoryImage('gallery')
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        }
+      ]
+    );
+  };
+
   const handleCreateCategory = async () => {
     if (!newCategoryName.trim()) {
       Alert.alert('Error', 'Please enter category name');
       return;
     }
+
+    const exists = categories.some(c => c.name.trim().toLowerCase() === newCategoryName.trim().toLowerCase());
+    if (exists) {
+      Alert.alert('Error', 'Category already exists!');
+      return;
+    }
+
     const id = 'cat-' + newCategoryName.toLowerCase().replace(/ /g, '-');
     const image = newCategoryImage.trim() || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=120';
     try {
@@ -841,13 +910,21 @@ export default function SellerDashboard() {
                   onChangeText={setNewCategoryName}
                   style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border, width: '100%', marginBottom: 10 }]}
                 />
-                <TextInput
-                  placeholder="Image URL (Optional)"
-                  placeholderTextColor="#888"
-                  value={newCategoryImage}
-                  onChangeText={setNewCategoryImage}
-                  style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border, width: '100%' }]}
-                />
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <TextInput
+                    placeholder="Image URL (or upload)"
+                    placeholderTextColor="#888"
+                    value={newCategoryImage}
+                    onChangeText={setNewCategoryImage}
+                    style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border, flex: 1, marginBottom: 0, marginRight: 10 }]}
+                  />
+                  <TouchableOpacity 
+                    style={{ backgroundColor: ZOMATO_RED, width: 40, height: 40, borderRadius: 8, alignItems: 'center', justifyContent: 'center' }} 
+                    onPress={requestCategoryImageSource}
+                  >
+                    <Camera size={18} color="#FFF" />
+                  </TouchableOpacity>
+                </View>
               </View>
 
               <TouchableOpacity style={[styles.saveBtn, { backgroundColor: ZOMATO_RED, marginTop: 14 }]} onPress={handleCreateCategory}>

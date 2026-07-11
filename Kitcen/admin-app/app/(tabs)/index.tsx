@@ -709,11 +709,13 @@ export default function AdminDashboard() {
               <View style={styles.categoriesGrid}>
                 {categories.map((cat) => (
                   <View key={cat.id} style={[styles.catCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
-                    {cat.image ? (
-                      <Image source={{ uri: cat.image }} style={styles.catCardImage} />
-                    ) : (
-                      <View style={styles.catCardPlaceholder} />
-                    )}
+                    <Image 
+                      source={{ uri: (cat.image && cat.image.trim() !== '') ? cat.image : 
+                                     (cat.imageUrl && cat.imageUrl.trim() !== '') ? cat.imageUrl : 
+                                     (cat.image_url && cat.image_url.trim() !== '') ? cat.image_url : 
+                                     'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300' }} 
+                      style={styles.catCardImage} 
+                    />
                     <View style={styles.catCardInfo}>
                       <Text style={[styles.catCardName, { color: themeColors.text }]} numberOfLines={1}>{cat.name}</Text>
                       <TouchableOpacity onPress={() => {

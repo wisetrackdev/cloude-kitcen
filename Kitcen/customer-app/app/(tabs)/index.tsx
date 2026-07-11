@@ -73,11 +73,28 @@ export default function HomeScreen() {
   const markAllAsRead = useNotificationStore(state => state.markAllAsRead);
   const clearAllNotifs = useNotificationStore(state => state.clearAll);
 
+  const [dbCategories, setDbCategories] = useState<any[]>([]);
+
   useEffect(() => {
     fetchKitchens();
     fetchAllProducts();
     fetchLiveBanners();
+    fetchDbCategories();
   }, []);
+
+  const fetchDbCategories = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/categories`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          setDbCategories(json.data);
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to load categories from API:', err);
+    }
+  };
 
   const fetchLiveBanners = async () => {
     try {
@@ -113,16 +130,28 @@ export default function HomeScreen() {
     return list;
   };
 
-  // Compile categories dynamically (combine custom categories from sellers with static ones)
   const getDynamicCategories = () => {
-    const list = [...categoryMeta];
+    const list = dbCategories.map(c => ({
+      name: c.name,
+      image: c.image || c.imageUrl || c.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=120'
+    }));
+
+    if (list.length === 0) {
+      categoryMeta.forEach(meta => {
+        list.push({
+          name: meta.name,
+          image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=120'
+        });
+      });
+    }
+
     allProducts.forEach(p => {
       if (p.category && p.category.trim() !== '') {
         const exists = list.some(c => c.name.toLowerCase() === p.category.toLowerCase());
         if (!exists) {
           list.push({
             name: p.category,
-            icon: Utensils // Default icon for dynamic seller categories
+            image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=120'
           });
         }
       }
@@ -271,7 +300,6 @@ export default function HomeScreen() {
               <View style={styles.categoryContainer}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
                   {categories.map((cat, index) => {
-                    const IconComponent = cat.icon || Utensils;
                     const isSelected = selectedCategory?.toLowerCase() === cat.name.toLowerCase();
                     return (
                       <TouchableOpacity 
@@ -279,8 +307,12 @@ export default function HomeScreen() {
                         style={styles.categoryItem}
                         onPress={() => setSelectedCategory(isSelected ? null : cat.name)}
                       >
-                        <View style={[styles.categoryCircle, isSelected && styles.categoryCircleSelected]}>
-                          <IconComponent size={22} color={isSelected ? "#FFF" : "#FFB300"} strokeWidth={1.8} />
+                        <View style={[styles.categoryCircle, isSelected && styles.categoryCircleSelected, { overflow: 'hidden' }]}>
+                          <Image 
+                            source={{ uri: cat.image }} 
+                            style={{ width: '100%', height: '100%', borderRadius: 29 }} 
+                            resizeMode="cover"
+                          />
                         </View>
                         <Text style={[styles.categoryLabel, isSelected && styles.categoryLabelSelected]}>{cat.name}</Text>
                       </TouchableOpacity>

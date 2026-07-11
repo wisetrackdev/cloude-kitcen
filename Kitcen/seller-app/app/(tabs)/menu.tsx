@@ -72,7 +72,6 @@ export default function SellerMenuScreen() {
   const [newDishImage, setNewDishImage] = useState('');
   const [newDishVeg, setNewDishVeg] = useState(true);
   const [newDishCat, setNewDishCat] = useState('Tiffin Meals');
-  const [customCategory, setCustomCategory] = useState('');
 
   const [hiddenCategories, setHiddenCategories] = useState<string[]>([]);
 
@@ -165,11 +164,6 @@ export default function SellerMenuScreen() {
     }
 
     let finalCategory = newDishCat;
-    if (customCategory.trim() !== '') {
-      finalCategory = customCategory.trim();
-      // Call store to create category in database dynamically
-      await createCategory(finalCategory);
-    }
 
     // Upload local image URI to Cloudinary if set, otherwise fallback to placeholder
     let finalImageUrl = '';
@@ -202,7 +196,6 @@ export default function SellerMenuScreen() {
     setNewDishPrice('');
     setNewDishDesc('');
     setNewDishImage('');
-    setCustomCategory('');
     setShowAddDishModal(false);
     Alert.alert('Success', 'Dish added successfully to your kitchen!');
   };
@@ -387,7 +380,6 @@ export default function SellerMenuScreen() {
                     ]}
                     onPress={() => {
                       setNewDishCat(cat.name);
-                      setCustomCategory('');
                     }}
                   >
                     <Tag size={10} color={newDishCat === cat.name ? '#000' : '#888'} style={{ marginRight: 4 }} />
@@ -398,17 +390,6 @@ export default function SellerMenuScreen() {
                   </TouchableOpacity>
                 ))}
               </ScrollView>
-
-              <TextInput
-                placeholder="Or create new category (e.g. Desserts)"
-                placeholderTextColor="#888"
-                value={customCategory}
-                onChangeText={(text) => {
-                  setCustomCategory(text);
-                  setNewDishCat(text);
-                }}
-                style={[styles.inputField, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
-              />
 
               <View style={styles.switchRow}>
                 <Text style={[styles.switchLabel, { color: themeColors.textSecondary }]}>Dietary Status: Veg Item</Text>
