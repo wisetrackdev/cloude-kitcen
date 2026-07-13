@@ -421,9 +421,11 @@ const styles = StyleSheet.create({
   },
   categorySelector: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     paddingHorizontal: 16,
     marginTop: 24,
-    marginBottom: 16,
+    marginBottom: 10,
+    rowGap: 10,
   },
   categoryBtn: {
     paddingVertical: 8,
@@ -431,6 +433,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     marginRight: 10,
+    marginBottom: 8,
   },
   categoryBtnActive: {
     backgroundColor: '#FF5252',

@@ -305,7 +305,7 @@ export default function HomeScreen() {
             <>
               {/* Categories Horizontal Slider */}
               <View style={styles.categoryContainer}>
-                <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
+                <ScrollView horizontal={true} nestedScrollEnabled={true} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
                   {categories.map((cat, index) => {
                     const isSelected = selectedCategory 
                       ? (selectedCategory.toLowerCase() === cat.name.toLowerCase()) 
@@ -346,7 +346,7 @@ export default function HomeScreen() {
                 </TouchableOpacity>
               </View>
 
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.bestSellerScroll}>
+              <ScrollView horizontal={true} nestedScrollEnabled={true} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.bestSellerScroll}>
                 {getBestSellers().map((item: any) => (
                   <TouchableOpacity 
                     key={item.id} 
@@ -362,7 +362,7 @@ export default function HomeScreen() {
               </ScrollView>
 
               {/* Dynamic Promo Banners Slider */}
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
+              <ScrollView horizontal={true} nestedScrollEnabled={true} showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
                 {liveBanners.map((banner, index) => (
                   <TouchableOpacity 
                     key={banner.id || index} 
