@@ -23,6 +23,7 @@ import {
   HelpCircle, 
   AlertTriangle, 
   Award, 
+  Gift,
   Compass, 
   Power, 
   Navigation, 
@@ -40,7 +41,8 @@ import {
   Activity, 
   Calendar, 
   Inbox, 
-  ShieldAlert 
+  ShieldAlert,
+  Sparkles
 } from 'lucide-react-native';
 import { theme } from '../../styles/theme';
 import { useKitchenStore } from '../../store/useKitchenStore';
