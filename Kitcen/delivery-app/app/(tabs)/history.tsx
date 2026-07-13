@@ -94,10 +94,10 @@ export default function RiderHistoryScreen() {
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
       
       {/* Fixed Header */}
-      <View style={[styles.header, { backgroundColor: themeColors.card, borderBottomColor: themeColors.border }]}>
+      <View style={[styles.header, { backgroundColor: '#FFCC00', borderBottomColor: '#E2B200' }]}>
         <View style={styles.headerInfo}>
-          <Text style={styles.subtitle}>Earnings & Records</Text>
-          <Text style={[styles.title, { color: themeColors.text }]}>Delivery History</Text>
+          <Text style={[styles.subtitle, { color: '#333' }]}>Earnings & Records</Text>
+          <Text style={[styles.title, { color: '#000' }]}>Delivery History</Text>
         </View>
         <View style={styles.badge}>
           <Award size={14} color="#000" />

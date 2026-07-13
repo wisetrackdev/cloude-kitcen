@@ -14,7 +14,7 @@ namespace CloudeKicten.Models.BusinessLayer
         Task<ApiResponse<List<OrderResponseDto>>> GetOrdersByRiderIdAsync(string riderId);
         Task<ApiResponse<OrderResponseDto>> GetOrderByIdAsync(string id);
         Task<ApiResponse<OrderResponseDto>> CreateOrderAsync(OrderCreateDto dto);
-        Task<ApiResponse<OrderResponseDto>> UpdateOrderStatusAsync(string id, string status);
+        Task<ApiResponse<OrderResponseDto>> UpdateOrderStatusAsync(string id, string status, string? pickupPhotoUrl = null, string? deliveryPhotoUrl = null);
         Task<ApiResponse<bool>> DeleteOrderAsync(string id);
         Task<ApiResponse<List<ChatDto>>> GetChatsByOrderIdAsync(string orderId);
         Task<ApiResponse<ChatDto>> SendChatMessageAsync(string orderId, ChatCreateDto dto);
@@ -147,13 +147,15 @@ namespace CloudeKicten.Models.BusinessLayer
             return ApiResponse<OrderResponseDto>.Ok(res, "Order placed successfully.");
         }
 
-        public async Task<ApiResponse<OrderResponseDto>> UpdateOrderStatusAsync(string id, string status)
+        public async Task<ApiResponse<OrderResponseDto>> UpdateOrderStatusAsync(string id, string status, string? pickupPhotoUrl = null, string? deliveryPhotoUrl = null)
         {
             var o = await _databaseLayer.GetOrderByIdAsync(id);
             if (o == null) return ApiResponse<OrderResponseDto>.Fail("Order not found.");
 
-            await _databaseLayer.UpdateOrderStatusAsync(id, status);
+            await _databaseLayer.UpdateOrderStatusAsync(id, status, pickupPhotoUrl, deliveryPhotoUrl);
             o.Status = status;
+            if (pickupPhotoUrl != null) o.PickupPhotoUrl = pickupPhotoUrl;
+            if (deliveryPhotoUrl != null) o.DeliveryPhotoUrl = deliveryPhotoUrl;
 
             var res = await MapToOrderResponseDtoAsync(o);
             return ApiResponse<OrderResponseDto>.Ok(res, "Order status updated successfully.");
@@ -268,7 +270,11 @@ namespace CloudeKicten.Models.BusinessLayer
                 PickedUpAt = dbOrder.PickedUpAt?.ToString("yyyy-MM-dd HH:mm:ss"),
                 DeliveredAt = dbOrder.DeliveredAt?.ToString("yyyy-MM-dd HH:mm:ss"),
                 AcceptedByRiderAt = dbOrder.AcceptedByRiderAt?.ToString("yyyy-MM-dd HH:mm:ss"),
-                CreatedAt = dbOrder.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")
+                CreatedAt = dbOrder.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"),
+                PickupPhotoUrl = dbOrder.PickupPhotoUrl,
+                DeliveryPhotoUrl = dbOrder.DeliveryPhotoUrl,
+                IsRiderSettled = dbOrder.IsRiderSettled,
+                IsSellerSettled = dbOrder.IsSellerSettled
             };
         }
 

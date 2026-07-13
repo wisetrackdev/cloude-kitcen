@@ -158,6 +158,11 @@ namespace CloudeKicten
             ALTER TABLE shops ADD COLUMN IF NOT EXISTS bank_name VARCHAR(100) NULL;
             ALTER TABLE shops ADD COLUMN IF NOT EXISTS account_number VARCHAR(50) NULL;
             ALTER TABLE shops ADD COLUMN IF NOT EXISTS ifsc_code VARCHAR(50) NULL;
+
+            ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_photo_url VARCHAR(500) NULL;
+            ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_photo_url VARCHAR(500) NULL;
+            ALTER TABLE orders ADD COLUMN IF NOT EXISTS is_rider_settled BOOLEAN DEFAULT FALSE;
+            ALTER TABLE orders ADD COLUMN IF NOT EXISTS is_seller_settled BOOLEAN DEFAULT FALSE;
         ";
 
         public const string CreateOrderChatsTable = @"
@@ -653,38 +658,38 @@ namespace CloudeKicten
         // ==========================================
 
         public const string InsertOrder = @"
-            INSERT INTO orders (id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at)
-            VALUES (@Id, @KitchenId, @CustomerId, @ItemsJson, @Subtotal, @DeliveryCharge, @Tax, @Discount, @Total, @Status, @PaymentMethod, @OrderDate, @RiderId, @DeliveryAddress, CURRENT_TIMESTAMP);
+            INSERT INTO orders (id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at, is_rider_settled, is_seller_settled)
+            VALUES (@Id, @KitchenId, @CustomerId, @ItemsJson, @Subtotal, @DeliveryCharge, @Tax, @Discount, @Total, @Status, @PaymentMethod, @OrderDate, @RiderId, @DeliveryAddress, CURRENT_TIMESTAMP, @IsRiderSettled, @IsSellerSettled);
         ";
 
         public const string GetAllOrders = @"
-            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at, picked_up_at, delivered_at, accepted_by_rider_at
+            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at, picked_up_at, delivered_at, accepted_by_rider_at, is_rider_settled, is_seller_settled, pickup_photo_url, delivery_photo_url
             FROM orders
             ORDER BY created_at DESC;
         ";
 
         public const string GetOrderById = @"
-            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at, picked_up_at, delivered_at, accepted_by_rider_at
+            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at, picked_up_at, delivered_at, accepted_by_rider_at, is_rider_settled, is_seller_settled, pickup_photo_url, delivery_photo_url
             FROM orders
             WHERE id = @Id;
         ";
 
         public const string GetOrdersByCustomerId = @"
-            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at, picked_up_at, delivered_at, accepted_by_rider_at
+            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at, picked_up_at, delivered_at, accepted_by_rider_at, is_rider_settled, is_seller_settled, pickup_photo_url, delivery_photo_url
             FROM orders
             WHERE customer_id = @CustomerId
             ORDER BY created_at DESC;
         ";
 
         public const string GetOrdersByKitchenId = @"
-            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at, picked_up_at, delivered_at, accepted_by_rider_at
+            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at, picked_up_at, delivered_at, accepted_by_rider_at, is_rider_settled, is_seller_settled, pickup_photo_url, delivery_photo_url
             FROM orders
             WHERE kitchen_id = @KitchenId
             ORDER BY created_at DESC;
         ";
 
         public const string GetOrdersByRiderId = @"
-            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at, picked_up_at, delivered_at, accepted_by_rider_at
+            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at, picked_up_at, delivered_at, accepted_by_rider_at, is_rider_settled, is_seller_settled, pickup_photo_url, delivery_photo_url
             FROM orders
             WHERE rider_id = @RiderId
             ORDER BY created_at DESC;
@@ -694,7 +699,9 @@ namespace CloudeKicten
             UPDATE orders
             SET status = @Status,
                 picked_up_at = CASE WHEN @Status = 'on_the_way' THEN CURRENT_TIMESTAMP ELSE picked_up_at END,
-                delivered_at = CASE WHEN @Status = 'delivered' THEN CURRENT_TIMESTAMP ELSE delivered_at END
+                delivered_at = CASE WHEN @Status = 'delivered' THEN CURRENT_TIMESTAMP ELSE delivered_at END,
+                pickup_photo_url = CASE WHEN @PickupPhotoUrl IS NOT NULL THEN @PickupPhotoUrl ELSE pickup_photo_url END,
+                delivery_photo_url = CASE WHEN @DeliveryPhotoUrl IS NOT NULL THEN @DeliveryPhotoUrl ELSE delivery_photo_url END
             WHERE id = @Id;
         ";
 

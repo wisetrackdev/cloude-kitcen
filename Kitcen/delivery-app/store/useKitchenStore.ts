@@ -96,7 +96,7 @@ interface KitchenState {
   
   // Order actions
   placeOrder: (order: Omit<OrderRecord, 'id' | 'status' | 'date'>) => Promise<string>;
-  updateOrderStatus: (orderId: string, status: OrderRecord['status']) => Promise<void>;
+  updateOrderStatus: (orderId: string, status: OrderRecord['status'], pickupPhotoUrl?: string, deliveryPhotoUrl?: string) => Promise<boolean>;
   acceptOrder: (orderId: string, riderId: string) => Promise<boolean>;
 }
 
@@ -409,28 +409,39 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
     return id;
   },
 
-  updateOrderStatus: async (orderId, status) => {
+  updateOrderStatus: async (orderId, status, pickupPhotoUrl, deliveryPhotoUrl) => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/orders/${orderId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status })
+        body: JSON.stringify({ status, pickupPhotoUrl, deliveryPhotoUrl })
       });
       const json = await res.json();
       if (json.success) {
         set((state) => ({
-          orders: state.orders.map(o => o.id === orderId ? { ...o, status } : o)
+          orders: state.orders.map(o => o.id === orderId ? { 
+            ...o, 
+            status, 
+            pickupPhotoUrl: pickupPhotoUrl || o.pickupPhotoUrl, 
+            deliveryPhotoUrl: deliveryPhotoUrl || o.deliveryPhotoUrl 
+          } : o)
         }));
-        return;
+        return true;
       }
+      return false;
     } catch (err) {
       console.error('API Error updating order status, doing local fallback:', err);
+      // Fallback
+      set((state) => ({
+        orders: state.orders.map(o => o.id === orderId ? { 
+          ...o, 
+          status, 
+          pickupPhotoUrl: pickupPhotoUrl || o.pickupPhotoUrl, 
+          deliveryPhotoUrl: deliveryPhotoUrl || o.deliveryPhotoUrl 
+        } : o)
+      }));
+      return true;
     }
-
-    // Fallback
-    set((state) => ({
-      orders: state.orders.map(o => o.id === orderId ? { ...o, status } : o)
-    }));
   },
 
   acceptOrder: async (orderId, riderId) => {

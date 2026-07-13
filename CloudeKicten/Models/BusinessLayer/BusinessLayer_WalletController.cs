@@ -12,6 +12,7 @@ namespace CloudeKicten.Models.BusinessLayer
         Task<ApiResponse<WalletDb>> DebitWalletAsync(string userId, decimal amount, string description);
         Task<ApiResponse<List<WalletTransactionDb>>> GetTransactionHistoryAsync(string userId);
         Task<ApiResponse<bool>> ProcessPaymentAsync(string? orderId, string? subId, decimal amount, string method, string transactionId, string status);
+        Task<ApiResponse<PayoutCycleInfoDto>> GetPayoutCycleInfoAsync(string userId);
     }
 
     public class BusinessLayer_WalletController : IBusinessLayer_WalletController
@@ -72,6 +73,12 @@ namespace CloudeKicten.Models.BusinessLayer
             var result = await _databaseLayer.InsertPaymentAsync(id, orderId, subId, amount, method, transactionId, status);
             if (!result) return ApiResponse<bool>.Fail("Failed to log payment transaction.");
             return ApiResponse<bool>.Ok(true, "Payment transaction completed successfully.");
+        }
+
+        public async Task<ApiResponse<PayoutCycleInfoDto>> GetPayoutCycleInfoAsync(string userId)
+        {
+            var info = await _databaseLayer.GetPayoutCycleInfoAsync(userId);
+            return ApiResponse<PayoutCycleInfoDto>.Ok(info);
         }
     }
 }

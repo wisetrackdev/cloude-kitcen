@@ -23,13 +23,16 @@ namespace CloudeKicten.Models.BusinessLayer
     {
         private readonly IDatabaseLayer_AdminController _databaseLayer;
         private readonly IDatabaseLayer_AuthController _authDatabaseLayer;
+        private readonly IDatabaseLayer_WalletController _walletDatabaseLayer;
 
         public BusinessLayer_AdminController(
             IDatabaseLayer_AdminController databaseLayer,
-            IDatabaseLayer_AuthController authDatabaseLayer)
+            IDatabaseLayer_AuthController authDatabaseLayer,
+            IDatabaseLayer_WalletController walletDatabaseLayer)
         {
             this._databaseLayer = databaseLayer;
             this._authDatabaseLayer = authDatabaseLayer;
+            this._walletDatabaseLayer = walletDatabaseLayer;
         }
 
         private async Task<bool> IsAdminUserAsync(string userId)
@@ -94,6 +97,13 @@ namespace CloudeKicten.Models.BusinessLayer
         {
             if (!await IsAdminUserAsync(adminUserId))
                 return ApiResponse<SettlementDb>.Fail("Unauthorized access. Admin role required.");
+
+            // Auto-calculate payout amount if 0 or less
+            if (settlement.Amount <= 0)
+            {
+                var cycleInfo = await _walletDatabaseLayer.GetPayoutCycleInfoAsync(settlement.UserId);
+                settlement.Amount = cycleInfo.UnpaidBalance;
+            }
 
             settlement.Id = "SET-" + Guid.NewGuid().ToString("N").Substring(0, 6).ToUpper();
             settlement.Status = "pending";

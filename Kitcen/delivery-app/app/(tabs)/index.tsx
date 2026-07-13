@@ -10,7 +10,8 @@ import {
   Modal, 
   TextInput, 
   ActivityIndicator, 
-  Switch 
+  Switch,
+  Image 
 } from 'react-native';
 import { 
   MapPin, 
@@ -49,6 +50,8 @@ import { useKitchenStore } from '../../store/useKitchenStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { API_BASE_URL } from '../../store/apiConfig';
 import { alertService } from '../../store/alertService';
+import * as ImagePicker from 'expo-image-picker';
+import { uploadImageToServer } from '../../store/uploadHelper';
 
 export default function RiderDashboard() {
   const user = useAuthStore(state => state.user);
@@ -66,6 +69,37 @@ export default function RiderDashboard() {
   const setTheme = useAuthStore(state => state.setTheme);
   const isOnline = useAuthStore(state => state.isOnline);
   const setDutyStatus = useAuthStore(state => state.setDutyStatus);
+
+  const [payoutInfo, setPayoutInfo] = useState<any>(null);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+
+  const fetchPayoutInfo = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/wallet/${riderId}/payout-info`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success) {
+          setPayoutInfo(json.data);
+        }
+      }
+    } catch (err) {
+      console.warn('Error fetching payout info:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchPayoutInfo();
+    const interval = setInterval(fetchPayoutInfo, 8000);
+    return () => clearInterval(interval);
+  }, [riderId]);
+
+  const getTodayEarnings = () => {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    return orders
+      .filter(o => o.riderId === riderId && o.status === 'delivered' && o.deliveredAt && new Date(o.deliveredAt.replace(' ', 'T')) >= todayStart)
+      .reduce((sum, o) => sum + Number(o.deliveryCharge || 40), 0);
+  };
 
   // Chat state
   const [chatOrder, setChatOrder] = useState<any>(null);
@@ -174,22 +208,85 @@ export default function RiderDashboard() {
     }
   };
 
+  const pickImageFromCamera = async (): Promise<string | null> => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Camera access is required to take order photo.');
+        return null;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        quality: 0.7,
+      });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        return result.assets[0].uri;
+      }
+      return null;
+    } catch (e) {
+      Alert.alert('Camera Error', 'Could not open camera.');
+      return null;
+    }
+  };
+
   const handleUpdateStatus = async (orderId: string, currentStatus: string) => {
     let nextStatus: typeof orders[0]['status'] = 'placed';
+    let promptMsg = '';
+    
     if (currentStatus === 'ready') {
       nextStatus = 'on_the_way';
+      promptMsg = 'Please take a photo of the order package at the seller counter before picking it up.';
     } else if (currentStatus === 'on_the_way') {
       nextStatus = 'delivered';
+      promptMsg = 'Please take a photo of the order handover at the customer location to complete delivery.';
     } else {
       return;
     }
 
-    const success = await updateOrderStatus(orderId, nextStatus);
-    if (success) {
-      Alert.alert('Status Updated', `Order status updated to: ${nextStatus.replace('_', ' ').toUpperCase()}`);
-    } else {
-      Alert.alert('Error', 'Failed to update order status.');
-    }
+    Alert.alert(
+      'Camera Verification Required',
+      promptMsg,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Open Camera',
+          onPress: async () => {
+            const localUri = await pickImageFromCamera();
+            if (!localUri) return;
+
+            setIsUpdatingStatus(true);
+            try {
+              const uploadedUrl = await uploadImageToServer(localUri);
+              if (!uploadedUrl) {
+                Alert.alert('Error', 'Failed to upload photo to server. Please try again.');
+                setIsUpdatingStatus(false);
+                return;
+              }
+
+              let pickupPhotoUrl: string | undefined = undefined;
+              let deliveryPhotoUrl: string | undefined = undefined;
+              if (currentStatus === 'ready') {
+                pickupPhotoUrl = uploadedUrl;
+              } else {
+                deliveryPhotoUrl = uploadedUrl;
+              }
+
+              const success = await updateOrderStatus(orderId, nextStatus, pickupPhotoUrl, deliveryPhotoUrl);
+              if (success) {
+                Alert.alert('Success', `Order status updated to: ${nextStatus.replace('_', ' ').toUpperCase()}`);
+                fetchPayoutInfo();
+              } else {
+                Alert.alert('Error', 'Failed to update order status.');
+              }
+            } catch (err: any) {
+              Alert.alert('Error', err.message || 'Verification failed. Try again.');
+            } finally {
+              setIsUpdatingStatus(false);
+            }
+          }
+        }
+      ]
+    );
   };
 
   const handleOpenMaps = (address: string) => {
@@ -241,19 +338,19 @@ export default function RiderDashboard() {
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
       
       {/* Header (Fixed at the top, does not scroll) */}
-      <View style={[styles.header, { backgroundColor: themeColors.card, borderBottomColor: themeColors.border }]}>
+      <View style={[styles.header, { backgroundColor: '#FFCC00', borderBottomColor: '#E2B200' }]}>
         
         {/* Toggle Switch Duty */}
         <TouchableOpacity 
           style={[
             styles.toggleDutyBtn, 
-            { backgroundColor: isOnline ? '#2ecc71' : (isDarkMode ? '#222' : '#E0E0E0') }
+            { backgroundColor: isOnline ? '#249B3E' : '#333' }
           ]}
           onPress={() => setDutyStatus(!isOnline)}
           activeOpacity={0.8}
         >
           <View style={[styles.toggleDot, { alignSelf: isOnline ? 'flex-end' : 'flex-start' }]} />
-          <Text style={[styles.toggleText, { color: isOnline ? '#000' : themeColors.text }]}>
+          <Text style={[styles.toggleText, { color: '#FFF' }]}>
             {isOnline ? 'Online' : 'Offline'}
           </Text>
         </TouchableOpacity>
@@ -263,19 +360,19 @@ export default function RiderDashboard() {
           
           {/* Light / Dark Mode Toggle */}
           <TouchableOpacity 
-            style={[styles.actionIconBtn, { borderColor: themeColors.border }]} 
+            style={[styles.actionIconBtn, { borderColor: '#E2B200', backgroundColor: 'rgba(0,0,0,0.05)' }]} 
             onPress={() => setTheme(!isDarkMode)}
           >
-            {isDarkMode ? <Sun size={16} color="#FFCC00" /> : <Moon size={16} color="#1E2022" />}
+            {isDarkMode ? <Sun size={16} color="#000" /> : <Moon size={16} color="#000" />}
           </TouchableOpacity>
 
           {/* Help Support */}
           <TouchableOpacity 
-            style={[styles.actionIconBtn, { borderColor: themeColors.border, minWidth: 55 }]} 
+            style={[styles.actionIconBtn, { borderColor: '#E2B200', backgroundColor: 'rgba(0,0,0,0.05)', minWidth: 55 }]} 
             onPress={triggerHelp}
           >
-            <HelpCircle size={14} color={isDarkMode ? '#AAA' : '#555'} />
-            <Text style={[styles.actionIconLabel, { color: themeColors.text }]}>HELP</Text>
+            <HelpCircle size={14} color="#000" />
+            <Text style={[styles.actionIconLabel, { color: '#000' }]}>HELP</Text>
           </TouchableOpacity>
 
           {/* SOS Emergency */}
@@ -295,6 +392,52 @@ export default function RiderDashboard() {
         contentContainerStyle={{ paddingBottom: 40 }} 
         showsVerticalScrollIndicator={false}
       >
+        {isUpdatingStatus && (
+          <View style={{ padding: 12, backgroundColor: '#FFCC00', flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
+            <ActivityIndicator size="small" color="#000" style={{ marginRight: 8 }} />
+            <Text style={{ fontSize: 12, color: '#000', fontWeight: 'bold' }}>Uploading photo & updating order status...</Text>
+          </View>
+        )}
+
+        {/* Payout & Earnings Summary Card (Visible in both online/offline) */}
+        <View style={{ paddingHorizontal: 16, marginTop: 12 }}>
+          <View style={[styles.payoutSummaryCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+            <Text style={[styles.payoutHeaderTitle, { color: themeColors.textSecondary }]}>
+              WEEKLY PAYOUT CYCLE (7 DAYS)
+            </Text>
+            
+            <View style={styles.payoutMetricsRow}>
+              {/* Today's Earnings */}
+              <View style={styles.payoutMetricItem}>
+                <Text style={styles.payoutMetricLabel}>Today's Earnings</Text>
+                <Text style={[styles.payoutMetricVal, { color: '#2ecc71' }]}>
+                  ₹{getTodayEarnings()}
+                </Text>
+                <Text style={styles.payoutMetricSub}>Resets at 12 AM</Text>
+              </View>
+
+              {/* Divider */}
+              <View style={[styles.verticalDivider, { backgroundColor: themeColors.border }]} />
+
+              {/* Current Cycle (Unpaid Balance) */}
+              <View style={styles.payoutMetricItem}>
+                <Text style={styles.payoutMetricLabel}>Unpaid Balance</Text>
+                <Text style={[styles.payoutMetricVal, { color: '#FFCC00' }]}>
+                  ₹{payoutInfo?.unpaidBalance ?? 0}
+                </Text>
+                <Text style={styles.payoutMetricSub}>Payout in {payoutInfo?.daysRemaining ?? 7} days</Text>
+              </View>
+            </View>
+
+            {/* Next Payout Details bar */}
+            <View style={[styles.payoutFooterBar, { backgroundColor: isDarkMode ? '#1a1a1a' : '#eaeaea' }]}>
+              <Calendar size={12} color={themeColors.textSecondary} style={{ marginRight: 6 }} />
+              <Text style={[styles.payoutFooterText, { color: themeColors.text }]}>
+                Next Payout: <Text style={{ fontWeight: 'bold' }}>{payoutInfo?.nextPayoutDate ?? 'Calculating...'}</Text>
+              </Text>
+            </View>
+          </View>
+        </View>
         
         {/* IF OFFLINE (OFF DUTY VIEW) */}
         {!isOnline ? (
@@ -422,6 +565,13 @@ export default function RiderDashboard() {
                                 <Text style={[styles.mapLinkText, { color: '#007AFF' }]}>💬 Chat Seller</Text>
                               </TouchableOpacity>
                             </View>
+
+                            {delivery.pickupPhotoUrl && (
+                              <View style={{ marginTop: 8 }}>
+                                <Text style={{ fontSize: 9, color: '#2ecc71', fontWeight: 'bold' }}>✓ Pickup Photo:</Text>
+                                <Image source={{ uri: delivery.pickupPhotoUrl }} style={{ width: 120, height: 80, borderRadius: 6, marginTop: 4 }} />
+                              </View>
+                            )}
                           </View>
                         </View>
 
@@ -463,6 +613,13 @@ export default function RiderDashboard() {
                                 <Text style={[styles.mapLinkText, { color: '#007AFF' }]}>💬 Chat Customer</Text>
                               </TouchableOpacity>
                             </View>
+
+                            {delivery.deliveryPhotoUrl && (
+                              <View style={{ marginTop: 8 }}>
+                                <Text style={{ fontSize: 9, color: '#2ecc71', fontWeight: 'bold' }}>✓ Delivery Photo:</Text>
+                                <Image source={{ uri: delivery.deliveryPhotoUrl }} style={{ width: 120, height: 80, borderRadius: 6, marginTop: 4 }} />
+                              </View>
+                            )}
                           </View>
                         </View>
                       </View>
@@ -1085,5 +1242,55 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 10,
+  },
+  payoutSummaryCard: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+  },
+  payoutHeaderTitle: {
+    fontSize: 9,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+    marginBottom: 12,
+  },
+  payoutMetricsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    marginBottom: 12,
+  },
+  payoutMetricItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  payoutMetricLabel: {
+    fontSize: 10,
+    color: '#888',
+    marginBottom: 4,
+  },
+  payoutMetricVal: {
+    fontSize: 22,
+    fontWeight: 'bold',
+  },
+  payoutMetricSub: {
+    fontSize: 8,
+    color: '#888',
+    marginTop: 2,
+  },
+  verticalDivider: {
+    width: 1,
+    height: 40,
+  },
+  payoutFooterBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  payoutFooterText: {
+    fontSize: 10,
   }
 });

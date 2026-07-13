@@ -65,7 +65,7 @@ namespace CloudeKicten.Controllers
         [HttpPut("{id}/status")]
         public async Task<IActionResult> UpdateStatus(string id, [FromBody] OrderStatusUpdateDto dto)
         {
-            var result = await _businessLayer.UpdateOrderStatusAsync(id, dto.Status);
+            var result = await _businessLayer.UpdateOrderStatusAsync(id, dto.Status, dto.PickupPhotoUrl, dto.DeliveryPhotoUrl);
             if (!result.Success)
             {
                 return BadRequest(result);

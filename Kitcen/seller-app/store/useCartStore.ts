@@ -135,7 +135,7 @@ export const useCartStore = create<CartState>((set, get) => ({
   getTotals: () => {
     const { items, coupon, tip } = get();
     const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const tax = Math.round(subtotal * 0.15 * 100) / 100; // 15% combined GST/Service charges
+    const tax = 0; // GST is 0 by default, configured by seller
     const deliveryCharge = subtotal > 0 ? 29 : 0; // Flat base fee
     
     let discount = 0;

@@ -14,7 +14,7 @@ namespace CloudeKicten.Models.DatabaseLayer
         Task<List<OrderDb>> GetOrdersByRiderIdAsync(string riderId);
         Task<OrderDb?> GetOrderByIdAsync(string id);
         Task<bool> InsertOrderAsync(OrderDb order);
-        Task<bool> UpdateOrderStatusAsync(string id, string status);
+        Task<bool> UpdateOrderStatusAsync(string id, string status, string? pickupPhotoUrl = null, string? deliveryPhotoUrl = null);
         Task<bool> DeleteOrderAsync(string id);
         Task<List<ChatDto>> GetChatsByOrderIdAsync(string orderId);
         Task<bool> InsertChatAsync(ChatDb chat);
@@ -135,18 +135,22 @@ namespace CloudeKicten.Models.DatabaseLayer
             cmd.Parameters.AddWithValue("@OrderDate", order.OrderDate);
             cmd.Parameters.AddWithValue("@RiderId", (object?)order.RiderId ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@DeliveryAddress", (object?)order.DeliveryAddress ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@IsRiderSettled", order.IsRiderSettled);
+            cmd.Parameters.AddWithValue("@IsSellerSettled", order.IsSellerSettled);
 
             var result = await cmd.ExecuteNonQueryAsync();
             return result > 0;
         }
 
-        public async Task<bool> UpdateOrderStatusAsync(string id, string status)
+        public async Task<bool> UpdateOrderStatusAsync(string id, string status, string? pickupPhotoUrl = null, string? deliveryPhotoUrl = null)
         {
             using var conn = GetConnection();
             await conn.OpenAsync();
             using var cmd = new NpgsqlCommand(Sql.UpdateOrderStatus, conn);
             cmd.Parameters.AddWithValue("@Id", id);
             cmd.Parameters.AddWithValue("@Status", status);
+            cmd.Parameters.AddWithValue("@PickupPhotoUrl", (object?)pickupPhotoUrl ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@DeliveryPhotoUrl", (object?)deliveryPhotoUrl ?? DBNull.Value);
 
             var result = await cmd.ExecuteNonQueryAsync();
             return result > 0;
@@ -276,7 +280,11 @@ namespace CloudeKicten.Models.DatabaseLayer
                 CreatedAt = r.GetDateTime(r.GetOrdinal("created_at")),
                 PickedUpAt = r.IsDBNull(r.GetOrdinal("picked_up_at")) ? null : r.GetDateTime(r.GetOrdinal("picked_up_at")),
                 DeliveredAt = r.IsDBNull(r.GetOrdinal("delivered_at")) ? null : r.GetDateTime(r.GetOrdinal("delivered_at")),
-                AcceptedByRiderAt = r.IsDBNull(r.GetOrdinal("accepted_by_rider_at")) ? null : r.GetDateTime(r.GetOrdinal("accepted_by_rider_at"))
+                AcceptedByRiderAt = r.IsDBNull(r.GetOrdinal("accepted_by_rider_at")) ? null : r.GetDateTime(r.GetOrdinal("accepted_by_rider_at")),
+                PickupPhotoUrl = r.IsDBNull(r.GetOrdinal("pickup_photo_url")) ? null : r.GetString(r.GetOrdinal("pickup_photo_url")),
+                DeliveryPhotoUrl = r.IsDBNull(r.GetOrdinal("delivery_photo_url")) ? null : r.GetString(r.GetOrdinal("delivery_photo_url")),
+                IsRiderSettled = r.IsDBNull(r.GetOrdinal("is_rider_settled")) ? false : r.GetBoolean(r.GetOrdinal("is_rider_settled")),
+                IsSellerSettled = r.IsDBNull(r.GetOrdinal("is_seller_settled")) ? false : r.GetBoolean(r.GetOrdinal("is_seller_settled"))
             };
         }
 

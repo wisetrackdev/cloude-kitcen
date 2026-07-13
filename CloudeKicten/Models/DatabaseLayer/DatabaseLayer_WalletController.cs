@@ -13,6 +13,7 @@ namespace CloudeKicten.Models.DatabaseLayer
         Task<bool> UpdateWalletBalanceAsync(string userId, decimal amount, string type, string description);
         Task<List<WalletTransactionDb>> GetWalletTransactionsAsync(string userId);
         Task<bool> InsertPaymentAsync(string id, string? orderId, string? subId, decimal amount, string method, string txId, string status);
+        Task<PayoutCycleInfoDto> GetPayoutCycleInfoAsync(string userId);
     }
 
     public class DatabaseLayer_WalletController : IDatabaseLayer_WalletController
@@ -140,6 +141,81 @@ namespace CloudeKicten.Models.DatabaseLayer
 
             var result = await cmdInsert.ExecuteNonQueryAsync();
             return result > 0;
+        }
+
+        public async Task<PayoutCycleInfoDto> GetPayoutCycleInfoAsync(string userId)
+        {
+            var info = new PayoutCycleInfoDto();
+            using var conn = GetConnection();
+            await conn.OpenAsync();
+
+            // 1. Get user role and created date
+            string role = "";
+            DateTime userCreatedAt = DateTime.UtcNow;
+            using (var cmdUser = new NpgsqlCommand("SELECT role, created_at FROM user_register WHERE id = @UserId;", conn))
+            {
+                cmdUser.Parameters.AddWithValue("@UserId", userId);
+                using var reader = await cmdUser.ExecuteReaderAsync();
+                if (await reader.ReadAsync())
+                {
+                    role = reader.GetString(0);
+                    userCreatedAt = reader.GetDateTime(1);
+                }
+            }
+
+            // 2. Calculate unpaid balance
+            decimal unpaid = 0;
+            if (role.Equals("rider", StringComparison.OrdinalIgnoreCase) || role.Equals("delivery_boy", StringComparison.OrdinalIgnoreCase))
+            {
+                using var cmdUnpaid = new NpgsqlCommand("SELECT COALESCE(SUM(delivery_charge), 0) FROM orders WHERE rider_id = @UserId AND status = 'delivered' AND is_rider_settled = FALSE;", conn);
+                cmdUnpaid.Parameters.AddWithValue("@UserId", userId);
+                unpaid = Convert.ToDecimal(await cmdUnpaid.ExecuteScalarAsync());
+            }
+            else if (role.Equals("seller", StringComparison.OrdinalIgnoreCase) || role.Equals("vendor", StringComparison.OrdinalIgnoreCase))
+            {
+                using var cmdUnpaid = new NpgsqlCommand("SELECT COALESCE(SUM(total), 0) FROM orders WHERE kitchen_id IN (SELECT id FROM shops WHERE vendor_id = @UserId) AND status = 'delivered' AND is_seller_settled = FALSE;", conn);
+                cmdUnpaid.Parameters.AddWithValue("@UserId", userId);
+                unpaid = Convert.ToDecimal(await cmdUnpaid.ExecuteScalarAsync());
+            }
+            info.UnpaidBalance = unpaid;
+
+            // 3. Payout history
+            using (var cmdHistory = new NpgsqlCommand("SELECT id, user_type, user_id, amount, status, transaction_details, settled_at FROM settlements WHERE user_id = @UserId ORDER BY settled_at DESC;", conn))
+            {
+                cmdHistory.Parameters.AddWithValue("@UserId", userId);
+                using var reader = await cmdHistory.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    info.PayoutHistory.Add(new SettlementDb
+                    {
+                        Id = reader.GetString(0),
+                        UserType = reader.GetString(1),
+                        UserId = reader.GetString(2),
+                        Amount = reader.GetDecimal(3),
+                        Status = reader.GetString(4),
+                        TransactionDetails = reader.IsDBNull(5) ? null : reader.GetString(5),
+                        SettledAt = reader.GetDateTime(6)
+                    });
+                }
+            }
+
+            // 4. Populate last payout details
+            if (info.PayoutHistory.Count > 0)
+            {
+                var last = info.PayoutHistory[0];
+                info.LastPayoutAmount = last.Amount;
+                info.LastPayoutDate = last.SettledAt.ToString("yyyy-MM-dd HH:mm:ss");
+                info.LastPayoutStatus = last.Status;
+            }
+
+            // 5. Calculate remaining days in 7-day cycle
+            var daysSinceSignup = (DateTime.UtcNow - userCreatedAt).TotalDays;
+            var daysRemaining = 7 - (int)(daysSinceSignup % 7);
+            if (daysRemaining <= 0) daysRemaining = 7;
+            info.DaysRemaining = daysRemaining;
+            info.NextPayoutDate = DateTime.UtcNow.AddDays(daysRemaining).ToString("dd MMMM yyyy");
+
+            return info;
         }
     }
 

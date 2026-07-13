@@ -39,9 +39,11 @@ export default function CartScreen() {
 
   // Zustand Kitchen store
   const placeOrder = useKitchenStore(state => state.placeOrder);
+  const kitchens = useKitchenStore(state => state.kitchens);
+  const kitchen = kitchens.find(k => k.id === restaurantId);
 
   const [promoCodeInput, setPromoCodeInput] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'wallet' | 'card'>('cod');
+  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'wallet' | 'card' | 'paytm'>('paytm');
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [loadingLocation, setLoadingLocation] = useState(false);
 
@@ -278,25 +280,29 @@ export default function CartScreen() {
         <View style={[styles.section, { backgroundColor: themeColors.card, borderBottomColor: themeColors.border }]}>
           <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Payment Method</Text>
           <View style={styles.paymentMethodRow}>
-            {(['cod'] as const).map((method) => (
-              <TouchableOpacity
-                key={method}
-                style={[
-                  styles.paymentOption,
-                  { backgroundColor: themeColors.inputBg, borderColor: themeColors.border },
-                  paymentMethod === method && { borderColor: '#FF5252', backgroundColor: 'rgba(255,82,82,0.05)' }
-                ]}
-                onPress={() => setPaymentMethod(method)}
-              >
-                <Text style={[
-                  styles.paymentLabel,
-                  { color: themeColors.textSecondary },
-                  paymentMethod === method && { color: '#FF5252' }
-                ]}>
-                  {method === 'cod' ? 'Cash on Delivery' : method === 'wallet' ? 'Wallet' : 'Card'}
-                </Text>
-              </TouchableOpacity>
-            ))}
+            <TouchableOpacity
+              style={[
+                styles.paymentOption,
+                { backgroundColor: themeColors.inputBg, borderColor: '#FFCC00', backgroundColor: 'rgba(255,204,0,0.05)', flex: 1, paddingVertical: 12, borderRadius: 10 }
+              ]}
+            >
+              <Text style={[styles.paymentLabel, { color: '#FFCC00', fontWeight: 'bold', textAlign: 'center' }]}>
+                Paytm / UPI Online Only
+              </Text>
+            </TouchableOpacity>
+          </View>
+          
+          {/* Display Seller UPI Details */}
+          <View style={{ marginTop: 12, padding: 12, backgroundColor: isDarkMode ? '#1a1a10' : '#fffdeb', borderRadius: 10, borderWidth: 1, borderColor: '#FFCC00' }}>
+            <Text style={{ fontSize: 11, color: themeColors.text, fontWeight: 'bold' }}>
+              Direct Pay to Seller UPI:
+            </Text>
+            <Text style={{ fontSize: 15, color: '#FFCC00', fontWeight: 'bold', marginTop: 4 }}>
+              {kitchen?.upiId ? `${kitchen.upiId}` : (kitchen?.upiNumber ? `${kitchen.upiNumber}@paytm` : 'sdev70817@paytm')}
+            </Text>
+            <Text style={{ fontSize: 9, color: themeColors.textSecondary, marginTop: 4, lineHeight: 12 }}>
+              Please copy this UPI ID to make payment using Paytm, PhonePe, or Google Pay. Cash on Delivery is disabled.
+            </Text>
           </View>
         </View>
 

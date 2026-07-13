@@ -227,20 +227,34 @@ export default function RiderProfile() {
   const dynamicEarnings = riderCompletedOrders.reduce((sum, o) => sum + Number(o.deliveryCharge || 40), 0);
 
   const renderHeader = (title: string) => (
-    <View style={[styles.tabHeader, { borderBottomColor: themeColors.border }]}>
-      <TouchableOpacity onPress={() => setActiveTab('main')} style={[styles.backBtn, { backgroundColor: isDarkMode ? '#1C1C1E' : '#E4E4E6' }]}>
-        <ArrowLeft size={18} color={themeColors.text} />
+    <View style={[styles.tabHeaderFixed, { backgroundColor: '#FFCC00', borderBottomColor: '#E2B200' }]}>
+      <TouchableOpacity onPress={() => setActiveTab('main')} style={[styles.backBtn, { backgroundColor: 'rgba(0,0,0,0.1)' }]}>
+        <ArrowLeft size={18} color="#000" />
       </TouchableOpacity>
-      <Text style={[styles.tabHeaderTitle, { color: themeColors.text }]}>{title}</Text>
+      <Text style={[styles.tabHeaderTitle, { color: '#000' }]}>{title}</Text>
     </View>
   );
 
   return (
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
+      {activeTab === 'main' ? (
+        <View style={[styles.tabHeaderFixed, { backgroundColor: '#FFCC00', borderBottomColor: '#E2B200', paddingLeft: 16 }]}>
+          <Text style={[styles.tabHeaderTitle, { color: '#000', marginLeft: 0 }]}>Rider Profile</Text>
+        </View>
+      ) : (
+        renderHeader(
+          activeTab === 'profile' ? "Personal Details" :
+          activeTab === 'vehicle' ? "Vehicle Details" :
+          activeTab === 'bank' ? "Payout Bank Details" :
+          activeTab === 'help' ? "Rider Safety Guideline" :
+          "Security & Settings"
+        )
+      )}
+
       {activeTab === 'main' && (
         <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
           {/* Header Card */}
-          <View style={[styles.profileHeader, { borderBottomColor: themeColors.border }]}>
+          <View style={[styles.profileHeader, { borderBottomColor: themeColors.border, paddingTop: 15 }]}>
             <View style={styles.avatarContainer}>
               <Image source={{ uri: avatar }} style={styles.avatar} />
               <TouchableOpacity style={styles.camIcon} onPress={() => {
@@ -350,8 +364,7 @@ export default function RiderProfile() {
 
       {/* Tab: Profile */}
       {activeTab === 'profile' && (
-        <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
-          {renderHeader("Personal Details")}
+        <ScrollView style={[styles.tabContent, { padding: 16 }]} showsVerticalScrollIndicator={false}>
           <View style={[styles.inputCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
             <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>First Name</Text>
             <TextInput
@@ -399,8 +412,7 @@ export default function RiderProfile() {
 
       {/* Tab: Vehicle */}
       {activeTab === 'vehicle' && (
-        <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
-          {renderHeader("Vehicle Details")}
+        <ScrollView style={[styles.tabContent, { padding: 16 }]} showsVerticalScrollIndicator={false}>
           <View style={[styles.inputCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
             <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Vehicle Plate Number</Text>
             <TextInput
@@ -447,8 +459,7 @@ export default function RiderProfile() {
 
       {/* Tab: Bank details */}
       {activeTab === 'bank' && (
-        <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
-          {renderHeader("Payout Bank Details")}
+        <ScrollView style={[styles.tabContent, { padding: 16 }]} showsVerticalScrollIndicator={false}>
           <View style={[styles.inputCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
             <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Bank Name</Text>
             <TextInput
@@ -488,8 +499,7 @@ export default function RiderProfile() {
 
       {/* Tab: Help */}
       {activeTab === 'help' && (
-        <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
-          {renderHeader("Rider Safety Guideline")}
+        <ScrollView style={[styles.tabContent, { padding: 16 }]} showsVerticalScrollIndicator={false}>
           <View style={[styles.infoTextCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
             <CheckCircle size={32} color={theme.colors.success} style={{ marginBottom: 12 }} />
             <Text style={[styles.infoTitle, { color: themeColors.text }]}>Safety Rules for Delivery Partner</Text>
@@ -505,8 +515,7 @@ export default function RiderProfile() {
 
       {/* Tab: Settings */}
       {activeTab === 'settings' && (
-        <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
-          {renderHeader("Security & Settings")}
+        <ScrollView style={[styles.tabContent, { padding: 16 }]} showsVerticalScrollIndicator={false}>
           <View style={[styles.inputCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
             <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Role Credentials</Text>
             <TextInput
@@ -651,6 +660,14 @@ const styles = StyleSheet.create({
   },
   tabContent: {
     flex: 1,
+  },
+  tabHeaderFixed: {
+    paddingTop: 50,
+    paddingBottom: 15,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
   },
   tabHeader: {
     flexDirection: 'row',

@@ -48,6 +48,13 @@ namespace CloudeKicten.Controllers
             return Ok(result);
         }
 
+        [HttpGet("{userId}/payout-info")]
+        public async Task<IActionResult> GetPayoutInfo(string userId)
+        {
+            var result = await _businessLayer.GetPayoutCycleInfoAsync(userId);
+            return Ok(result);
+        }
+
         [HttpPost("payments")]
         public async Task<IActionResult> ProcessPayment([FromBody] PaymentRequestDto dto)
         {

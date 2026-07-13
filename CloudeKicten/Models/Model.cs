@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using CloudeKicten.Models.DatabaseLayer;
 
 namespace CloudeKicten.Models
 {
@@ -100,6 +101,10 @@ namespace CloudeKicten.Models
         public DateTime? PickedUpAt { get; set; }
         public DateTime? DeliveredAt { get; set; }
         public DateTime? AcceptedByRiderAt { get; set; }
+        public string? PickupPhotoUrl { get; set; }
+        public string? DeliveryPhotoUrl { get; set; }
+        public bool IsRiderSettled { get; set; } = false;
+        public bool IsSellerSettled { get; set; } = false;
     }
 
     public class SubscriptionDb
@@ -360,6 +365,10 @@ namespace CloudeKicten.Models
         public string? DeliveredAt { get; set; }
         public string? AcceptedByRiderAt { get; set; }
         public string? CreatedAt { get; set; }
+        public string? PickupPhotoUrl { get; set; }
+        public string? DeliveryPhotoUrl { get; set; }
+        public bool IsRiderSettled { get; set; }
+        public bool IsSellerSettled { get; set; }
     }
 
     public class RateRiderDto
@@ -383,6 +392,8 @@ namespace CloudeKicten.Models
     public class OrderStatusUpdateDto
     {
         public string Status { get; set; } = string.Empty;
+        public string? PickupPhotoUrl { get; set; }
+        public string? DeliveryPhotoUrl { get; set; }
     }
 
     public class AssignRiderDto
@@ -517,5 +528,16 @@ namespace CloudeKicten.Models
       public string OrderId { get; set; } = string.Empty;
       public string CustomerId { get; set; } = string.Empty;
       public string CustomerName { get; set; } = string.Empty;
+    }
+
+    public class PayoutCycleInfoDto
+    {
+        public decimal UnpaidBalance { get; set; }
+        public int DaysRemaining { get; set; }
+        public string NextPayoutDate { get; set; } = string.Empty;
+        public decimal LastPayoutAmount { get; set; }
+        public string LastPayoutDate { get; set; } = string.Empty;
+        public string LastPayoutStatus { get; set; } = string.Empty;
+        public List<SettlementDb> PayoutHistory { get; set; } = new();
     }
 }

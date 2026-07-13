@@ -171,13 +171,58 @@ namespace CloudeKicten.Models.DatabaseLayer
         {
             using var conn = GetConnection();
             await conn.OpenAsync();
-            using var cmd = new NpgsqlCommand("UPDATE settlements SET status = @Status, transaction_details = @TxDetails, settled_at = CURRENT_TIMESTAMP WHERE id = @Id;", conn);
-            cmd.Parameters.AddWithValue("@Id", id);
-            cmd.Parameters.AddWithValue("@Status", status);
-            cmd.Parameters.AddWithValue("@TxDetails", txDetails);
+            using var tx = await conn.BeginTransactionAsync();
 
-            var result = await cmd.ExecuteNonQueryAsync();
-            return result > 0;
+            try
+            {
+                // 1. Get Settlement user info
+                string userType = "";
+                string userId = "";
+                using (var cmdGet = new NpgsqlCommand("SELECT user_type, user_id FROM settlements WHERE id = @Id;", conn, tx))
+                {
+                    cmdGet.Parameters.AddWithValue("@Id", id);
+                    using var reader = await cmdGet.ExecuteReaderAsync();
+                    if (await reader.ReadAsync())
+                    {
+                        userType = reader.GetString(0);
+                        userId = reader.GetString(1);
+                    }
+                }
+
+                // 2. Update Settlement Status
+                using (var cmdUpdate = new NpgsqlCommand("UPDATE settlements SET status = @Status, transaction_details = @TxDetails, settled_at = CURRENT_TIMESTAMP WHERE id = @Id;", conn, tx))
+                {
+                    cmdUpdate.Parameters.AddWithValue("@Id", id);
+                    cmdUpdate.Parameters.AddWithValue("@Status", status);
+                    cmdUpdate.Parameters.AddWithValue("@TxDetails", txDetails);
+                    await cmdUpdate.ExecuteNonQueryAsync();
+                }
+
+                // 3. Mark corresponding orders as settled if status is 'settled'
+                if (status.Equals("settled", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(userId))
+                {
+                    if (userType.Equals("rider", StringComparison.OrdinalIgnoreCase) || userType.Equals("delivery_boy", StringComparison.OrdinalIgnoreCase))
+                    {
+                        using var cmdSettleRider = new NpgsqlCommand("UPDATE orders SET is_rider_settled = TRUE WHERE rider_id = @UserId AND status = 'delivered';", conn, tx);
+                        cmdSettleRider.Parameters.AddWithValue("@UserId", userId);
+                        await cmdSettleRider.ExecuteNonQueryAsync();
+                    }
+                    else if (userType.Equals("vendor", StringComparison.OrdinalIgnoreCase) || userType.Equals("seller", StringComparison.OrdinalIgnoreCase))
+                    {
+                        using var cmdSettleSeller = new NpgsqlCommand("UPDATE orders SET is_seller_settled = TRUE WHERE kitchen_id IN (SELECT id FROM shops WHERE vendor_id = @UserId) AND status = 'delivered';", conn, tx);
+                        cmdSettleSeller.Parameters.AddWithValue("@UserId", userId);
+                        await cmdSettleSeller.ExecuteNonQueryAsync();
+                    }
+                }
+
+                await tx.CommitAsync();
+                return true;
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                throw;
+            }
         }
 
         public async Task<List<BannerDb>> GetActiveBannersAsync()
