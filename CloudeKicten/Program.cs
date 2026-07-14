@@ -90,6 +90,10 @@ namespace CloudeKicten
             builder.Services.AddScoped<IDatabaseLayer_WalletController, DatabaseLayer_WalletController>();
             builder.Services.AddScoped<IBusinessLayer_WalletController, BusinessLayer_WalletController>();
 
+            // New Dedicated Payment Verification Dependencies
+            builder.Services.AddScoped<IDatabaseLayer_PaymentController, DatabaseLayer_PaymentController>();
+            builder.Services.AddScoped<IBusinessLayer_PaymentController, BusinessLayer_PaymentController>();
+
             // Review Dependencies
             builder.Services.AddScoped<IDatabaseLayer_ReviewController, DatabaseLayer_ReviewController>();
             builder.Services.AddScoped<IBusinessLayer_ReviewController, BusinessLayer_ReviewController>();

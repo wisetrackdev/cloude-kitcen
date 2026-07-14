@@ -41,6 +41,8 @@ export interface Kitchen {
   latitude?: number;
   longitude?: number;
   isLive?: boolean;
+  upiId?: string | null;
+  upiNumber?: string | null;
 }
 
 export interface OrderItem {
@@ -104,6 +106,19 @@ interface KitchenState {
   // Order actions
   placeOrder: (order: Omit<OrderRecord, 'id' | 'status' | 'date'>) => Promise<string>;
   updateOrderStatus: (orderId: string, status: OrderRecord['status']) => Promise<void>;
+  verifyPayment: (payload: {
+    transactionId: string;
+    utrNumber: string;
+    userId: string;
+    kitchenId: string;
+    deliveryAddress: string;
+    totalAmount: number;
+    subtotal: number;
+    deliveryCharge: number;
+    tax: number;
+    discount: number;
+    items: any[];
+  }) => Promise<{ success: boolean; message: string; orderId?: string }>;
 }
 
 // Offline fallback mock data
@@ -201,7 +216,9 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
           bankName: k.bankName,
           accountNumber: k.accountNumber,
           ifscCode: k.ifscCode,
-          isLive: k.isLive
+          isLive: k.isLive,
+          upiId: k.upiId,
+          upiNumber: k.upiNumber
         }));
         set({ kitchens: mappedKitchens, isLoading: false });
       } else {
@@ -517,5 +534,32 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
     set((state) => ({
       orders: state.orders.map(o => o.id === orderId ? { ...o, status } : o)
     }));
+  },
+
+  verifyPayment: async (payload) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/payment/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      const json = await res.json();
+      if (json.success) {
+        // Success: refresh kitchens (revenue) and fetch orders list
+        get().fetchKitchens();
+        get().fetchOrders(payload.userId);
+        return { 
+          success: true, 
+          message: json.message || 'Payment verified successfully.',
+          orderId: json.data?.orderId
+        };
+      } else {
+        return { success: false, message: json.message || 'Payment verification failed.' };
+      }
+    } catch (err: any) {
+      console.error('API Error verifying payment:', err);
+      return { success: false, message: err.message || 'Network error occurred during payment verification.' };
+    }
   }
 }));

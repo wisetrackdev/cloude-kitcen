@@ -7,7 +7,8 @@ import {
   TouchableOpacity, 
   TextInput, 
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  Linking
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Trash2, Tag, ChevronRight, Plus, Minus, CreditCard, MapPin, Navigation } from 'lucide-react-native';
@@ -116,43 +117,54 @@ export default function CartScreen() {
       Alert.alert('Address Required', 'Please enter or detect your delivery address.');
       return;
     }
-    
-    try {
-      const orderId = await placeOrder({
-        kitchenId: restaurantId || 'k1',
-        kitchenName: restaurantName || 'The Pizza Box',
-        customerName: user?.name || 'Customer User',
-        items: cartItems.map(item => ({
-          id: item.id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          selectedCustomizations: item.selectedCustomizations
-        })),
-        subtotal: totals.subtotal,
-        deliveryCharge: totals.deliveryCharge,
-        tax: totals.tax,
-        discount: totals.discount,
-        total: totals.total,
-        paymentMethod: paymentMethod,
-        deliveryAddress: deliveryAddress
-      });
 
-      Alert.alert(
-        'Order Confirmed',
-        'Your order has been placed successfully!',
-        [
-          {
-            text: 'Track Order',
-            onPress: () => {
-              clearCart();
-              router.replace(`/tracking/${orderId}`);
-            }
-          }
-        ]
-      );
-    } catch (err: any) {
-      Alert.alert('Checkout Error', 'Failed to submit order. Please try again.');
+    const sellerUpi = kitchen?.upiId || (kitchen?.upiNumber ? `${kitchen.upiNumber}@paytm` : 'sdev70817@paytm');
+    const upiUrl = `upi://pay?pa=${sellerUpi}&pn=${encodeURIComponent(kitchen?.name || 'Cloud Kitchen')}&am=${totals.total}&cu=INR&tn=${encodeURIComponent('Food Order')}`;
+
+    const navigateToVerify = () => {
+      router.push({
+        pathname: '/payment-verify',
+        params: {
+          kitchenId: restaurantId || 'k1',
+          kitchenName: restaurantName || 'The Pizza Box',
+          amount: totals.total.toString(),
+          subtotal: totals.subtotal.toString(),
+          deliveryCharge: totals.deliveryCharge.toString(),
+          tax: totals.tax.toString(),
+          discount: totals.discount.toString(),
+          deliveryAddress: deliveryAddress,
+          items: JSON.stringify(cartItems.map(item => ({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity
+          }))),
+          upiId: sellerUpi
+        }
+      });
+    };
+
+    try {
+      const canOpen = await Linking.canOpenURL(upiUrl);
+      if (canOpen) {
+        await Linking.openURL(upiUrl);
+        // Wait 1 second and then navigate to verification screen
+        setTimeout(() => {
+          navigateToVerify();
+        }, 1000);
+      } else {
+        Alert.alert(
+          'UPI App Not Found',
+          `Could not open UPI apps automatically. Please pay ₹${totals.total} to UPI ID: ${sellerUpi} manually, then click Proceed to verify.`,
+          [
+            { text: 'Proceed to Verify', onPress: navigateToVerify },
+            { text: 'Cancel', style: 'cancel' }
+          ]
+        );
+      }
+    } catch (err) {
+      console.warn('Linking error', err);
+      navigateToVerify();
     }
   };
 
@@ -346,7 +358,7 @@ export default function CartScreen() {
           <Text style={[styles.footerLabel, { color: themeColors.textSecondary }]}>Grand Total</Text>
         </View>
         <TouchableOpacity style={styles.payButton} onPress={handleCheckout}>
-          <Text style={styles.payButtonText}>Place Order</Text>
+          <Text style={styles.payButtonText}>Pay Now</Text>
           <ChevronRight size={16} color="#FFF" />
         </TouchableOpacity>
       </View>
