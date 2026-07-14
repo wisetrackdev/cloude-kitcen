@@ -23,7 +23,18 @@ export default function OrderTrackingScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
 
+  const isDarkMode = useAuthStore(state => state.isDarkMode);
   const user = useAuthStore(state => state.user);
+  
+  const themeColors = {
+    background: isDarkMode ? '#0B0B0C' : '#F5F6F8',
+    card: isDarkMode ? '#121214' : '#FFFFFF',
+    border: isDarkMode ? '#1F1F22' : '#EAEAEA',
+    text: isDarkMode ? '#FFFFFF' : '#1E2022',
+    textSecondary: isDarkMode ? '#8E8E93' : '#686E73',
+    inputBg: isDarkMode ? '#0F0F0F' : '#F0F2F4'
+  };
+
   const customerId = user?.id || 'usr-customer-simulated';
 
   const orders = useKitchenStore(state => state.orders);
@@ -148,21 +159,21 @@ export default function OrderTrackingScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: themeColors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.replace('/')}>
-          <ArrowLeft size={20} color="#FFF" />
+      <View style={[styles.header, { borderBottomColor: themeColors.border }]}>
+        <TouchableOpacity style={[styles.backButton, { backgroundColor: themeColors.inputBg }]} onPress={() => router.replace('/')}>
+          <ArrowLeft size={20} color={themeColors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Live Tracker ({id})</Text>
+        <Text style={[styles.headerTitle, { color: themeColors.text }]}>Live Tracker ({id})</Text>
         <View style={{ width: 36 }} />
       </View>
 
       {/* Map visual section */}
-      <View style={styles.mapMock}>
-        <View style={styles.mapOverlayInfo}>
+      <View style={[styles.mapMock, { backgroundColor: isDarkMode ? '#151515' : '#E5E5EA' }]}>
+        <View style={[styles.mapOverlayInfo, { backgroundColor: isDarkMode ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.9)', borderColor: themeColors.border }]}>
           <Navigation size={18} color={theme.colors.primary} />
-          <Text style={styles.mapEtaText}>
+          <Text style={[styles.mapEtaText, { color: themeColors.text }]}>
             {currentStatus === 'delivered' ? 'Order Delivered 🎉' : 
              currentStatus === 'cancelled' ? 'Order Cancelled ❌' : 
              `Arriving in ${getEta(currentStatus)} mins`}
@@ -171,16 +182,16 @@ export default function OrderTrackingScreen() {
 
         {/* Dummy Map Route with dynamic address overlay */}
         <View style={styles.mapGraphicWrapper}>
-          <View style={styles.addressLineCard}>
+          <View style={[styles.addressLineCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
             <View style={styles.addressLineRow}>
               <MapPin size={12} color={theme.colors.success} style={{ marginRight: 6 }} />
-              <Text numberOfLines={1} style={styles.addressLineText}>
+              <Text numberOfLines={1} style={[styles.addressLineText, { color: themeColors.textSecondary }]}>
                 Kitchen: {activeKitchen?.address || 'Noida Sector 62, UP'}
               </Text>
             </View>
             <View style={styles.addressLineRow}>
               <MapPin size={12} color={theme.colors.primary} style={{ marginRight: 6 }} />
-              <Text numberOfLines={1} style={styles.addressLineText}>
+              <Text numberOfLines={1} style={[styles.addressLineText, { color: themeColors.textSecondary }]}>
                 Delivery: {activeOrder?.deliveryAddress || 'Your Address'}
               </Text>
             </View>
@@ -194,25 +205,25 @@ export default function OrderTrackingScreen() {
 
       <ScrollView style={styles.statusSection} showsVerticalScrollIndicator={false}>
         {/* Kitchen Partner Details Card */}
-        <View style={[styles.riderCard, { marginBottom: 12 }]}>
+        <View style={[styles.riderCard, { backgroundColor: themeColors.card, borderColor: themeColors.border, marginBottom: 12 }]}>
           <View style={styles.riderMeta}>
             <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,179,0,0.1)', alignItems: 'center', justifyContent: 'center' }}>
               <ChefHat size={20} color={theme.colors.primary} />
             </View>
             <View style={{ marginLeft: 10 }}>
-              <Text style={styles.riderName}>{activeKitchen?.name || 'Kitchen Partner'}</Text>
-              <Text style={styles.riderVehicle}>Home Chef Partner • Healthy Meals</Text>
+              <Text style={[styles.riderName, { color: themeColors.text }]}>{activeKitchen?.name || 'Kitchen Partner'}</Text>
+              <Text style={[styles.riderVehicle, { color: themeColors.textSecondary }]}>Home Chef Partner • Healthy Meals</Text>
             </View>
           </View>
           <View style={styles.riderActions}>
             <TouchableOpacity 
-              style={styles.actionBtn}
+              style={[styles.actionBtn, { backgroundColor: themeColors.inputBg }]}
               onPress={() => Linking.openURL(`tel:${(activeKitchen as any)?.phone || (activeOrder as any)?.kitchenPhone || ''}`)}
             >
               <Phone size={16} color={theme.colors.primary} />
             </TouchableOpacity>
             <TouchableOpacity 
-              style={styles.actionBtn}
+              style={[styles.actionBtn, { backgroundColor: themeColors.inputBg }]}
               onPress={() => setChatActive(true)}
             >
               <MessageSquare size={16} color={theme.colors.primary} />
@@ -223,26 +234,26 @@ export default function OrderTrackingScreen() {
         {/* Rider profile card */}
         {activeOrder?.riderId ? (
           <View>
-            <View style={styles.riderCard}>
+            <View style={[styles.riderCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
               <View style={styles.riderMeta}>
                 <Image 
                   source={{ uri: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80' }} 
                   style={styles.riderAvatar} 
                 />
                 <View>
-                  <Text style={styles.riderName}>{activeOrder?.riderName || 'Vikram Singh'} (Rider Assigned)</Text>
-                  <Text style={styles.riderVehicle}>Hero Splendor (MH-02-AB-9831)</Text>
+                  <Text style={[styles.riderName, { color: themeColors.text }]}>{activeOrder?.riderName || 'Vikram Singh'} (Rider Assigned)</Text>
+                  <Text style={[styles.riderVehicle, { color: themeColors.textSecondary }]}>Hero Splendor (MH-02-AB-9831)</Text>
                 </View>
               </View>
               <View style={styles.riderActions}>
                 <TouchableOpacity 
-                  style={styles.actionBtn}
+                  style={[styles.actionBtn, { backgroundColor: themeColors.inputBg }]}
                   onPress={() => Linking.openURL(`tel:${activeOrder?.riderPhone || ''}`)}
                 >
                   <Phone size={16} color={theme.colors.primary} />
                 </TouchableOpacity>
                 <TouchableOpacity 
-                  style={styles.actionBtn}
+                  style={[styles.actionBtn, { backgroundColor: themeColors.inputBg }]}
                   onPress={() => setChatActive(true)}
                 >
                   <MessageSquare size={16} color={theme.colors.primary} />
@@ -252,9 +263,9 @@ export default function OrderTrackingScreen() {
 
             {/* Rider Rating Card when order is delivered */}
             {currentStatus === 'delivered' && (
-              <View style={styles.ratingCard}>
-                <Text style={styles.ratingTitle}>Rate Delivery Partner</Text>
-                <Text style={styles.ratingSubtitle}>How was your delivery experience with {activeOrder?.riderName || 'the rider'}?</Text>
+              <View style={[styles.ratingCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+                <Text style={[styles.ratingTitle, { color: themeColors.text }]}>Rate Delivery Partner</Text>
+                <Text style={[styles.ratingSubtitle, { color: themeColors.textSecondary }]}>How was your delivery experience with {activeOrder?.riderName || 'the rider'}?</Text>
                 {isRiderRated ? (
                   <View style={styles.ratingSuccess}>
                     <Text style={styles.ratingSuccessText}>You rated: {riderRating} ⭐</Text>
@@ -276,9 +287,9 @@ export default function OrderTrackingScreen() {
             )}
           </View>
         ) : (
-          <View style={[styles.riderCard, { justifyContent: 'center', paddingVertical: 20 }]}>
+          <View style={[styles.riderCard, { backgroundColor: themeColors.card, borderColor: themeColors.border, justifyContent: 'center', paddingVertical: 20 }]}>
             <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginRight: 10 }} />
-            <Text style={{ color: '#FFF', fontSize: 13, fontWeight: 'bold' }}>Finding nearest delivery partner...</Text>
+            <Text style={{ color: themeColors.text, fontSize: 13, fontWeight: 'bold' }}>Finding nearest delivery partner...</Text>
           </View>
         )}
 
@@ -297,6 +308,7 @@ export default function OrderTrackingScreen() {
                 <View style={styles.bulletCol}>
                   <View style={[
                     styles.trackerCircle, 
+                    { borderColor: themeColors.border, backgroundColor: themeColors.background },
                     isCompleted && styles.trackerCircleActive
                   ]}>
                     {isCompleted && <View style={styles.trackerDot} />}
@@ -304,10 +316,10 @@ export default function OrderTrackingScreen() {
                   {item.step !== 5 && <View style={[styles.trackerLine, isCompleted && styles.trackerLineActive]} />}
                 </View>
                 <View style={styles.trackerTextContainer}>
-                  <Text style={[styles.stepLabel, isCompleted && styles.stepLabelActive]}>
+                  <Text style={[styles.stepLabel, isCompleted ? { color: themeColors.text } : { color: themeColors.textSecondary }]}>
                     {item.label}
                   </Text>
-                  <Text style={styles.stepSub}>{item.sub}</Text>
+                  <Text style={[styles.stepSub, { color: themeColors.textSecondary }]}>{item.sub}</Text>
                 </View>
               </View>
             );
@@ -315,9 +327,9 @@ export default function OrderTrackingScreen() {
         </View>
 
         {/* Safety standards */}
-        <View style={styles.safetyCard}>
-          <ShieldCheck size={16} color={theme.colors.veg} />
-          <Text style={styles.safetyText}>
+        <View style={[styles.safetyCard, { backgroundColor: isDarkMode ? 'rgba(52,199,89,0.05)' : '#E8F5E9', borderColor: themeColors.border }]}>
+          <ShieldCheck size={16} color={isDarkMode ? theme.colors.veg : '#2E7D32'} />
+          <Text style={[styles.safetyText, { color: isDarkMode ? theme.colors.veg : '#2E7D32' }]}>
             Our riders undergo daily temperature screenings and follow strictly contactless delivery protocols.
           </Text>
         </View>
@@ -332,12 +344,12 @@ export default function OrderTrackingScreen() {
           visible={chatActive}
           onRequestClose={() => setChatActive(false)}
         >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
+          <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
+            <View style={[styles.modalContent, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+              <View style={[styles.modalHeader, { borderBottomColor: themeColors.border }]}>
                 <Text style={styles.modalTitle}>Chat with Delivery Partner</Text>
-                <TouchableOpacity onPress={() => setChatActive(false)} style={styles.closeBtn}>
-                  <X size={18} color="#FFF" />
+                <TouchableOpacity onPress={() => setChatActive(false)} style={[styles.closeBtn, { backgroundColor: themeColors.inputBg }]}>
+                  <X size={18} color={themeColors.text} />
                 </TouchableOpacity>
               </View>
 
@@ -349,26 +361,26 @@ export default function OrderTrackingScreen() {
                       key={msg.id} 
                       style={[
                         styles.msgBubble, 
-                        isMe ? styles.msgBubbleMe : styles.msgBubbleOther
+                        isMe ? styles.msgBubbleMe : [styles.msgBubbleOther, { backgroundColor: themeColors.inputBg }]
                       ]}
                     >
                       <Text style={styles.msgSender}>{isMe ? 'You' : msg.senderName}</Text>
-                      <Text style={styles.msgText}>{msg.message}</Text>
+                      <Text style={[styles.msgText, { color: isMe ? '#FFF' : themeColors.text }]}>{msg.message}</Text>
                     </View>
                   );
                 })}
                 {messages.length === 0 && (
-                  <Text style={{ color: '#555', textAlign: 'center', marginVertical: 30 }}>Send a message to start chatting...</Text>
+                  <Text style={{ color: themeColors.textSecondary, textAlign: 'center', marginVertical: 30 }}>Send a message to start chatting...</Text>
                 )}
               </ScrollView>
 
-              <View style={styles.chatInputRow}>
+              <View style={[styles.chatInputRow, { borderTopColor: themeColors.border }]}>
                 <TextInput
                   placeholder="Type a message..."
                   placeholderTextColor="#888"
                   value={newMessageText}
                   onChangeText={setNewMessageText}
-                  style={styles.chatInput}
+                  style={[styles.chatInput, { backgroundColor: themeColors.inputBg, color: themeColors.text }]}
                 />
                 <TouchableOpacity style={styles.sendBtn} onPress={sendChatMessage}>
                   <Send size={16} color="#000" />

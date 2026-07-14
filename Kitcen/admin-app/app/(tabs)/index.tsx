@@ -430,15 +430,23 @@ export default function AdminDashboard() {
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
     
     const weeklyOrders = sellerOrders.filter(o => {
-      const orderDate = new Date(o.date || o.createdAt || Date.now());
+      let dateStr = o.date || o.createdAt;
+      if (typeof dateStr === 'string' && dateStr.includes('today')) return true;
+      const orderDate = new Date(dateStr || Date.now());
       return orderDate >= oneWeekAgo;
     });
+
+    const weeklyEarnings = weeklyOrders.filter(o => o.status === 'delivered').reduce((sum, o) => sum + o.total, 0);
+    const totalEarnings = sellerOrders.filter(o => o.status === 'delivered').reduce((sum, o) => sum + o.total, 0);
+    const historicEarnings = totalEarnings - weeklyEarnings;
 
     return {
       totalOrders: sellerOrders.length,
       cancelledOrders: sellerOrders.filter(o => o.status === 'cancelled').length,
       deliveredOrders: sellerOrders.filter(o => o.status === 'delivered').length,
-      totalEarnings: sellerOrders.filter(o => o.status === 'delivered').reduce((sum, o) => sum + o.total, 0),
+      totalEarnings,
+      weeklyEarnings,
+      historicEarnings,
       weeklyOrdersCount: weeklyOrders.length
     };
   };
@@ -576,8 +584,8 @@ export default function AdminDashboard() {
                   </View>
 
                   <View style={styles.kitchenAdminStats}>
-                    <Text style={[styles.adminStatVal, { color: '#2ecc71' }]}>₹{kitchen.revenue}</Text>
-                    <Text style={[styles.adminStatLabel, { color: themeColors.textSecondary }]}>{kitchen.ordersCount} Orders</Text>
+                    <Text style={[styles.adminStatVal, { color: '#FFB300' }]}>₹{getSellerStats(kitchen.id).weeklyEarnings}</Text>
+                    <Text style={[styles.adminStatLabel, { color: themeColors.textSecondary }]}>7-Day Due</Text>
                     
                     {kitchen.isApproved !== 'approved' && kitchen.isApproved !== 'rejected' && (
                       <View style={{ marginTop: 8, flexDirection: 'row' }}>
@@ -890,8 +898,22 @@ export default function AdminDashboard() {
                     </View>
 
                     <View style={[styles.statsRow, { borderBottomColor: themeColors.border }]}>
-                      <Text style={[styles.statsLabel, { fontWeight: 'bold', color: themeColors.text }]}>Total Net Revenue:</Text>
-                      <Text style={{ fontWeight: 'bold', color: '#2ecc71', fontSize: 18 }}>
+                      <Text style={[styles.statsLabel, { fontWeight: 'bold', color: themeColors.text }]}>7-Day Payout Due:</Text>
+                      <Text style={{ fontWeight: 'bold', color: '#FFB300', fontSize: 18 }}>
+                        ₹{getSellerStats(selectedSellerForStats.id).weeklyEarnings}
+                      </Text>
+                    </View>
+
+                    <View style={[styles.statsRow, { borderBottomColor: themeColors.border }]}>
+                      <Text style={[styles.statsLabel, { color: themeColors.textSecondary }]}>Paid / Cleared History:</Text>
+                      <Text style={{ fontWeight: 'bold', color: '#2ecc71', fontSize: 16 }}>
+                        ₹{getSellerStats(selectedSellerForStats.id).historicEarnings}
+                      </Text>
+                    </View>
+
+                    <View style={[styles.statsRow, { borderBottomColor: themeColors.border }]}>
+                      <Text style={[styles.statsLabel, { color: themeColors.textSecondary }]}>Lifetime Net Revenue:</Text>
+                      <Text style={{ fontWeight: 'bold', color: themeColors.text, fontSize: 14 }}>
                         ₹{getSellerStats(selectedSellerForStats.id).totalEarnings}
                       </Text>
                     </View>

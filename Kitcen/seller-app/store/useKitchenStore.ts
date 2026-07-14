@@ -471,12 +471,19 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status })
       });
-      const json = await res.json();
-      if (json.success) {
-        set((state) => ({
-          orders: state.orders.map(o => o.id === orderId ? { ...o, status } : o)
-        }));
-        return;
+      
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const json = await res.json();
+        if (json.success) {
+          set((state) => ({
+            orders: state.orders.map(o => o.id === orderId ? { ...o, status } : o)
+          }));
+          return;
+        }
+      } else {
+        const text = await res.text();
+        console.warn('Non-JSON status update response:', text.substring(0, 200));
       }
     } catch (err) {
       console.error('API Error updating order status, doing local fallback:', err);

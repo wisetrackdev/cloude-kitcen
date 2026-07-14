@@ -94,7 +94,25 @@ export default function AdminRidersScreen() {
 
   const getRiderEarnings = (riderId: string) => {
     const riderCompleted = getRiderCompletedOrders(riderId);
-    return riderCompleted.reduce((sum, o) => sum + Number(o.deliveryCharge || 40), 0);
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    const weeklyOrders = riderCompleted.filter(o => {
+      let dateStr = o.date || o.createdAt;
+      if (typeof dateStr === 'string' && dateStr.includes('today')) return true;
+      const orderDate = new Date(dateStr || Date.now());
+      return orderDate >= oneWeekAgo;
+    });
+
+    const weekly = weeklyOrders.reduce((sum, o) => sum + Number(o.deliveryCharge || 40), 0);
+    const total = riderCompleted.reduce((sum, o) => sum + Number(o.deliveryCharge || 40), 0);
+    const historic = total - weekly;
+
+    return {
+      weekly,
+      historic,
+      total
+    };
   };
 
   if (isLoading) {
@@ -174,7 +192,7 @@ export default function AdminRidersScreen() {
 
               <View style={styles.cardFooter}>
                 <Text style={[styles.completedCountText, { color: themeColors.textSecondary }]}>Jobs Done: <Text style={{ color: themeColors.text, fontWeight: 'bold' }}>{completedCount}</Text></Text>
-                <Text style={[styles.earningsText, { color: themeColors.textSecondary }]}>Earnings: <Text style={{ color: themeColors.success, fontWeight: 'bold' }}>₹{earnings}</Text></Text>
+                <Text style={[styles.earningsText, { color: themeColors.textSecondary }]}>7-Day Due: <Text style={{ color: themeColors.primary, fontWeight: 'bold' }}>₹{earnings.weekly}</Text></Text>
                 <ChevronRight size={14} color="#888" />
               </View>
             </TouchableOpacity>
@@ -210,6 +228,23 @@ export default function AdminRidersScreen() {
               </View>
 
               <ScrollView style={styles.modalScroller} contentContainerStyle={{ padding: 16 }}>
+                {/* Rider Payout Summary */}
+                <Text style={[styles.modalSectionTitle, { color: themeColors.primary }]}>Payout Settlement (Swiggy Payout Cycle)</Text>
+                <View style={[styles.detailsGroup, { backgroundColor: themeColors.background, borderColor: themeColors.border, padding: 16, marginBottom: 20 }]}>
+                  <View style={styles.detailRow}>
+                    <Text style={[styles.detailLabel, { color: themeColors.textSecondary, fontWeight: 'bold' }]}>7-Day Pending Payout</Text>
+                    <Text style={[styles.detailVal, { color: themeColors.primary, fontWeight: 'bold', fontSize: 16 }]}>₹{getRiderEarnings(selectedRider.id).weekly}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={[styles.detailLabel, { color: themeColors.textSecondary }]}>Paid / Cleared History</Text>
+                    <Text style={[styles.detailVal, { color: themeColors.success, fontWeight: 'bold' }]}>₹{getRiderEarnings(selectedRider.id).historic}</Text>
+                  </View>
+                  <View style={[styles.detailRow, { borderBottomWidth: 0, paddingBottom: 0 }]}>
+                    <Text style={[styles.detailLabel, { color: themeColors.textSecondary }]}>Lifetime Payout</Text>
+                    <Text style={[styles.detailVal, { color: themeColors.text, fontWeight: 'bold' }]}>₹{getRiderEarnings(selectedRider.id).total}</Text>
+                  </View>
+                </View>
+
                 {/* Bank Account Section */}
                 <Text style={[styles.modalSectionTitle, { color: themeColors.primary }]}>Bank & Document Details</Text>
                 <View style={[styles.detailsGroup, { backgroundColor: themeColors.background, borderColor: themeColors.border }]}>
