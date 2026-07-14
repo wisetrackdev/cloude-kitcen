@@ -39,6 +39,17 @@ export default function RiderLoginScreen() {
   const [tempRefreshToken, setTempRefreshToken] = useState('');
   const [tempUser, setTempUser] = useState<any>(null);
 
+  // Multi-step registration states
+  const [regStep, setRegStep] = useState(1);
+  const [vehicleName, setVehicleName] = useState('');
+  const [vehicleNumber, setVehicleNumber] = useState('');
+  const [rcNumber, setRcNumber] = useState('');
+  const [panCard, setPanCard] = useState('');
+  const [licenseNumber, setLicenseNumber] = useState('');
+  const [bankName, setBankName] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
+  const [ifscCode, setIfscCode] = useState('');
+
   // Select Image (Camera or Gallery)
   const selectProfileImage = async (source: 'camera' | 'gallery') => {
     try {
@@ -121,13 +132,57 @@ export default function RiderLoginScreen() {
 
   // Complete Profile for Rider
   const handleCompleteProfile = async () => {
-    if (!firstName.trim() || !lastName.trim()) {
-      Alert.alert('Error', 'First Name and Last Name are required');
+    if (regStep === 1) {
+      if (!firstName.trim() || !lastName.trim()) {
+        Alert.alert('Error', 'First Name and Last Name are required');
+        return;
+      }
+      if (!deliveryZone.trim()) {
+        Alert.alert('Error', 'Please enter your preferred Delivery Location/Zone');
+        return;
+      }
+      setRegStep(2);
       return;
     }
-    if (!deliveryZone.trim()) {
-      Alert.alert('Error', 'Please enter your preferred Delivery Location/Zone');
+
+    if (regStep === 2) {
+      if (!vehicleName.trim()) {
+        Alert.alert('Error', 'Vehicle Name is required (e.g. Hero Splendor)');
+        return;
+      }
+      if (!vehicleNumber.trim()) {
+        Alert.alert('Error', 'Vehicle Plate Number is required');
+        return;
+      }
+      if (!rcNumber.trim()) {
+        Alert.alert('Error', 'RC book registration detail is required');
+        return;
+      }
+      if (!panCard.trim()) {
+        Alert.alert('Error', 'PAN card number is required');
+        return;
+      }
+      if (!licenseNumber.trim()) {
+        Alert.alert('Error', 'Driving license number is required');
+        return;
+      }
+      setRegStep(3);
       return;
+    }
+
+    if (regStep === 3) {
+      if (!bankName.trim()) {
+        Alert.alert('Error', 'Bank name is required');
+        return;
+      }
+      if (!accountNumber.trim()) {
+        Alert.alert('Error', 'Bank account number is required');
+        return;
+      }
+      if (!ifscCode.trim()) {
+        Alert.alert('Error', 'IFSC code is required');
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -149,7 +204,7 @@ export default function RiderLoginScreen() {
       if (json.success) {
         let updatedUser = json.data;
 
-        // 2. Register Rider with preferred delivery zone
+        // 2. Register Rider with preferred details
         try {
           const regRes = await fetch(`${API_BASE_URL}/api/riders/register`, {
             method: 'POST',
@@ -159,9 +214,13 @@ export default function RiderLoginScreen() {
             },
             body: JSON.stringify({
               userId: updatedUser.id,
-              vehicleNumber: 'MH-02-' + Math.floor(1000 + Math.random() * 9000),
-              licenseNumber: 'DL-' + Math.floor(10000000 + Math.random() * 90000000),
-              deliveryZone: deliveryZone.trim()
+              vehicleNumber: vehicleNumber.trim(),
+              licenseNumber: licenseNumber.trim(),
+              deliveryZone: deliveryZone.trim(),
+              rcNumber: rcNumber.trim(),
+              bankName: bankName.trim(),
+              accountNumber: accountNumber.trim(),
+              ifscCode: ifscCode.trim()
             })
           });
           const regJson = await regRes.json();
@@ -174,7 +233,7 @@ export default function RiderLoginScreen() {
 
         setAuth(tempToken, tempRefreshToken, {
           id: updatedUser.id,
-          name: updatedUser.name,
+          name: `${firstName.trim()} ${lastName.trim()}`,
           email: updatedUser.email,
           phone: updatedUser.phone || '',
           avatar: updatedUser.avatar || '',
@@ -370,75 +429,180 @@ export default function RiderLoginScreen() {
 
             {showCompleteProfile ? (
               <ScrollView style={{ width: '100%', maxHeight: 380, marginTop: 10 }} showsVerticalScrollIndicator={false}>
-                <Text style={{ color: theme.colors.primary, fontWeight: 'bold', fontSize: 16, marginBottom: 12 }}>
+                <Text style={{ color: theme.colors.primary, fontWeight: 'bold', fontSize: 16, marginBottom: 4 }}>
                   Complete Rider Profile
                 </Text>
+                <Text style={{ color: '#888', fontSize: 11, marginBottom: 12 }}>
+                  Step {regStep} of 3
+                </Text>
                 
-                <View style={styles.inputWrapper}>
-                  <User size={16} color={theme.colors.textSecondary} />
-                  <TextInput
-                    placeholder="First Name"
-                    placeholderTextColor="#888"
-                    value={firstName}
-                    onChangeText={setFirstName}
-                    style={styles.input}
-                  />
-                </View>
+                {regStep === 1 && (
+                  <>
+                    <View style={styles.inputWrapper}>
+                      <User size={16} color={theme.colors.textSecondary} />
+                      <TextInput
+                        placeholder="First Name"
+                        placeholderTextColor="#888"
+                        value={firstName}
+                        onChangeText={setFirstName}
+                        style={styles.input}
+                      />
+                    </View>
 
-                <View style={styles.inputWrapper}>
-                  <User size={16} color={theme.colors.textSecondary} />
-                  <TextInput
-                    placeholder="Last Name"
-                    placeholderTextColor="#888"
-                    value={lastName}
-                    onChangeText={setLastName}
-                    style={styles.input}
-                  />
-                </View>
+                    <View style={styles.inputWrapper}>
+                      <User size={16} color={theme.colors.textSecondary} />
+                      <TextInput
+                        placeholder="Last Name"
+                        placeholderTextColor="#888"
+                        value={lastName}
+                        onChangeText={setLastName}
+                        style={styles.input}
+                      />
+                    </View>
 
-                <View style={styles.inputWrapper}>
-                  <MapPin size={16} color={theme.colors.textSecondary} />
-                  <TextInput
-                    placeholder="Preferred Delivery Zone (e.g. Noida)"
-                    placeholderTextColor="#888"
-                    value={deliveryZone}
-                    onChangeText={setDeliveryZone}
-                    style={styles.input}
-                  />
-                </View>
+                    <View style={styles.inputWrapper}>
+                      <MapPin size={16} color={theme.colors.textSecondary} />
+                      <TextInput
+                        placeholder="Preferred Delivery Zone (e.g. Noida)"
+                        placeholderTextColor="#888"
+                        value={deliveryZone}
+                        onChangeText={setDeliveryZone}
+                        style={styles.input}
+                      />
+                    </View>
 
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginVertical: 10, paddingHorizontal: 4 }}>
-                  {avatar ? (
-                    <Text style={{ color: '#2ecc71', fontSize: 13, fontWeight: 'bold' }}>✓ Profile Photo Uploaded</Text>
-                  ) : (
-                    <Text style={{ color: '#888', fontSize: 13 }}>No photo selected</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginVertical: 10, paddingHorizontal: 4 }}>
+                      {avatar ? (
+                        <Text style={{ color: '#2ecc71', fontSize: 13, fontWeight: 'bold' }}>✓ Profile Photo Uploaded</Text>
+                      ) : (
+                        <Text style={{ color: '#888', fontSize: 13 }}>No photo selected</Text>
+                      )}
+                      <TouchableOpacity 
+                        style={{ 
+                          flexDirection: 'row', 
+                          alignItems: 'center', 
+                          backgroundColor: '#2c2c2c', 
+                          paddingHorizontal: 12, 
+                          paddingVertical: 8, 
+                          borderRadius: 8
+                        }} 
+                        onPress={requestProfileImage}
+                      >
+                        <Camera size={14} color="#FFF" style={{ marginRight: 6 }} />
+                        <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold' }}>Select Photo</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {avatar ? (
+                      <Image 
+                        source={{ uri: avatar }}
+                        style={{ width: 80, height: 80, borderRadius: 40, alignSelf: 'center', marginVertical: 8, borderWidth: 1, borderColor: '#EAEAEA' }}
+                      />
+                    ) : null}
+                  </>
+                )}
+
+                {regStep === 2 && (
+                  <>
+                    <View style={styles.inputWrapper}>
+                      <TextInput
+                        placeholder="Vehicle Name (e.g. Hero Splendor)"
+                        placeholderTextColor="#888"
+                        value={vehicleName}
+                        onChangeText={setVehicleName}
+                        style={styles.input}
+                      />
+                    </View>
+                    <View style={styles.inputWrapper}>
+                      <TextInput
+                        placeholder="Vehicle Plate Number (e.g. MH-02-AB-1234)"
+                        placeholderTextColor="#888"
+                        value={vehicleNumber}
+                        onChangeText={setVehicleNumber}
+                        style={styles.input}
+                      />
+                    </View>
+                    <View style={styles.inputWrapper}>
+                      <TextInput
+                        placeholder="RC Book Registration Number"
+                        placeholderTextColor="#888"
+                        value={rcNumber}
+                        onChangeText={setRcNumber}
+                        style={styles.input}
+                      />
+                    </View>
+                    <View style={styles.inputWrapper}>
+                      <TextInput
+                        placeholder="PAN Card Number"
+                        placeholderTextColor="#888"
+                        value={panCard}
+                        onChangeText={setPanCard}
+                        style={styles.input}
+                      />
+                    </View>
+                    <View style={styles.inputWrapper}>
+                      <TextInput
+                        placeholder="Driving License (DL) Number"
+                        placeholderTextColor="#888"
+                        value={licenseNumber}
+                        onChangeText={setLicenseNumber}
+                        style={styles.input}
+                      />
+                    </View>
+                  </>
+                )}
+
+                {regStep === 3 && (
+                  <>
+                    <View style={styles.inputWrapper}>
+                      <TextInput
+                        placeholder="Bank Name (e.g. State Bank of India)"
+                        placeholderTextColor="#888"
+                        value={bankName}
+                        onChangeText={setBankName}
+                        style={styles.input}
+                      />
+                    </View>
+                    <View style={styles.inputWrapper}>
+                      <TextInput
+                        placeholder="Account Number"
+                        placeholderTextColor="#888"
+                        value={accountNumber}
+                        keyboardType="numeric"
+                        onChangeText={setAccountNumber}
+                        style={styles.input}
+                      />
+                    </View>
+                    <View style={styles.inputWrapper}>
+                      <TextInput
+                        placeholder="Bank IFSC Code"
+                        placeholderTextColor="#888"
+                        value={ifscCode}
+                        onChangeText={setIfscCode}
+                        style={styles.input}
+                      />
+                    </View>
+                  </>
+                )}
+
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 15 }}>
+                  {regStep > 1 && (
+                    <TouchableOpacity 
+                      style={[styles.primaryBtn, { flex: 1, marginRight: 10, backgroundColor: '#888' }]} 
+                      onPress={() => setRegStep(prev => prev - 1)}
+                    >
+                      <Text style={styles.primaryBtnText}>Back</Text>
+                    </TouchableOpacity>
                   )}
                   <TouchableOpacity 
-                    style={{ 
-                      flexDirection: 'row', 
-                      alignItems: 'center', 
-                      backgroundColor: '#2c2c2c', 
-                      paddingHorizontal: 12, 
-                      paddingVertical: 8, 
-                      borderRadius: 8
-                    }} 
-                    onPress={requestProfileImage}
+                    style={[styles.primaryBtn, { flex: 2 }]} 
+                    onPress={handleCompleteProfile}
                   >
-                    <Camera size={14} color="#FFF" style={{ marginRight: 6 }} />
-                    <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold' }}>Select Photo</Text>
+                    <Text style={styles.primaryBtnText}>
+                      {regStep === 3 ? 'Register' : 'Next'}
+                    </Text>
                   </TouchableOpacity>
                 </View>
-
-                {avatar ? (
-                  <Image 
-                    source={{ uri: avatar }}
-                    style={{ width: 80, height: 80, borderRadius: 40, alignSelf: 'center', marginVertical: 8, borderWidth: 1, borderColor: '#EAEAEA' }}
-                  />
-                ) : null}
-
-                <TouchableOpacity style={[styles.primaryBtn, { marginTop: 15 }]} onPress={handleCompleteProfile}>
-                  <Text style={styles.primaryBtnText}>Complete Profile & Register</Text>
-                </TouchableOpacity>
               </ScrollView>
             ) : (
               <>

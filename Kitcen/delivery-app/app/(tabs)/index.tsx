@@ -73,6 +73,19 @@ export default function RiderDashboard() {
   const [payoutInfo, setPayoutInfo] = useState<any>(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
+  // Delivery zone/area filter choice
+  const [selectedZone, setSelectedZone] = useState<string>('All');
+  const AVAILABLE_ZONES = ['All', 'Noida', 'Indirapuram', 'Vasundhara', 'Vaishali', 'Greater Noida', 'Sector 62'];
+
+  const isOrderInSelectedZone = (o: any) => {
+    if (selectedZone === 'All') return true;
+    const kitchen = kitchens.find((k) => k.id === o.kitchenId);
+    const zoneLower = selectedZone.toLowerCase();
+    const kitchenMatch = kitchen?.address && kitchen.address.toLowerCase().includes(zoneLower);
+    const deliveryMatch = o.deliveryAddress && o.deliveryAddress.toLowerCase().includes(zoneLower);
+    return !!(kitchenMatch || deliveryMatch);
+  };
+
   const fetchPayoutInfo = async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/wallet/${riderId}/payout-info`);
@@ -129,9 +142,9 @@ export default function RiderDashboard() {
       return;
     }
     
-    // Available orders: no riderId, status in ['ready', 'placed', 'preparing']
+    // Available orders: no riderId, status in ['ready', 'placed', 'preparing'] and matching chosen zone
     const availableIds = orders
-      .filter((o) => !o.riderId && ['ready', 'placed', 'preparing'].includes(o.status))
+      .filter((o) => !o.riderId && ['ready', 'placed', 'preparing'].includes(o.status) && isOrderInSelectedZone(o))
       .map((o) => o.id);
 
     // Find if there are any new IDs that were not in our previous list
@@ -322,7 +335,7 @@ export default function RiderDashboard() {
   );
 
   const availableOrdersPool = orders.filter(
-    (o) => !o.riderId && ['ready', 'placed', 'preparing'].includes(o.status)
+    (o) => !o.riderId && ['ready', 'placed', 'preparing'].includes(o.status) && isOrderInSelectedZone(o)
   );
 
   // Dynamic colors based on theme mode
@@ -396,6 +409,44 @@ export default function RiderDashboard() {
           <View style={{ padding: 12, backgroundColor: '#FFCC00', flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
             <ActivityIndicator size="small" color="#000" style={{ marginRight: 8 }} />
             <Text style={{ fontSize: 12, color: '#000', fontWeight: 'bold' }}>Uploading photo & updating order status...</Text>
+          </View>
+        )}
+
+        {/* Active Delivery Area Selector (Only visible when Online) */}
+        {isOnline && (
+          <View style={{ paddingHorizontal: 16, marginTop: 15 }}>
+            <Text style={{ fontSize: 11, fontWeight: 'bold', color: themeColors.textSecondary, marginBottom: 8, letterSpacing: 0.5 }}>
+              ACTIVE DELIVERY AREA CHOICE
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 2 }}>
+              {AVAILABLE_ZONES.map((zone) => {
+                const isActive = selectedZone === zone;
+                return (
+                  <TouchableOpacity
+                    key={zone}
+                    onPress={() => setSelectedZone(zone)}
+                    style={{
+                      paddingHorizontal: 14,
+                      paddingVertical: 8,
+                      borderRadius: 18,
+                      backgroundColor: isActive ? '#FFCC00' : themeColors.card,
+                      borderWidth: 1,
+                      borderColor: isActive ? '#FFCC00' : themeColors.border,
+                      marginRight: 8,
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 1 },
+                      shadowOpacity: 0.1,
+                      shadowRadius: 1,
+                      elevation: 1
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: isActive ? 'bold' : 'normal', color: isActive ? '#000' : themeColors.text }}>
+                      📍 {zone}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
           </View>
         )}
 

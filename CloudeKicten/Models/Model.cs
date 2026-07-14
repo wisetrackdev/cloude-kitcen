@@ -230,6 +230,10 @@ namespace CloudeKicten.Models
         public string VehicleNumber { get; set; } = string.Empty;
         public string LicenseNumber { get; set; } = string.Empty;
         public string? DeliveryZone { get; set; }
+        public string? RcNumber { get; set; }
+        public string? BankName { get; set; }
+        public string? AccountNumber { get; set; }
+        public string? IfscCode { get; set; }
     }
 
     public class VendorRegisterDto

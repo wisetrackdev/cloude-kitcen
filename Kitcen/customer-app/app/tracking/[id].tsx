@@ -296,7 +296,11 @@ export default function OrderTrackingScreen() {
         {/* Vertical status tracker */}
         <View style={styles.trackerWrapper}>
           {[
-            { step: 1, label: 'Order Confirmed', sub: 'We have received your order' },
+            { 
+              step: 1, 
+              label: currentStatus === 'placed' ? 'Waiting for Seller Acceptance' : 'Order Confirmed & Accepted', 
+              sub: currentStatus === 'placed' ? 'Seller is reviewing and confirming your order...' : 'Seller has accepted your order!' 
+            },
             { step: 2, label: 'Cooking & Preparing', sub: 'Chef is preparing your fresh meal' },
             { step: 3, label: 'Ready for Pickup', sub: 'Kitchen has packed your order' },
             { step: 4, label: 'On The Way', sub: 'Rider is speeding towards your house' },

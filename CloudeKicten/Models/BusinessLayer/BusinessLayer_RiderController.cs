@@ -57,6 +57,10 @@ namespace CloudeKicten.Models.BusinessLayer
                 VehicleNumber = dto.VehicleNumber,
                 LicenseNumber = dto.LicenseNumber,
                 DeliveryZone = dto.DeliveryZone,
+                RcNumber = dto.RcNumber,
+                BankName = dto.BankName,
+                AccountNumber = dto.AccountNumber,
+                IfscCode = dto.IfscCode,
                 IsActive = true
             };
 
