@@ -336,7 +336,7 @@ export default function CartScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 13, color: themeColors.textSecondary, fontWeight: 'bold' }}>Delivery Distance</Text>
-                <Text style={{ fontSize: 11, color: themeColors.textSecondary, marginTop: 2 }}>From {kitchenName || 'Kitchen'} to your address</Text>
+                <Text style={{ fontSize: 11, color: themeColors.textSecondary, marginTop: 2 }}>From {restaurantName || 'Kitchen'} to your address</Text>
               </View>
             </View>
             <View style={{ alignItems: 'flex-end' }}>

@@ -45,6 +45,7 @@ export default function OrderTrackingScreen() {
 
   // Chat and Rating states
   const [chatActive, setChatActive] = useState(false);
+  const [chatTarget, setChatTarget] = useState<'Rider' | 'Seller'>('Rider');
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessageText, setNewMessageText] = useState('');
   const [chatInterval, setChatInterval] = useState<any>(null);
@@ -158,7 +159,7 @@ export default function OrderTrackingScreen() {
       Math.sin(dLat/2) * Math.sin(dLat/2) +
       Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
       Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1-a));
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     return R * c;
   };
 
@@ -240,13 +241,16 @@ export default function OrderTrackingScreen() {
           <View style={styles.riderActions}>
             <TouchableOpacity 
               style={[styles.actionBtn, { backgroundColor: themeColors.inputBg }]}
-              onPress={() => Linking.openURL(`tel:${(activeKitchen as any)?.phone || (activeOrder as any)?.kitchenPhone || ''}`)}
+              onPress={() => Linking.openURL(`tel:${(activeKitchen as any)?.phone || (activeOrder as any)?.kitchenPhone || '9876543210'}`)}
             >
               <Phone size={16} color={theme.colors.primary} />
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.actionBtn, { backgroundColor: themeColors.inputBg }]}
-              onPress={() => setChatActive(true)}
+              onPress={() => {
+                setChatTarget('Seller');
+                setChatActive(true);
+              }}
             >
               <MessageSquare size={16} color={theme.colors.primary} />
             </TouchableOpacity>
@@ -270,13 +274,16 @@ export default function OrderTrackingScreen() {
               <View style={styles.riderActions}>
                 <TouchableOpacity 
                   style={[styles.actionBtn, { backgroundColor: themeColors.inputBg }]}
-                  onPress={() => Linking.openURL(`tel:${activeOrder?.riderPhone || ''}`)}
+                  onPress={() => Linking.openURL(`tel:${activeOrder?.riderPhone || '8527430152'}`)}
                 >
                   <Phone size={16} color={theme.colors.primary} />
                 </TouchableOpacity>
                 <TouchableOpacity 
                   style={[styles.actionBtn, { backgroundColor: themeColors.inputBg }]}
-                  onPress={() => setChatActive(true)}
+                  onPress={() => {
+                    setChatTarget('Rider');
+                    setChatActive(true);
+                  }}
                 >
                   <MessageSquare size={16} color={theme.colors.primary} />
                 </TouchableOpacity>
@@ -373,7 +380,11 @@ export default function OrderTrackingScreen() {
           <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
             <View style={[styles.modalContent, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
               <View style={[styles.modalHeader, { borderBottomColor: themeColors.border }]}>
-                <Text style={styles.modalTitle}>Chat with Delivery Partner</Text>
+                <Text style={styles.modalTitle}>
+                  {chatTarget === 'Seller' 
+                    ? `Chat with ${activeKitchen?.name || 'Seller'}` 
+                    : `Chat with ${activeOrder?.riderName || 'Rider'}`}
+                </Text>
                 <TouchableOpacity onPress={() => setChatActive(false)} style={[styles.closeBtn, { backgroundColor: themeColors.inputBg }]}>
                   <X size={18} color={themeColors.text} />
                 </TouchableOpacity>
