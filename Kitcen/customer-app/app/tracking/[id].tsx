@@ -141,7 +141,8 @@ export default function OrderTrackingScreen() {
 
   const getStatusNumber = (status: string) => {
     switch (status) {
-      case 'placed': return 1;
+      case 'placed':
+      case 'confirmed': return 1;
       case 'preparing': return 2;
       case 'ready': return 3;
       case 'on_the_way': return 4;

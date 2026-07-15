@@ -110,7 +110,7 @@ export default function RiderDashboard() {
       Math.sin(dLat/2) * Math.sin(dLat/2) +
       Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
       Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1-a));
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     return R * c;
   };
 
@@ -199,9 +199,9 @@ export default function RiderDashboard() {
       return;
     }
     
-    // Available orders: no riderId, status in ['ready', 'placed', 'preparing'] and matching chosen zone
+    // Available orders: no riderId, status in ['ready', 'placed', 'preparing', 'confirmed'] and matching chosen zone
     const availableIds = orders
-      .filter((o) => !o.riderId && ['ready', 'placed', 'preparing'].includes(o.status) && isOrderInSelectedZone(o))
+      .filter((o) => !o.riderId && ['ready', 'placed', 'preparing', 'confirmed'].includes(o.status) && isOrderInSelectedZone(o))
       .map((o) => o.id);
 
     // Find if there are any new IDs that were not in our previous list
@@ -388,11 +388,11 @@ export default function RiderDashboard() {
 
   // Filter orders
   const activeDeliveries = orders.filter(
-    (o) => o.riderId === riderId && ['ready', 'on_the_way', 'preparing'].includes(o.status)
+    (o) => o.riderId === riderId && ['ready', 'on_the_way', 'preparing', 'confirmed'].includes(o.status)
   );
 
   const availableOrdersPool = orders.filter(
-    (o) => !o.riderId && ['ready', 'placed', 'preparing'].includes(o.status) && isOrderInSelectedZone(o)
+    (o) => !o.riderId && ['ready', 'placed', 'preparing', 'confirmed'].includes(o.status) && isOrderInSelectedZone(o)
   );
 
   // Dynamic colors based on theme mode

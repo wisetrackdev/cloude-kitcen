@@ -498,9 +498,9 @@ export default function SellerDashboard() {
       return;
     }
     
-    // Filter orders for this kitchen that are in 'placed' state (newly ordered by customer)
+    // Filter orders for this kitchen that are in 'placed' or 'confirmed' state (newly ordered by customer)
     const placedIds = orders
-      .filter((o) => o.kitchenId === selectedKitchenId && o.status === 'placed')
+      .filter((o) => o.kitchenId === selectedKitchenId && (o.status === 'placed' || o.status === 'confirmed'))
       .map((o) => o.id);
 
     // If there is any new order ID that wasn't in our previous list, trigger the alert
@@ -527,7 +527,7 @@ export default function SellerDashboard() {
 
   const handleOrderStatusToggle = async (orderId: string, currentStatus: string) => {
     let nextStatus: typeof orders[0]['status'] = 'placed';
-    if (currentStatus === 'placed') {
+    if (currentStatus === 'placed' || currentStatus === 'confirmed') {
       nextStatus = 'preparing';
     } else if (currentStatus === 'preparing') {
       nextStatus = 'ready';
@@ -576,7 +576,8 @@ export default function SellerDashboard() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'placed': return '#007AFF';
+      case 'placed':
+      case 'confirmed': return '#007AFF';
       case 'preparing': return '#FF9500';
       case 'ready': return '#5856D6';
       case 'on_the_way': return '#FFCC00';
@@ -684,7 +685,7 @@ export default function SellerDashboard() {
                 </View>
                 <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status) + '15', borderColor: getStatusColor(order.status) }]}>
                   <Text style={[styles.statusText, { color: getStatusColor(order.status) }]}>
-                    {order.status === 'placed' ? 'INCOMING' : order.status.toUpperCase()}
+                    {(order.status === 'placed' || order.status === 'confirmed') ? 'INCOMING' : order.status.toUpperCase()}
                   </Text>
                 </View>
               </View>
@@ -751,13 +752,13 @@ export default function SellerDashboard() {
                   <Text style={styles.totalVal}>₹{order.total}</Text>
                 </View>
 
-                {order.status === 'placed' || order.status === 'preparing' ? (
+                {order.status === 'placed' || order.status === 'confirmed' || order.status === 'preparing' ? (
                   <TouchableOpacity 
                     style={styles.actionBtn}
                     onPress={() => handleOrderStatusToggle(order.id, order.status)}
                   >
                     <Text style={styles.actionText}>
-                      {order.status === 'placed' ? '✓ Accept Order' : '⚡ Mark Food Ready'}
+                      {(order.status === 'placed' || order.status === 'confirmed') ? '✓ Accept Order' : '⚡ Mark Food Ready'}
                     </Text>
                   </TouchableOpacity>
                 ) : (
