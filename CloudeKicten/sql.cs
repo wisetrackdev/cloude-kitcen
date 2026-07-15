@@ -250,7 +250,11 @@ namespace CloudeKicten
                 payment_method VARCHAR(50) NOT NULL,
                 order_date VARCHAR(100) NOT NULL,
                 rider_id VARCHAR(50) NULL REFERENCES user_register(id) ON DELETE SET NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                latitude NUMERIC(10,8) NULL,
+                longitude NUMERIC(11,8) NULL,
+                is_rider_settled BOOLEAN DEFAULT FALSE,
+                is_seller_settled BOOLEAN DEFAULT FALSE
             );";
 
         public const string CreateOrderItemsTable = @"
