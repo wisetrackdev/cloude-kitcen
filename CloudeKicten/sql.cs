@@ -658,38 +658,38 @@ namespace CloudeKicten
         // ==========================================
 
         public const string InsertOrder = @"
-            INSERT INTO orders (id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at, is_rider_settled, is_seller_settled)
-            VALUES (@Id, @KitchenId, @CustomerId, @ItemsJson, @Subtotal, @DeliveryCharge, @Tax, @Discount, @Total, @Status, @PaymentMethod, @OrderDate, @RiderId, @DeliveryAddress, CURRENT_TIMESTAMP, @IsRiderSettled, @IsSellerSettled);
+            INSERT INTO orders (id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at, is_rider_settled, is_seller_settled, latitude, longitude)
+            VALUES (@Id, @KitchenId, @CustomerId, @ItemsJson, @Subtotal, @DeliveryCharge, @Tax, @Discount, @Total, @Status, @PaymentMethod, @OrderDate, @RiderId, @DeliveryAddress, CURRENT_TIMESTAMP, @IsRiderSettled, @IsSellerSettled, @Latitude, @Longitude);
         ";
 
         public const string GetAllOrders = @"
-            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at, picked_up_at, delivered_at, accepted_by_rider_at, is_rider_settled, is_seller_settled, pickup_photo_url, delivery_photo_url
+            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at, picked_up_at, delivered_at, accepted_by_rider_at, is_rider_settled, is_seller_settled, pickup_photo_url, delivery_photo_url, latitude, longitude
             FROM orders
             ORDER BY created_at DESC;
         ";
 
         public const string GetOrderById = @"
-            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at, picked_up_at, delivered_at, accepted_by_rider_at, is_rider_settled, is_seller_settled, pickup_photo_url, delivery_photo_url
+            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at, picked_up_at, delivered_at, accepted_by_rider_at, is_rider_settled, is_seller_settled, pickup_photo_url, delivery_photo_url, latitude, longitude
             FROM orders
             WHERE id = @Id;
         ";
 
         public const string GetOrdersByCustomerId = @"
-            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at, picked_up_at, delivered_at, accepted_by_rider_at, is_rider_settled, is_seller_settled, pickup_photo_url, delivery_photo_url
+            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at, picked_up_at, delivered_at, accepted_by_rider_at, is_rider_settled, is_seller_settled, pickup_photo_url, delivery_photo_url, latitude, longitude
             FROM orders
             WHERE customer_id = @CustomerId
             ORDER BY created_at DESC;
         ";
 
         public const string GetOrdersByKitchenId = @"
-            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at, picked_up_at, delivered_at, accepted_by_rider_at, is_rider_settled, is_seller_settled, pickup_photo_url, delivery_photo_url
+            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at, picked_up_at, delivered_at, accepted_by_rider_at, is_rider_settled, is_seller_settled, pickup_photo_url, delivery_photo_url, latitude, longitude
             FROM orders
             WHERE kitchen_id = @KitchenId
             ORDER BY created_at DESC;
         ";
 
         public const string GetOrdersByRiderId = @"
-            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at, picked_up_at, delivered_at, accepted_by_rider_at, is_rider_settled, is_seller_settled, pickup_photo_url, delivery_photo_url
+            SELECT id, kitchen_id, customer_id, items_json, subtotal, delivery_charge, tax, discount, total, status, payment_method, order_date, rider_id, delivery_address, created_at, picked_up_at, delivered_at, accepted_by_rider_at, is_rider_settled, is_seller_settled, pickup_photo_url, delivery_photo_url, latitude, longitude
             FROM orders
             WHERE rider_id = @RiderId
             ORDER BY created_at DESC;

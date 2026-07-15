@@ -97,6 +97,8 @@ namespace CloudeKicten.Models
         public string OrderDate { get; set; } = string.Empty;
         public string? RiderId { get; set; }
         public string? DeliveryAddress { get; set; }
+        public decimal? Latitude { get; set; }
+        public decimal? Longitude { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? PickedUpAt { get; set; }
         public DateTime? DeliveredAt { get; set; }
@@ -342,6 +344,8 @@ namespace CloudeKicten.Models
         public decimal Total { get; set; }
         public string PaymentMethod { get; set; } = "cod";
         public string? DeliveryAddress { get; set; }
+        public decimal? Latitude { get; set; }
+        public decimal? Longitude { get; set; }
     }
 
     public class OrderResponseDto
@@ -373,6 +377,10 @@ namespace CloudeKicten.Models
         public string? DeliveryPhotoUrl { get; set; }
         public bool IsRiderSettled { get; set; }
         public bool IsSellerSettled { get; set; }
+        public decimal? ShopLatitude { get; set; }
+        public decimal? ShopLongitude { get; set; }
+        public decimal? CustomerLatitude { get; set; }
+        public decimal? CustomerLongitude { get; set; }
     }
 
     public class RateRiderDto

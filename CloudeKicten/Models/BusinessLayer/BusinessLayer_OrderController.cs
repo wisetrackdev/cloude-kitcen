@@ -111,6 +111,18 @@ namespace CloudeKicten.Models.BusinessLayer
             if (kitchen == null)
                 return ApiResponse<OrderResponseDto>.Fail($"Kitchen with ID '{dto.KitchenId}' not found.");
 
+            double distance = 1.0;
+            if (kitchen.Latitude.HasValue && kitchen.Longitude.HasValue && dto.Latitude.HasValue && dto.Longitude.HasValue)
+            {
+                distance = CalculateHaversineDistance(
+                    (double)kitchen.Latitude.Value, (double)kitchen.Longitude.Value,
+                    (double)dto.Latitude.Value, (double)dto.Longitude.Value
+                );
+            }
+
+            decimal calculatedDeliveryCharge = CalculateDeliveryCharge(distance);
+            decimal calculatedTotal = dto.Subtotal + calculatedDeliveryCharge + dto.Tax - dto.Discount;
+
             string orderId = "CK-" + new Random().Next(1000, 9999);
             string orderDate = DateTime.Now.ToString("dd MMMM, h:mm tt") + " today";
 
@@ -121,10 +133,10 @@ namespace CloudeKicten.Models.BusinessLayer
                 CustomerId = dto.CustomerId,
                 ItemsJson = JsonSerializer.Serialize(dto.Items),
                 Subtotal = dto.Subtotal,
-                DeliveryCharge = dto.DeliveryCharge,
+                DeliveryCharge = calculatedDeliveryCharge,
                 Tax = dto.Tax,
                 Discount = dto.Discount,
-                Total = dto.Total,
+                Total = calculatedTotal,
                 Status = "placed",
                 PaymentMethod = dto.PaymentMethod,
                 OrderDate = orderDate,
@@ -501,15 +513,7 @@ namespace CloudeKicten.Models.BusinessLayer
 
         private decimal CalculateDeliveryCharge(double distanceKm)
         {
-            const decimal BaseCharge = 10.0m;
-            const double BaseDistanceKm = 2.0;
-            const decimal PerKmCharge = 5.0m;
-
-            if (distanceKm <= BaseDistanceKm)
-                return BaseCharge;
-
-            double extraKm = Math.Ceiling(distanceKm - BaseDistanceKm);
-            return BaseCharge + ((decimal)extraKm * PerKmCharge);
+            return (decimal)Math.Round(distanceKm, 2) * 5.0m;
         }
     }
 }
