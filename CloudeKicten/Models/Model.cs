@@ -544,4 +544,46 @@ namespace CloudeKicten.Models
         public string LastPayoutStatus { get; set; } = string.Empty;
         public List<SettlementDb> PayoutHistory { get; set; } = new();
     }
+
+    public class AddressDb
+    {
+        public string Id { get; set; } = string.Empty;
+        public string UserId { get; set; } = string.Empty;
+        public string AddressName { get; set; } = string.Empty;
+        public string AddressLine { get; set; } = string.Empty;
+        public decimal? Latitude { get; set; }
+        public decimal? Longitude { get; set; }
+        public bool IsDefault { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    }
+
+    public class AddressDto
+    {
+        public string? Id { get; set; }
+        public string UserId { get; set; } = string.Empty;
+        public string AddressName { get; set; } = string.Empty;
+        public string AddressLine { get; set; } = string.Empty;
+        public decimal? Latitude { get; set; }
+        public decimal? Longitude { get; set; }
+        public bool IsDefault { get; set; }
+    }
+
+    public class DeliveryPreviewRequestDto
+    {
+        public string ShopId { get; set; } = string.Empty;
+        public string AddressId { get; set; } = string.Empty;
+    }
+
+    public class DeliveryPreviewResponseDto
+    {
+        public double DistanceKm { get; set; }
+        public decimal DeliveryCharge { get; set; }
+    }
+
+    public class RiderLocationDto
+    {
+        public string RiderId { get; set; } = string.Empty;
+        public decimal Latitude { get; set; }
+        public decimal Longitude { get; set; }
+    }
 }

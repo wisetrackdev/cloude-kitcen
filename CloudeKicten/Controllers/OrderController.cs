@@ -119,5 +119,44 @@ namespace CloudeKicten.Controllers
             var result = await _businessLayer.GetSupportRoomsAsync();
             return Ok(result);
         }
+
+        [HttpGet("address")]
+        public async Task<IActionResult> GetAddresses([FromQuery] string userId)
+        {
+            var result = await _businessLayer.GetAddressesByUserIdAsync(userId);
+            return Ok(result);
+        }
+
+        [HttpPost("address")]
+        public async Task<IActionResult> SaveAddress([FromBody] AddressDto dto)
+        {
+            var result = await _businessLayer.SaveAddressAsync(dto);
+            if (!result.Success) return BadRequest(result);
+            return Ok(result);
+        }
+
+        [HttpDelete("address/{id}")]
+        public async Task<IActionResult> DeleteAddress(string id)
+        {
+            var result = await _businessLayer.DeleteAddressAsync(id);
+            if (!result.Success) return BadRequest(result);
+            return Ok(result);
+        }
+
+        [HttpPost("preview-delivery")]
+        public async Task<IActionResult> PreviewDelivery([FromBody] DeliveryPreviewRequestDto dto)
+        {
+            var result = await _businessLayer.PreviewDeliveryAsync(dto);
+            if (!result.Success) return BadRequest(result);
+            return Ok(result);
+        }
+
+        [HttpPost("{id}/assign-rider")]
+        public async Task<IActionResult> AssignNearestRider(string id)
+        {
+            var result = await _businessLayer.AssignNearestRiderAsync(id);
+            if (!result.Success) return BadRequest(result);
+            return Ok(result);
+        }
     }
 }

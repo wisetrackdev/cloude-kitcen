@@ -22,6 +22,11 @@ namespace CloudeKicten.Models.DatabaseLayer
         Task<List<string>> GetRiderIdsAsync();
         Task<bool> InsertNotificationAsync(string userId, string title, string body);
         Task<List<SupportRoomDto>> GetSupportRoomsAsync();
+        Task<List<AddressDb>> GetAddressesByUserIdAsync(string userId);
+        Task<AddressDb?> GetAddressByIdAsync(string id);
+        Task<bool> InsertAddressAsync(AddressDb address);
+        Task<bool> DeleteAddressAsync(string id);
+        Task<List<RiderLocationDto>> GetOnlineRidersAsync();
     }
 
     public class DatabaseLayer_OrderController : IDatabaseLayer_OrderController
@@ -320,6 +325,113 @@ namespace CloudeKicten.Models.DatabaseLayer
             catch (Exception ex)
             {
                 Console.WriteLine($"Error fetching support rooms: {ex.Message}");
+            }
+            return list;
+        }
+
+        public async Task<List<AddressDb>> GetAddressesByUserIdAsync(string userId)
+        {
+            var list = new List<AddressDb>();
+            using var conn = GetConnection();
+            await conn.OpenAsync();
+            using var cmd = new NpgsqlCommand("SELECT id, user_id, address_name, address_line, latitude, longitude, is_default, created_at FROM addresses WHERE user_id = @UserId ORDER BY created_at DESC;", conn);
+            cmd.Parameters.AddWithValue("@UserId", userId);
+
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                list.Add(new AddressDb
+                {
+                    Id = reader.GetString(0),
+                    UserId = reader.GetString(1),
+                    AddressName = reader.GetString(2),
+                    AddressLine = reader.GetString(3),
+                    Latitude = reader.IsDBNull(4) ? null : reader.GetDecimal(4),
+                    Longitude = reader.IsDBNull(5) ? null : reader.GetDecimal(5),
+                    IsDefault = reader.GetBoolean(6),
+                    CreatedAt = reader.GetDateTime(7)
+                });
+            }
+            return list;
+        }
+
+        public async Task<AddressDb?> GetAddressByIdAsync(string id)
+        {
+            using var conn = GetConnection();
+            await conn.OpenAsync();
+            using var cmd = new NpgsqlCommand("SELECT id, user_id, address_name, address_line, latitude, longitude, is_default, created_at FROM addresses WHERE id = @Id;", conn);
+            cmd.Parameters.AddWithValue("@Id", id);
+
+            using var reader = await cmd.ExecuteReaderAsync();
+            if (await reader.ReadAsync())
+            {
+                return new AddressDb
+                {
+                    Id = reader.GetString(0),
+                    UserId = reader.GetString(1),
+                    AddressName = reader.GetString(2),
+                    AddressLine = reader.GetString(3),
+                    Latitude = reader.IsDBNull(4) ? null : reader.GetDecimal(4),
+                    Longitude = reader.IsDBNull(5) ? null : reader.GetDecimal(5),
+                    IsDefault = reader.GetBoolean(6),
+                    CreatedAt = reader.GetDateTime(7)
+                };
+            }
+            return null;
+        }
+
+        public async Task<bool> InsertAddressAsync(AddressDb address)
+        {
+            using var conn = GetConnection();
+            await conn.OpenAsync();
+
+            if (address.IsDefault)
+            {
+                using var clearCmd = new NpgsqlCommand("UPDATE addresses SET is_default = FALSE WHERE user_id = @UserId;", conn);
+                clearCmd.Parameters.AddWithValue("@UserId", address.UserId);
+                await clearCmd.ExecuteNonQueryAsync();
+            }
+
+            using var cmd = new NpgsqlCommand("INSERT INTO addresses (id, user_id, address_name, address_line, latitude, longitude, is_default, created_at) VALUES (@Id, @UserId, @AddressName, @AddressLine, @Latitude, @Longitude, @IsDefault, @CreatedAt);", conn);
+            cmd.Parameters.AddWithValue("@Id", address.Id);
+            cmd.Parameters.AddWithValue("@UserId", address.UserId);
+            cmd.Parameters.AddWithValue("@AddressName", address.AddressName);
+            cmd.Parameters.AddWithValue("@AddressLine", address.AddressLine);
+            cmd.Parameters.AddWithValue("@Latitude", (object?)address.Latitude ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@Longitude", (object?)address.Longitude ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@IsDefault", address.IsDefault);
+            cmd.Parameters.AddWithValue("@CreatedAt", address.CreatedAt);
+
+            var result = await cmd.ExecuteNonQueryAsync();
+            return result > 0;
+        }
+
+        public async Task<bool> DeleteAddressAsync(string id)
+        {
+            using var conn = GetConnection();
+            await conn.OpenAsync();
+            using var cmd = new NpgsqlCommand("DELETE FROM addresses WHERE id = @Id;", conn);
+            cmd.Parameters.AddWithValue("@Id", id);
+
+            var result = await cmd.ExecuteNonQueryAsync();
+            return result > 0;
+        }
+
+        public async Task<List<RiderLocationDto>> GetOnlineRidersAsync()
+        {
+            var list = new List<RiderLocationDto>();
+            using var conn = GetConnection();
+            await conn.OpenAsync();
+            using var cmd = new NpgsqlCommand("SELECT id, current_latitude, current_longitude FROM delivery_partners WHERE is_active = true AND is_approved = true AND current_latitude IS NOT NULL AND current_longitude IS NOT NULL;", conn);
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                list.Add(new RiderLocationDto
+                {
+                    RiderId = reader.GetString(0),
+                    Latitude = reader.GetDecimal(1),
+                    Longitude = reader.GetDecimal(2)
+                });
             }
             return list;
         }

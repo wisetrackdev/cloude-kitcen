@@ -18,8 +18,13 @@ namespace CloudeKicten.Models.BusinessLayer
         Task<ApiResponse<bool>> DeleteOrderAsync(string id);
         Task<ApiResponse<List<ChatDto>>> GetChatsByOrderIdAsync(string orderId);
         Task<ApiResponse<ChatDto>> SendChatMessageAsync(string orderId, ChatCreateDto dto);
-        Task<ApiResponse<OrderResponseDto>> AcceptOrderAsync(string id, string riderId);
         Task<ApiResponse<List<SupportRoomDto>>> GetSupportRoomsAsync();
+        Task<ApiResponse<OrderResponseDto>> AcceptOrderAsync(string id, string riderId);
+        Task<ApiResponse<List<AddressDto>>> GetAddressesByUserIdAsync(string userId);
+        Task<ApiResponse<AddressDto>> SaveAddressAsync(AddressDto dto);
+        Task<ApiResponse<bool>> DeleteAddressAsync(string id);
+        Task<ApiResponse<DeliveryPreviewResponseDto>> PreviewDeliveryAsync(DeliveryPreviewRequestDto dto);
+        Task<ApiResponse<OrderResponseDto>> AssignNearestRiderAsync(string orderId);
     }
 
     public class BusinessLayer_OrderController : IBusinessLayer_OrderController
@@ -27,15 +32,21 @@ namespace CloudeKicten.Models.BusinessLayer
         private readonly IDatabaseLayer_OrderController _databaseLayer;
         private readonly IDatabaseLayer_KitchenController _kitchenDatabaseLayer;
         private readonly IDatabaseLayer_AuthController _authDatabaseLayer;
+        private readonly Microsoft.Extensions.Configuration.IConfiguration _configuration;
+        private readonly IDatabaseLayer_WalletController _walletDatabaseLayer;
 
         public BusinessLayer_OrderController(
             IDatabaseLayer_OrderController databaseLayer,
             IDatabaseLayer_KitchenController kitchenDatabaseLayer,
-            IDatabaseLayer_AuthController authDatabaseLayer)
+            IDatabaseLayer_AuthController authDatabaseLayer,
+            Microsoft.Extensions.Configuration.IConfiguration configuration,
+            IDatabaseLayer_WalletController walletDatabaseLayer)
         {
             this._databaseLayer = databaseLayer;
             this._kitchenDatabaseLayer = kitchenDatabaseLayer;
             this._authDatabaseLayer = authDatabaseLayer;
+            this._configuration = configuration;
+            this._walletDatabaseLayer = walletDatabaseLayer;
         }
 
         public async Task<ApiResponse<List<OrderResponseDto>>> GetAllOrdersAsync()
@@ -152,10 +163,44 @@ namespace CloudeKicten.Models.BusinessLayer
             var o = await _databaseLayer.GetOrderByIdAsync(id);
             if (o == null) return ApiResponse<OrderResponseDto>.Fail("Order not found.");
 
+            string normalizedStatus = status.Trim().ToLower();
+
+            if (normalizedStatus == "ready")
+            {
+                return await AssignNearestRiderAsync(id);
+            }
+
             await _databaseLayer.UpdateOrderStatusAsync(id, status, pickupPhotoUrl, deliveryPhotoUrl);
             o.Status = status;
             if (pickupPhotoUrl != null) o.PickupPhotoUrl = pickupPhotoUrl;
             if (deliveryPhotoUrl != null) o.DeliveryPhotoUrl = deliveryPhotoUrl;
+
+            if (normalizedStatus == "delivered" && !string.IsNullOrEmpty(o.RiderId) && !o.IsRiderSettled)
+            {
+                try
+                {
+                    await _walletDatabaseLayer.EnsureWalletExistsAsync(o.RiderId);
+                    await _walletDatabaseLayer.UpdateWalletBalanceAsync(
+                        userId: o.RiderId,
+                        amount: o.DeliveryCharge,
+                        type: "credit",
+                        description: $"Delivery earning for Order {o.Id}"
+                    );
+
+                    using (var conn = new Npgsql.NpgsqlConnection(_configuration.GetConnectionString("AppDbContext")))
+                    {
+                        await conn.OpenAsync();
+                        using var cmd = new Npgsql.NpgsqlCommand("UPDATE orders SET is_rider_settled = TRUE WHERE id = @Id;", conn);
+                        cmd.Parameters.AddWithValue("@Id", o.Id);
+                        await cmd.ExecuteNonQueryAsync();
+                    }
+                    o.IsRiderSettled = true;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error crediting rider wallet: {ex.Message}");
+                }
+            }
 
             var res = await MapToOrderResponseDtoAsync(o);
             return ApiResponse<OrderResponseDto>.Ok(res, "Order status updated successfully.");
@@ -282,6 +327,189 @@ namespace CloudeKicten.Models.BusinessLayer
         {
             var rooms = await _databaseLayer.GetSupportRoomsAsync();
             return ApiResponse<List<SupportRoomDto>>.Ok(rooms);
+        }
+
+        public async Task<ApiResponse<List<AddressDto>>> GetAddressesByUserIdAsync(string userId)
+        {
+            var dbAddresses = await _databaseLayer.GetAddressesByUserIdAsync(userId);
+            var list = new List<AddressDto>();
+            foreach (var a in dbAddresses)
+            {
+                list.Add(new AddressDto
+                {
+                    Id = a.Id,
+                    UserId = a.UserId,
+                    AddressName = a.AddressName,
+                    AddressLine = a.AddressLine,
+                    Latitude = a.Latitude,
+                    Longitude = a.Longitude,
+                    IsDefault = a.IsDefault
+                });
+            }
+            return ApiResponse<List<AddressDto>>.Ok(list);
+        }
+
+        public async Task<ApiResponse<AddressDto>> SaveAddressAsync(AddressDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.UserId) || string.IsNullOrWhiteSpace(dto.AddressLine))
+                return ApiResponse<AddressDto>.Fail("UserId and AddressLine are required.");
+
+            var address = new AddressDb
+            {
+                Id = string.IsNullOrEmpty(dto.Id) ? "AD-" + Guid.NewGuid().ToString("N").Substring(0, 8) : dto.Id,
+                UserId = dto.UserId,
+                AddressName = string.IsNullOrEmpty(dto.AddressName) ? "Home" : dto.AddressName,
+                AddressLine = dto.AddressLine,
+                Latitude = dto.Latitude,
+                Longitude = dto.Longitude,
+                IsDefault = dto.IsDefault,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var success = await _databaseLayer.InsertAddressAsync(address);
+            if (!success) return ApiResponse<AddressDto>.Fail("Failed to save address.");
+
+            dto.Id = address.Id;
+            return ApiResponse<AddressDto>.Ok(dto, "Address saved successfully.");
+        }
+
+        public async Task<ApiResponse<bool>> DeleteAddressAsync(string id)
+        {
+            var success = await _databaseLayer.DeleteAddressAsync(id);
+            if (!success) return ApiResponse<bool>.Fail("Failed to delete address.");
+            return ApiResponse<bool>.Ok(true, "Address deleted successfully.");
+        }
+
+        public async Task<ApiResponse<DeliveryPreviewResponseDto>> PreviewDeliveryAsync(DeliveryPreviewRequestDto dto)
+        {
+            var kitchen = await _kitchenDatabaseLayer.GetKitchenByIdAsync(dto.ShopId);
+            if (kitchen == null) return ApiResponse<DeliveryPreviewResponseDto>.Fail("Shop not found.");
+
+            var address = await _databaseLayer.GetAddressByIdAsync(dto.AddressId);
+            if (address == null) return ApiResponse<DeliveryPreviewResponseDto>.Fail("Address not found.");
+
+            if (!kitchen.Latitude.HasValue || !kitchen.Longitude.HasValue ||
+                !address.Latitude.HasValue || !address.Longitude.HasValue)
+            {
+                return ApiResponse<DeliveryPreviewResponseDto>.Ok(new DeliveryPreviewResponseDto
+                {
+                    DistanceKm = 1.5,
+                    DeliveryCharge = 10.0m
+                }, "Coordinates missing. Using default flat rate settings.");
+            }
+
+            double distance = CalculateHaversineDistance(
+                (double)kitchen.Latitude.Value, (double)kitchen.Longitude.Value,
+                (double)address.Latitude.Value, (double)address.Longitude.Value
+            );
+
+            decimal charge = CalculateDeliveryCharge(distance);
+
+            return ApiResponse<DeliveryPreviewResponseDto>.Ok(new DeliveryPreviewResponseDto
+            {
+                DistanceKm = Math.Round(distance, 2),
+                DeliveryCharge = charge
+            });
+        }
+
+        public async Task<ApiResponse<OrderResponseDto>> AssignNearestRiderAsync(string orderId)
+        {
+            var order = await _databaseLayer.GetOrderByIdAsync(orderId);
+            if (order == null) return ApiResponse<OrderResponseDto>.Fail("Order not found.");
+
+            var kitchen = await _kitchenDatabaseLayer.GetKitchenByIdAsync(order.KitchenId);
+            if (kitchen == null) return ApiResponse<OrderResponseDto>.Fail("Shop not found.");
+
+            if (!kitchen.Latitude.HasValue || !kitchen.Longitude.HasValue)
+            {
+                await _databaseLayer.UpdateOrderStatusAsync(orderId, "ready");
+                order.Status = "ready";
+                var res = await MapToOrderResponseDtoAsync(order);
+                return ApiResponse<OrderResponseDto>.Ok(res, "Order marked ready but shop coordinates are missing.");
+            }
+
+            var onlineRiders = await _databaseLayer.GetOnlineRidersAsync();
+            if (onlineRiders.Count == 0)
+            {
+                await _databaseLayer.UpdateOrderStatusAsync(orderId, "ready");
+                order.Status = "ready";
+                var res = await MapToOrderResponseDtoAsync(order);
+                return ApiResponse<OrderResponseDto>.Ok(res, "Order marked as Ready, but no online delivery boys found.");
+            }
+
+            RiderLocationDto? nearestRider = null;
+            double minDistance = double.MaxValue;
+
+            foreach (var rider in onlineRiders)
+            {
+                double dist = CalculateHaversineDistance(
+                    (double)kitchen.Latitude.Value, (double)kitchen.Longitude.Value,
+                    (double)rider.Latitude, (double)rider.Longitude
+                );
+
+                if (dist <= 10.0 && dist < minDistance)
+                {
+                    minDistance = dist;
+                    nearestRider = rider;
+                }
+            }
+
+            if (nearestRider != null)
+            {
+                await _databaseLayer.AssignRiderToOrderAsync(orderId, nearestRider.RiderId);
+                await _databaseLayer.UpdateOrderStatusAsync(orderId, "ready");
+                
+                order.RiderId = nearestRider.RiderId;
+                order.Status = "ready";
+
+                await _databaseLayer.InsertNotificationAsync(
+                    nearestRider.RiderId, 
+                    "New Delivery Assigned 🚴", 
+                    $"Accept order {orderId} from {kitchen.Name}. Pickup Sector: 132. Distance: {Math.Round(minDistance, 2)}km."
+                );
+
+                var res = await MapToOrderResponseDtoAsync(order);
+                return ApiResponse<OrderResponseDto>.Ok(res, "Rider assigned and order marked as Ready successfully.");
+            }
+            else
+            {
+                await _databaseLayer.UpdateOrderStatusAsync(orderId, "ready");
+                order.Status = "ready";
+                var res = await MapToOrderResponseDtoAsync(order);
+                return ApiResponse<OrderResponseDto>.Ok(res, "Order marked as Ready, but no delivery boy available within 10km.");
+            }
+        }
+
+        private double CalculateHaversineDistance(double lat1, double lon1, double lat2, double lon2)
+        {
+            const double R = 6371.0;
+            double dLat = ToRadians(lat2 - lat1);
+            double dLon = ToRadians(lon2 - lon1);
+
+            double a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                       Math.Cos(ToRadians(lat1)) * Math.Cos(ToRadians(lat2)) *
+                       Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+
+            double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+            return R * c;
+        }
+
+        private double ToRadians(double val)
+        {
+            return (Math.PI / 180.0) * val;
+        }
+
+        private decimal CalculateDeliveryCharge(double distanceKm)
+        {
+            const decimal BaseCharge = 10.0m;
+            const double BaseDistanceKm = 2.0;
+            const decimal PerKmCharge = 5.0m;
+
+            if (distanceKm <= BaseDistanceKm)
+                return BaseCharge;
+
+            double extraKm = Math.Ceiling(distanceKm - BaseDistanceKm);
+            return BaseCharge + ((decimal)extraKm * PerKmCharge);
         }
     }
 }
