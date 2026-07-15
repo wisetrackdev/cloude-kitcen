@@ -14,6 +14,7 @@ export const theme = {
     veg: '#249B3E',
     nonVeg: '#E43B3F',
   },
+  // hysgfhs
   spacing: {
     xs: 4,
     sm: 8,
