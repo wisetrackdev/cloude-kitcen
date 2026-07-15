@@ -65,6 +65,8 @@ export interface OrderRecord {
   riderId?: string;
   customerPhone?: string | null;
   deliveryAddress?: string | null;
+  kitchenAddress?: string | null;
+  kitchenPhone?: string | null;
   pickedUpAt?: string | null;
   deliveredAt?: string | null;
   acceptedByRiderAt?: string | null;
@@ -222,6 +224,8 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
           riderId: o.riderId || null,
           customerPhone: o.customerPhone || null,
           deliveryAddress: o.deliveryAddress || null,
+          kitchenAddress: o.kitchenAddress || null,
+          kitchenPhone: o.kitchenPhone || null,
           pickedUpAt: o.pickedUpAt || null,
           deliveredAt: o.deliveredAt || null,
           acceptedByRiderAt: o.acceptedByRiderAt || null,

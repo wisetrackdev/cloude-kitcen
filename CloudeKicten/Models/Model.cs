@@ -353,6 +353,8 @@ namespace CloudeKicten.Models
         public string Id { get; set; } = string.Empty;
         public string KitchenId { get; set; } = string.Empty;
         public string KitchenName { get; set; } = string.Empty;
+        public string? KitchenAddress { get; set; }
+        public string? KitchenPhone { get; set; }
         public string CustomerId { get; set; } = string.Empty;
         public string CustomerName { get; set; } = string.Empty;
         public List<OrderItemDto> Items { get; set; } = new();

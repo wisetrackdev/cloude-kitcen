@@ -76,6 +76,8 @@ export interface OrderRecord {
   riderPhone?: string | null;
   customerPhone?: string | null;
   deliveryAddress?: string | null;
+  kitchenAddress?: string | null;
+  kitchenPhone?: string | null;
   customerLatitude?: number | null;
   customerLongitude?: number | null;
   shopLatitude?: number | null;
@@ -332,7 +334,13 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
           riderName: o.riderName || null,
           riderPhone: o.riderPhone || null,
           customerPhone: o.customerPhone || null,
-          deliveryAddress: o.deliveryAddress || null
+          deliveryAddress: o.deliveryAddress || null,
+          kitchenAddress: o.kitchenAddress || null,
+          kitchenPhone: o.kitchenPhone || null,
+          customerLatitude: o.customerLatitude ? Number(o.customerLatitude) : null,
+          customerLongitude: o.customerLongitude ? Number(o.customerLongitude) : null,
+          shopLatitude: o.shopLatitude ? Number(o.shopLatitude) : null,
+          shopLongitude: o.shopLongitude ? Number(o.shopLongitude) : null
         }));
         set({ orders: mappedOrders, isLoading: false });
       } else {

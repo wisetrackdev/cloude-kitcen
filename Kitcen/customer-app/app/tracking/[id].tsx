@@ -40,6 +40,7 @@ export default function OrderTrackingScreen() {
   const orders = useKitchenStore(state => state.orders);
   const kitchens = useKitchenStore(state => state.kitchens);
   const fetchOrders = useKitchenStore(state => state.fetchOrders);
+  const fetchKitchens = useKitchenStore(state => state.fetchKitchens);
   const activeOrder = orders.find(o => o.id === id);
   const activeKitchen = kitchens.find(k => k.id === activeOrder?.kitchenId);
 
@@ -75,6 +76,7 @@ export default function OrderTrackingScreen() {
 
   // Poll order status every 5 seconds
   useEffect(() => {
+    fetchKitchens();
     fetchOrders();
     const interval = setInterval(() => {
       fetchOrders();
@@ -209,7 +211,7 @@ export default function OrderTrackingScreen() {
             <View style={styles.addressLineRow}>
               <MapPin size={12} color={theme.colors.success} style={{ marginRight: 6 }} />
               <Text numberOfLines={1} style={[styles.addressLineText, { color: themeColors.textSecondary }]}>
-                Kitchen: {activeKitchen?.address || 'Noida Sector 62, UP'}
+                Kitchen: {activeOrder?.kitchenAddress || activeKitchen?.address || 'Noida Sector 62, UP'}
               </Text>
             </View>
             <View style={styles.addressLineRow}>

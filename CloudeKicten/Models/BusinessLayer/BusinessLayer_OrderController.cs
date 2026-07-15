@@ -308,6 +308,8 @@ namespace CloudeKicten.Models.BusinessLayer
                 Id = dbOrder.Id,
                 KitchenId = dbOrder.KitchenId,
                 KitchenName = kitchen?.Name ?? "Unknown Kitchen",
+                KitchenAddress = kitchen?.Address,
+                KitchenPhone = kitchen?.OwnerPhone,
                 CustomerId = dbOrder.CustomerId,
                 CustomerName = customer != null ? $"{customer.FirstName} {customer.LastName}".Trim() : "Unknown Customer",
                 Items = items,
@@ -435,6 +437,29 @@ namespace CloudeKicten.Models.BusinessLayer
 
             var kitchen = await _kitchenDatabaseLayer.GetKitchenByIdAsync(order.KitchenId);
             if (kitchen == null) return ApiResponse<OrderResponseDto>.Fail("Shop not found.");
+
+            // If a rider is already assigned, keep them and just notify them
+            if (!string.IsNullOrEmpty(order.RiderId))
+            {
+                await _databaseLayer.UpdateOrderStatusAsync(orderId, "ready");
+                order.Status = "ready";
+
+                try
+                {
+                    await _databaseLayer.InsertNotificationAsync(
+                        order.RiderId, 
+                        "Order Ready for Pickup 📦", 
+                        $"Order {orderId} from {kitchen.Name} is now ready. Please proceed to pickup."
+                    );
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Notification warning: {ex.Message}");
+                }
+
+                var res = await MapToOrderResponseDtoAsync(order);
+                return ApiResponse<OrderResponseDto>.Ok(res, "Order marked as Ready. Existing rider notified.");
+            }
 
             if (!kitchen.Latitude.HasValue || !kitchen.Longitude.HasValue)
             {

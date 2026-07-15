@@ -69,7 +69,7 @@ export default function SellerDashboard() {
     const interval = setInterval(() => {
       fetchKitchens();
       fetchOrders();
-    }, 120000);
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 

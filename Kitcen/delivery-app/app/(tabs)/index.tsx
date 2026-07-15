@@ -165,11 +165,15 @@ export default function RiderDashboard() {
   const [newMessageText, setNewMessageText] = useState('');
   const [chatInterval, setChatInterval] = useState<any>(null);
 
+  // Fetch orders & kitchens on mount
+  useEffect(() => {
+    fetchOrders();
+    fetchKitchens();
+  }, []);
+
   // Poll orders & kitchens periodically only if online
   useEffect(() => {
     if (isOnline) {
-      fetchOrders();
-      fetchKitchens();
       const interval = setInterval(() => {
         fetchOrders();
         fetchKitchens();
@@ -632,20 +636,20 @@ export default function RiderDashboard() {
                             </Text>
                             <Text style={[styles.nodeName, { color: themeColors.text }]}>{delivery.kitchenName}</Text>
                             <Text style={[styles.nodeAddress, { color: themeColors.textSecondary }]}>
-                              Address: {kitchens.find(k => k.id === delivery.kitchenId)?.address || 'Collect from Vendor Counter'}
+                              Address: {delivery.kitchenAddress || kitchens.find(k => k.id === delivery.kitchenId)?.address || 'Collect from Vendor Counter'}
                             </Text>
                             
                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 }}>
                               <TouchableOpacity 
                                 style={[styles.mapLinkBtn, { borderColor: themeColors.border }]}
-                                onPress={() => handleOpenMaps(kitchens.find(k => k.id === delivery.kitchenId)?.address || delivery.kitchenName)}
+                                onPress={() => handleOpenMaps(delivery.kitchenAddress || kitchens.find(k => k.id === delivery.kitchenId)?.address || delivery.kitchenName)}
                               >
                                 <Text style={[styles.mapLinkText, { color: themeColors.text }]}>🗺 Navigate Shop</Text>
                               </TouchableOpacity>
 
                               <TouchableOpacity 
                                 style={[styles.mapLinkBtn, { marginLeft: 8, borderColor: 'rgba(52,199,89,0.2)', backgroundColor: 'rgba(52,199,89,0.1)' }]}
-                                onPress={() => Linking.openURL(`tel:${kitchens.find(k => k.id === delivery.kitchenId)?.ownerPhone || ''}`)}
+                                onPress={() => Linking.openURL(`tel:${delivery.kitchenPhone || kitchens.find(k => k.id === delivery.kitchenId)?.ownerPhone || '9876543210'}`)}
                               >
                                 <Text style={[styles.mapLinkText, { color: theme.colors.success }]}>📞 Call Seller</Text>
                               </TouchableOpacity>
@@ -771,7 +775,7 @@ export default function RiderDashboard() {
                       <View style={{ flex: 1, marginRight: 10 }}>
                         <Text style={[styles.poolTitle, { color: themeColors.text }]}>{order.kitchenName}</Text>
                         <Text style={[styles.poolDistance, { color: themeColors.textSecondary, fontSize: 11 }]} numberOfLines={1}>
-                          Shop Location: Noida Sector 132
+                          Shop: {order.kitchenAddress || kitchens.find(k => k.id === order.kitchenId)?.address || 'Noida Sector 132'}
                         </Text>
                         <Text style={[styles.poolDistance, { color: themeColors.textSecondary, fontSize: 11 }]} numberOfLines={2}>
                           Drop: {order.deliveryAddress || 'Customer Location'}
