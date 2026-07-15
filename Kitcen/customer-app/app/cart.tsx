@@ -43,10 +43,17 @@ export default function CartScreen() {
   const kitchens = useKitchenStore(state => state.kitchens);
   const kitchen = kitchens.find(k => k.id === restaurantId);
 
+  const userLocation = useAuthStore(state => state.location);
   const [promoCodeInput, setPromoCodeInput] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'wallet' | 'card' | 'paytm'>('paytm');
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [loadingLocation, setLoadingLocation] = useState(false);
+
+  useEffect(() => {
+    if (userLocation?.addressName) {
+      setDeliveryAddress(userLocation.addressName);
+    }
+  }, [userLocation]);
 
   const themeColors = {
     background: isDarkMode ? '#0B0B0C' : '#F5F6F8',
@@ -133,6 +140,8 @@ export default function CartScreen() {
           tax: totals.tax.toString(),
           discount: totals.discount.toString(),
           deliveryAddress: deliveryAddress,
+          latitude: userLocation?.latitude?.toString() || '28.5355',
+          longitude: userLocation?.longitude?.toString() || '77.3910',
           items: JSON.stringify(cartItems.map(item => ({
             id: item.id,
             name: item.name,

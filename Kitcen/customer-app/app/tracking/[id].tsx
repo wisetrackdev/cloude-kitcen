@@ -150,11 +150,33 @@ export default function OrderTrackingScreen() {
   const currentStatus = activeOrder ? activeOrder.status : 'placed';
   const statusStep = getStatusNumber(currentStatus);
 
+  const getHaversineDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371; // km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1-a));
+    return R * c;
+  };
+
   const getEta = (status: string) => {
-    if (status === 'placed') return 30;
-    if (status === 'preparing') return 20;
-    if (status === 'ready') return 15;
-    if (status === 'on_the_way') return 8;
+    const lat1 = activeOrder?.shopLatitude ? Number(activeOrder.shopLatitude) : (activeKitchen?.latitude ? Number(activeKitchen.latitude) : 28.5355);
+    const lon1 = activeOrder?.shopLongitude ? Number(activeOrder.shopLongitude) : (activeKitchen?.longitude ? Number(activeKitchen.longitude) : 77.3910);
+    const lat2 = activeOrder?.customerLatitude ? Number(activeOrder.customerLatitude) : 28.5355;
+    const lon2 = activeOrder?.customerLongitude ? Number(activeOrder.customerLongitude) : 77.3910;
+
+    const distance = getHaversineDistance(lat1, lon1, lat2, lon2);
+    const basePrepTime = 15;
+    const travelTime = Math.ceil(distance * 2);
+    const totalTime = basePrepTime + travelTime;
+
+    if (status === 'placed') return totalTime;
+    if (status === 'preparing') return Math.max(8, totalTime - 5);
+    if (status === 'ready') return Math.max(5, travelTime);
+    if (status === 'on_the_way') return Math.max(2, travelTime - 2);
     return 0;
   };
 

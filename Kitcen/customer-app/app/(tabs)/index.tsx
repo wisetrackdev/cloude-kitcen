@@ -28,7 +28,10 @@ import {
   Grape, 
   Cookie, 
   GlassWater,
-  X
+  X,
+  ChevronDown,
+  MapPin,
+  Plus
 } from 'lucide-react-native';
 import { theme } from '../../styles/theme';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -69,6 +72,78 @@ export default function HomeScreen() {
   const [liveBanners, setLiveBanners] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
 
+  // Address Selector (Zepto style) States
+  const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
+  const [activeAddress, setActiveAddress] = useState<any>(null);
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [showNewAddressForm, setShowNewAddressForm] = useState(false);
+
+  // New Address Form Fields
+  const [newLabel, setNewLabel] = useState('Home');
+  const [newAddressLine, setNewAddressLine] = useState('');
+  const [newLat, setNewLat] = useState('28.5355');
+  const [newLon, setNewLon] = useState('77.3910');
+  const [newIsDefault, setNewIsDefault] = useState(false);
+
+  const fetchAddresses = async () => {
+    if (!user?.id) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/orders/address?userId=${user.id}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          setSavedAddresses(json.data);
+          const def = json.data.find((a: any) => a.isDefault) || json.data[0];
+          if (def) {
+            setActiveAddress(def);
+            useAuthStore.setState({
+              location: {
+                latitude: Number(def.latitude),
+                longitude: Number(def.longitude),
+                addressName: def.addressLine
+              }
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to fetch addresses:', err);
+    }
+  };
+
+  const handleSaveAddress = async () => {
+    if (!newAddressLine.trim() || !user?.id) {
+      Alert.alert('Error', 'Please enter a valid address line');
+      return;
+    }
+    try {
+      const payload = {
+        userId: user.id,
+        addressName: newLabel,
+        addressLine: newAddressLine,
+        latitude: parseFloat(newLat) || 28.5355,
+        longitude: parseFloat(newLon) || 77.3910,
+        isDefault: newIsDefault
+      };
+      const res = await fetch(`${API_BASE_URL}/api/orders/address`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success) {
+          Alert.alert('Success', 'Address saved successfully');
+          setNewAddressLine('');
+          setShowNewAddressForm(false);
+          fetchAddresses();
+        }
+      }
+    } catch (err) {
+      Alert.alert('Error', 'Failed to save address');
+    }
+  };
+
   const notifications = useNotificationStore(state => state.notifications);
   const unreadCount = useNotificationStore(state => state.unreadCount);
   const markAllAsRead = useNotificationStore(state => state.markAllAsRead);
@@ -81,7 +156,8 @@ export default function HomeScreen() {
     fetchAllProducts();
     fetchLiveBanners();
     fetchDbCategories();
-  }, []);
+    fetchAddresses();
+  }, [user?.id]);
 
   const fetchDbCategories = async () => {
     try {
@@ -236,6 +312,21 @@ export default function HomeScreen() {
       
       {/* 1. Gold/Yellow Top Header Block */}
       <View style={styles.goldHeader}>
+        {/* Top Location Selector (Zepto style) */}
+        <TouchableOpacity 
+          style={styles.locationSelectorBar}
+          onPress={() => setShowLocationModal(true)}
+        >
+          <MapPin size={16} color="#FFF" style={{ marginRight: 6 }} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.deliveryToLabel}>Delivery to</Text>
+            <Text numberOfLines={1} style={styles.activeLocationText}>
+              {activeAddress ? `${activeAddress.addressName}: ${activeAddress.addressLine}` : 'Select Delivery Location'}
+            </Text>
+          </View>
+          <ChevronDown size={14} color="#FFF" />
+        </TouchableOpacity>
+
         {/* Search bar & Actions Row */}
         <View style={styles.headerTopRow}>
           <View style={styles.searchBar}>
@@ -534,6 +625,142 @@ export default function HomeScreen() {
                   <Text style={styles.clearAllText}>Clear All</Text>
                 </TouchableOpacity>
               </View>
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {/* Choose Address Modal (Zepto Style) */}
+      {showLocationModal && (
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={showLocationModal}
+          onRequestClose={() => setShowLocationModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Choose Address</Text>
+                <TouchableOpacity 
+                  onPress={() => setShowLocationModal(false)} 
+                  style={styles.closeBtn}
+                >
+                  <X size={18} color="#FFB300" />
+                </TouchableOpacity>
+              </View>
+
+              {!showNewAddressForm ? (
+                <ScrollView contentContainerStyle={{ padding: 20 }}>
+                  <Text style={styles.subModalTitle}>Saved Addresses</Text>
+                  
+                  {savedAddresses.length === 0 ? (
+                    <Text style={styles.noAddressText}>No saved addresses found. Add one below!</Text>
+                  ) : (
+                    savedAddresses.map((addr) => (
+                      <TouchableOpacity
+                        key={addr.id}
+                        style={[
+                          styles.addressCard,
+                          activeAddress?.id === addr.id && styles.activeAddressCard
+                        ]}
+                        onPress={() => {
+                          setActiveAddress(addr);
+                          useAuthStore.setState({
+                            location: {
+                              latitude: Number(addr.latitude),
+                              longitude: Number(addr.longitude),
+                              addressName: addr.addressLine
+                            }
+                          });
+                          setShowLocationModal(false);
+                          Alert.alert('Address Changed', `Delivery address set to ${addr.addressName}`);
+                        }}
+                      >
+                        <MapPin size={16} color={activeAddress?.id === addr.id ? "#FFB300" : "#8E8E93"} style={{ marginRight: 10 }} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.addressCardName}>{addr.addressName}</Text>
+                          <Text style={styles.addressCardLine} numberOfLines={2}>{addr.addressLine}</Text>
+                        </View>
+                      </TouchableOpacity>
+                    ))
+                  )}
+
+                  <TouchableOpacity 
+                    style={styles.addNewAddressBtn}
+                    onPress={() => setShowNewAddressForm(true)}
+                  >
+                    <Plus size={16} color="#FFF" style={{ marginRight: 6 }} />
+                    <Text style={styles.addNewAddressBtnText}>Add New Address</Text>
+                  </TouchableOpacity>
+                </ScrollView>
+              ) : (
+                <ScrollView contentContainerStyle={{ padding: 20 }}>
+                  <Text style={styles.subModalTitle}>Add New Address</Text>
+
+                  <Text style={styles.inputLabel}>Label (Home, Office, Other)</Text>
+                  <View style={styles.labelRow}>
+                    {['Home', 'Office', 'Other'].map((lbl) => (
+                      <TouchableOpacity
+                        key={lbl}
+                        style={[
+                          styles.labelPill,
+                          newLabel === lbl && styles.activeLabelPill
+                        ]}
+                        onPress={() => setNewLabel(lbl)}
+                      >
+                        <Text style={[
+                          styles.labelPillText,
+                          newLabel === lbl && styles.activeLabelPillText
+                        ]}>{lbl}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  <Text style={styles.inputLabel}>Flat / House No. / Pincode / Gali No.</Text>
+                  <TextInput
+                    style={styles.addressInput}
+                    placeholder="Enter complete address details"
+                    placeholderTextColor="#8E8E93"
+                    value={newAddressLine}
+                    onChangeText={setNewAddressLine}
+                  />
+
+                  <Text style={styles.inputLabel}>Latitude</Text>
+                  <TextInput
+                    style={styles.addressInput}
+                    placeholder="e.g. 28.5355"
+                    placeholderTextColor="#8E8E93"
+                    value={newLat}
+                    onChangeText={setNewLat}
+                    keyboardType="numeric"
+                  />
+
+                  <Text style={styles.inputLabel}>Longitude</Text>
+                  <TextInput
+                    style={styles.addressInput}
+                    placeholder="e.g. 77.3910"
+                    placeholderTextColor="#8E8E93"
+                    value={newLon}
+                    onChangeText={setNewLon}
+                    keyboardType="numeric"
+                  />
+
+                  <TouchableOpacity
+                    style={styles.saveAddressBtn}
+                    onPress={handleSaveAddress}
+                  >
+                    <Text style={styles.saveAddressBtnText}>Save Address</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.cancelAddressBtn}
+                    onPress={() => setShowNewAddressForm(false)}
+                  >
+                    <Text style={styles.cancelAddressBtnText}>Cancel</Text>
+                  </TouchableOpacity>
+                </ScrollView>
+              )}
             </View>
           </View>
         </Modal>
@@ -1047,5 +1274,141 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     lineHeight: 20,
+  },
+  locationSelectorBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 12,
+  },
+  deliveryToLabel: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 9,
+    fontWeight: 'bold',
+  },
+  activeLocationText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  subModalTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 15,
+  },
+  noAddressText: {
+    fontSize: 13,
+    color: '#8E8E93',
+    textAlign: 'center',
+    marginVertical: 20,
+  },
+  addressCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: '#EAEAEA',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 10,
+  },
+  activeAddressCard: {
+    borderColor: '#FFB300',
+    backgroundColor: '#FFFBE6',
+  },
+  addressCardName: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  addressCardLine: {
+    fontSize: 12,
+    color: '#666',
+  },
+  addNewAddressBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFB300',
+    borderRadius: 12,
+    paddingVertical: 14,
+    marginTop: 15,
+  },
+  addNewAddressBtnText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  inputLabel: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#666',
+    marginTop: 12,
+    marginBottom: 6,
+  },
+  labelRow: {
+    flexDirection: 'row',
+    marginBottom: 10,
+  },
+  labelPill: {
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: '#EAEAEA',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 10,
+  },
+  activeLabelPill: {
+    borderColor: '#FFB300',
+    backgroundColor: '#FFEFEB',
+  },
+  labelPillText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  activeLabelPillText: {
+    color: '#FFB300',
+    fontWeight: 'bold',
+  },
+  addressInput: {
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: '#EAEAEA',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#333',
+    marginBottom: 10,
+  },
+  saveAddressBtn: {
+    backgroundColor: '#FFB300',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 15,
+  },
+  saveAddressBtnText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  cancelAddressBtn: {
+    borderWidth: 1,
+    borderColor: '#EAEAEA',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  cancelAddressBtnText: {
+    color: '#666',
+    fontSize: 14,
   }
 });

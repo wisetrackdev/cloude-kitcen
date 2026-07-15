@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { useKitchenStore } from './useKitchenStore';
+import { useAuthStore } from './useAuthStore';
 
 export interface CartItem {
   id: string; // unique item id including customization combinations
@@ -136,23 +137,43 @@ export const useCartStore = create<CartState>((set, get) => ({
   getTotals: () => {
     const { items, coupon, tip, restaurantId } = get();
     const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const tax = 0; // GST is 0 by default, configured by seller
+    const tax = 0;
+
+    const getHaversineDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+      const R = 6371; // km
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    };
     
     let deliveryCharge = 0;
     if (subtotal > 0 && restaurantId) {
       const kitchens = useKitchenStore.getState().kitchens;
       const kitchen = kitchens.find(k => k.id === restaurantId);
-      if (kitchen && kitchen.distance) {
-        // Extract numeric distance (e.g. "1.8 km" -> 1.8)
-        const distNum = parseFloat(kitchen.distance.replace(/[^0-9.]/g, ''));
-        if (!isNaN(distNum)) {
-          // Rs. 5 per km
-          deliveryCharge = Math.max(5, Math.round(distNum * 5));
-        } else {
-          deliveryCharge = 29; // fallback
+      const userLocation = useAuthStore.getState().location;
+
+      if (kitchen) {
+        let distNum = 1.0;
+        if (kitchen.latitude && kitchen.longitude && userLocation?.latitude && userLocation?.longitude) {
+          distNum = getHaversineDistance(
+            Number(kitchen.latitude),
+            Number(kitchen.longitude),
+            Number(userLocation.latitude),
+            Number(userLocation.longitude)
+          );
+        } else if (kitchen.distance) {
+          distNum = parseFloat(kitchen.distance.replace(/[^0-9.]/g, '')) || 1.0;
         }
+
+        // Strictly ₹5 per km
+        deliveryCharge = Math.round(distNum * 5);
       } else {
-        deliveryCharge = 29; // fallback
+        deliveryCharge = 29;
       }
     }
     

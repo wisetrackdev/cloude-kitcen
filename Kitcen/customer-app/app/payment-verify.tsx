@@ -74,6 +74,8 @@ export default function PaymentVerifyScreen() {
         deliveryCharge: parseFloat(params.deliveryCharge as string) || 0,
         tax: parseFloat(params.tax as string) || 0,
         discount: parseFloat(params.discount as string) || 0,
+        latitude: params.latitude ? parseFloat(params.latitude as string) : null,
+        longitude: params.longitude ? parseFloat(params.longitude as string) : null,
         items: itemsList
       };
 

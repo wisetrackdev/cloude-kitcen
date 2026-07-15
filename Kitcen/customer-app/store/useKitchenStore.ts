@@ -76,6 +76,10 @@ export interface OrderRecord {
   riderPhone?: string | null;
   customerPhone?: string | null;
   deliveryAddress?: string | null;
+  customerLatitude?: number | null;
+  customerLongitude?: number | null;
+  shopLatitude?: number | null;
+  shopLongitude?: number | null;
 }
 
 interface KitchenState {
@@ -218,7 +222,9 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
           ifscCode: k.ifscCode,
           isLive: k.isLive,
           upiId: k.upiId,
-          upiNumber: k.upiNumber
+          upiNumber: k.upiNumber,
+          latitude: k.latitude ? Number(k.latitude) : undefined,
+          longitude: k.longitude ? Number(k.longitude) : undefined
         }));
         set({ kitchens: mappedKitchens, isLoading: false });
       } else {

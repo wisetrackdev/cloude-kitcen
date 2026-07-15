@@ -142,6 +142,8 @@ namespace CloudeKicten.Models.DatabaseLayer
             cmd.Parameters.AddWithValue("@DeliveryAddress", (object?)order.DeliveryAddress ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@IsRiderSettled", order.IsRiderSettled);
             cmd.Parameters.AddWithValue("@IsSellerSettled", order.IsSellerSettled);
+            cmd.Parameters.AddWithValue("@Latitude", (object?)order.Latitude ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@Longitude", (object?)order.Longitude ?? DBNull.Value);
 
             var result = await cmd.ExecuteNonQueryAsync();
             return result > 0;
@@ -289,7 +291,9 @@ namespace CloudeKicten.Models.DatabaseLayer
                 PickupPhotoUrl = r.IsDBNull(r.GetOrdinal("pickup_photo_url")) ? null : r.GetString(r.GetOrdinal("pickup_photo_url")),
                 DeliveryPhotoUrl = r.IsDBNull(r.GetOrdinal("delivery_photo_url")) ? null : r.GetString(r.GetOrdinal("delivery_photo_url")),
                 IsRiderSettled = r.IsDBNull(r.GetOrdinal("is_rider_settled")) ? false : r.GetBoolean(r.GetOrdinal("is_rider_settled")),
-                IsSellerSettled = r.IsDBNull(r.GetOrdinal("is_seller_settled")) ? false : r.GetBoolean(r.GetOrdinal("is_seller_settled"))
+                IsSellerSettled = r.IsDBNull(r.GetOrdinal("is_seller_settled")) ? false : r.GetBoolean(r.GetOrdinal("is_seller_settled")),
+                Latitude = r.IsDBNull(r.GetOrdinal("latitude")) ? null : r.GetDecimal(r.GetOrdinal("latitude")),
+                Longitude = r.IsDBNull(r.GetOrdinal("longitude")) ? null : r.GetDecimal(r.GetOrdinal("longitude"))
             };
         }
 

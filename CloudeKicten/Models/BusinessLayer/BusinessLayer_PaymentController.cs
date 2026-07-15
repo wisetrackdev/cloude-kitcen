@@ -117,6 +117,8 @@ namespace CloudeKicten.Models.BusinessLayer
                     PaymentMethod = "UPI_Intent",
                     OrderDate = orderDate,
                     DeliveryAddress = dto.DeliveryAddress,
+                    Latitude = dto.Latitude,
+                    Longitude = dto.Longitude,
                     IsRiderSettled = false,
                     IsSellerSettled = false
                 };

@@ -42,6 +42,8 @@ namespace CloudeKicten.Models
         public decimal DeliveryCharge { get; set; }
         public decimal Tax { get; set; }
         public decimal Discount { get; set; }
+        public decimal? Latitude { get; set; }
+        public decimal? Longitude { get; set; }
 
         [Required(ErrorMessage = "At least one order item is required.")]
         public List<OrderItemDto> Items { get; set; } = new();

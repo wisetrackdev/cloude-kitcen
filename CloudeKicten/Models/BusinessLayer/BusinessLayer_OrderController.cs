@@ -331,7 +331,11 @@ namespace CloudeKicten.Models.BusinessLayer
                 PickupPhotoUrl = dbOrder.PickupPhotoUrl,
                 DeliveryPhotoUrl = dbOrder.DeliveryPhotoUrl,
                 IsRiderSettled = dbOrder.IsRiderSettled,
-                IsSellerSettled = dbOrder.IsSellerSettled
+                IsSellerSettled = dbOrder.IsSellerSettled,
+                ShopLatitude = kitchen?.Latitude,
+                ShopLongitude = kitchen?.Longitude,
+                CustomerLatitude = dbOrder.Latitude,
+                CustomerLongitude = dbOrder.Longitude
             };
         }
 

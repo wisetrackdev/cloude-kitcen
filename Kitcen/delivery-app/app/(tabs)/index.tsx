@@ -52,6 +52,7 @@ import { API_BASE_URL } from '../../store/apiConfig';
 import { alertService } from '../../store/alertService';
 import * as ImagePicker from 'expo-image-picker';
 import { uploadImageToServer } from '../../store/uploadHelper';
+import * as Location from 'expo-location';
 
 export default function RiderDashboard() {
   const user = useAuthStore(state => state.user);
@@ -69,6 +70,49 @@ export default function RiderDashboard() {
   const setTheme = useAuthStore(state => state.setTheme);
   const isOnline = useAuthStore(state => state.isOnline);
   const setDutyStatus = useAuthStore(state => state.setDutyStatus);
+
+  // Location tracking states
+  const [riderLat, setRiderLat] = useState(28.6273);
+  const [riderLon, setRiderLon] = useState(77.3725);
+
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        let loc = await Location.getCurrentPositionAsync({});
+        setRiderLat(loc.coords.latitude);
+        setRiderLon(loc.coords.longitude);
+        
+        try {
+          await fetch(`${API_BASE_URL}/api/auth/rider/location`, {
+            method: 'PUT',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${useAuthStore.getState().token}`
+            },
+            body: JSON.stringify({
+              latitude: loc.coords.latitude,
+              longitude: loc.coords.longitude
+            })
+          });
+        } catch (err) {
+          console.warn('Failed to sync location to server:', err);
+        }
+      }
+    })();
+  }, [isOnline]);
+
+  const getHaversineDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371; // km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1-a));
+    return R * c;
+  };
 
   const [payoutInfo, setPayoutInfo] = useState<any>(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -712,30 +756,54 @@ export default function RiderDashboard() {
             {/* Available Orders Pool */}
             <View style={styles.sectionContainer}>
               <Text style={[styles.subSectionTitle, { color: themeColors.text }]}>Available Nearby Jobs ({availableOrdersPool.length})</Text>
-              {availableOrdersPool.map((order) => (
-                <View key={order.id} style={[styles.poolCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
-                  <View style={styles.poolHeader}>
-                    <View>
-                      <Text style={[styles.poolTitle, { color: themeColors.text }]}>{order.kitchenName}</Text>
-                      <Text style={[styles.poolDistance, { color: themeColors.textSecondary }]}>📍 {order.deliveryAddress || 'Customer Location'}</Text>
-                    </View>
-                    <View style={styles.poolPayout}>
-                      <Text style={styles.payoutVal}>₹{order.deliveryCharge || 40}</Text>
-                      <Text style={styles.payoutLabel}>Est. Payout</Text>
-                    </View>
-                  </View>
+              {availableOrdersPool.map((order) => {
+                const shopLat = order.shopLatitude ? Number(order.shopLatitude) : 28.5355;
+                const shopLon = order.shopLongitude ? Number(order.shopLongitude) : 77.3910;
+                const custLat = order.customerLatitude ? Number(order.customerLatitude) : 28.5355;
+                const custLon = order.customerLongitude ? Number(order.customerLongitude) : 77.3910;
 
-                  <View style={[styles.poolFooter, { borderTopColor: themeColors.border }]}>
-                    <Text style={[styles.poolTotal, { color: themeColors.text }]}>Total Bill: ₹{order.total} • COD</Text>
-                    <TouchableOpacity 
-                      style={styles.acceptJobBtn}
-                      onPress={() => handleAcceptOrder(order.id)}
-                    >
-                      <Text style={styles.acceptJobText}>Accept Order</Text>
-                    </TouchableOpacity>
+                const riderToShop = getHaversineDistance(riderLat, riderLon, shopLat, shopLon);
+                const shopToCust = getHaversineDistance(shopLat, shopLon, custLat, custLon);
+
+                return (
+                  <View key={order.id} style={[styles.poolCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+                    <View style={styles.poolHeader}>
+                      <View style={{ flex: 1, marginRight: 10 }}>
+                        <Text style={[styles.poolTitle, { color: themeColors.text }]}>{order.kitchenName}</Text>
+                        <Text style={[styles.poolDistance, { color: themeColors.textSecondary, fontSize: 11 }]} numberOfLines={1}>
+                          Shop Location: Noida Sector 132
+                        </Text>
+                        <Text style={[styles.poolDistance, { color: themeColors.textSecondary, fontSize: 11 }]} numberOfLines={2}>
+                          Drop: {order.deliveryAddress || 'Customer Location'}
+                        </Text>
+                        
+                        <View style={{ flexDirection: 'row', marginTop: 6, gap: 10 }}>
+                          <Text style={{ fontSize: 11, color: '#FFB300', fontWeight: 'bold' }}>
+                            🏍 Shop: {riderToShop.toFixed(1)} km
+                          </Text>
+                          <Text style={{ fontSize: 11, color: '#2ecc71', fontWeight: 'bold' }}>
+                            📍 Drop: {shopToCust.toFixed(1)} km
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.poolPayout}>
+                        <Text style={styles.payoutVal}>₹{Number(order.deliveryCharge || 40).toFixed(0)}</Text>
+                        <Text style={styles.payoutLabel}>Est. Payout</Text>
+                      </View>
+                    </View>
+
+                    <View style={[styles.poolFooter, { borderTopColor: themeColors.border }]}>
+                      <Text style={[styles.poolTotal, { color: themeColors.text }]}>Total Bill: ₹{order.total} • COD</Text>
+                      <TouchableOpacity 
+                        style={styles.acceptJobBtn}
+                        onPress={() => handleAcceptOrder(order.id)}
+                      >
+                        <Text style={styles.acceptJobText}>Accept Order</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
-                </View>
-              ))}
+                );
+              })}
 
               {availableOrdersPool.length === 0 && (
                 <View style={styles.emptyContainer}>

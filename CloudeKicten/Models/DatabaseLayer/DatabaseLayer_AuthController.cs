@@ -148,6 +148,16 @@ namespace CloudeKicten.Models.DatabaseLayer
                 Console.WriteLine($"[DB MIGRATION WARNING] Failed to alter shops table: {ex.Message}");
             }
 
+            try
+            {
+                cmd.CommandText = "ALTER TABLE orders ADD COLUMN IF NOT EXISTS latitude NUMERIC(10,8) NULL, ADD COLUMN IF NOT EXISTS longitude NUMERIC(11,8) NULL, ADD COLUMN IF NOT EXISTS is_rider_settled BOOLEAN DEFAULT FALSE, ADD COLUMN IF NOT EXISTS is_seller_settled BOOLEAN DEFAULT FALSE;";
+                await cmd.ExecuteNonQueryAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[DB MIGRATION WARNING] Failed to alter orders table: {ex.Message}");
+            }
+
             // Seeding disabled: no automatic database inserts on startup. All data will be managed manually or through the frontend.
             /*
             try
