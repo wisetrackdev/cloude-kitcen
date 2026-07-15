@@ -327,6 +327,25 @@ export default function CartScreen() {
           </View>
         </View>
 
+        {/* Distance Card */}
+        {totals.distanceKm > 0 && (
+          <View style={[styles.section, { marginBottom: 15, padding: 16, backgroundColor: themeColors.card, borderBottomColor: themeColors.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: 12, borderWidth: 1, borderColor: themeColors.border }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+              <View style={{ backgroundColor: '#FFF0F0', padding: 8, borderRadius: 8 }}>
+                <MapPin size={20} color="#FF5252" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 13, color: themeColors.textSecondary, fontWeight: 'bold' }}>Delivery Distance</Text>
+                <Text style={{ fontSize: 11, color: themeColors.textSecondary, marginTop: 2 }}>From {kitchenName || 'Kitchen'} to your address</Text>
+              </View>
+            </View>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={{ fontSize: 18, color: '#FF5252', fontWeight: 'bold' }}>{totals.distanceKm} km</Text>
+              <Text style={{ fontSize: 10, color: themeColors.textSecondary, marginTop: 2 }}>₹5 / km charge</Text>
+            </View>
+          </View>
+        )}
+
         {/* Summary pricing */}
         <View style={[styles.section, { marginBottom: 40, backgroundColor: themeColors.card, borderBottomColor: themeColors.border }]}>
           <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Bill Details</Text>

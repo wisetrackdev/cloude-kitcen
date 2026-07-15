@@ -50,6 +50,7 @@ interface CartState {
     deliveryCharge: number;
     discount: number;
     total: number;
+    distanceKm: number;
   };
 }
 
@@ -147,11 +148,12 @@ export const useCartStore = create<CartState>((set, get) => ({
         Math.sin(dLat/2) * Math.sin(dLat/2) +
         Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
         Math.sin(dLon/2) * Math.sin(dLon/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      const c = 2 * Math.atan2(Math.Sqrt(a), Math.Sqrt(1-a));
       return R * c;
     };
     
     let deliveryCharge = 0;
+    let distanceKm = 0;
     if (subtotal > 0 && restaurantId) {
       const kitchens = useKitchenStore.getState().kitchens;
       const kitchen = kitchens.find(k => k.id === restaurantId);
@@ -170,6 +172,7 @@ export const useCartStore = create<CartState>((set, get) => ({
           distNum = parseFloat(kitchen.distance.replace(/[^0-9.]/g, '')) || 1.0;
         }
 
+        distanceKm = Number(distNum.toFixed(2));
         // Strictly ₹5 per km
         deliveryCharge = Math.round(distNum * 5);
       } else {
@@ -196,7 +199,8 @@ export const useCartStore = create<CartState>((set, get) => ({
       tax,
       deliveryCharge,
       discount,
-      total
+      total,
+      distanceKm
     };
   }
 }));

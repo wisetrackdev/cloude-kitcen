@@ -80,6 +80,8 @@ namespace CloudeKicten.Models.DatabaseLayer
                 cmdOrder.Parameters.AddWithValue("@DeliveryAddress", (object?)order.DeliveryAddress ?? DBNull.Value);
                 cmdOrder.Parameters.AddWithValue("@IsRiderSettled", false);
                 cmdOrder.Parameters.AddWithValue("@IsSellerSettled", false);
+                cmdOrder.Parameters.AddWithValue("@Latitude", (object?)order.Latitude ?? DBNull.Value);
+                cmdOrder.Parameters.AddWithValue("@Longitude", (object?)order.Longitude ?? DBNull.Value);
                 
                 await cmdOrder.ExecuteNonQueryAsync();
 
