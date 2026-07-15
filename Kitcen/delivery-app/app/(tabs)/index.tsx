@@ -150,6 +150,13 @@ export default function RiderDashboard() {
     return () => clearInterval(interval);
   }, [riderId]);
 
+  useEffect(() => {
+    console.log('[RiderDashboard] Orders in state:', orders.map(o => ({ id: o.id, status: o.status, riderId: o.riderId })));
+    console.log('[RiderDashboard] AvailableOrdersPool:', availableOrdersPool.map(o => o.id));
+    console.log('[RiderDashboard] SelectedZone:', selectedZone);
+    console.log('[RiderDashboard] IsOnline:', isOnline);
+  }, [orders, availableOrdersPool, selectedZone, isOnline]);
+
   const getTodayEarnings = () => {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
@@ -174,6 +181,8 @@ export default function RiderDashboard() {
   // Poll orders & kitchens periodically only if online
   useEffect(() => {
     if (isOnline) {
+      fetchOrders();
+      fetchKitchens();
       const interval = setInterval(() => {
         fetchOrders();
         fetchKitchens();
