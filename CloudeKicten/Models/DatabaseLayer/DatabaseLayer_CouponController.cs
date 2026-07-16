@@ -63,6 +63,7 @@ namespace CloudeKicten.Models.DatabaseLayer
             await conn.OpenAsync();
             using var cmd = new NpgsqlCommand(Sql.InsertCoupon, conn);
             cmd.Parameters.AddWithValue("@Id", c.Id);
+            cmd.Parameters.AddWithValue("@KitchenId", (object?)c.KitchenId ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@Code", c.Code.Trim().ToUpper());
             cmd.Parameters.AddWithValue("@DiscountType", c.DiscountType);
             cmd.Parameters.AddWithValue("@DiscountValue", c.DiscountValue);
@@ -79,15 +80,16 @@ namespace CloudeKicten.Models.DatabaseLayer
         {
             return new CouponDb
             {
-                Id = r.GetString(r.GetOrdinal("Id")),
-                Code = r.GetString(r.GetOrdinal("Code")),
-                DiscountType = r.GetString(r.GetOrdinal("DiscountType")),
-                DiscountValue = r.GetDecimal(r.GetOrdinal("DiscountValue")),
-                MaxDiscount = r.GetDecimal(r.GetOrdinal("MaxDiscount")),
-                MinOrder = r.GetDecimal(r.GetOrdinal("MinOrder")),
-                ExpiryDate = r.GetDateTime(r.GetOrdinal("ExpiryDate")),
-                IsActive = r.GetBoolean(r.GetOrdinal("IsActive")),
-                CreatedAt = r.GetDateTime(r.GetOrdinal("CreatedAt"))
+                Id = r.GetString(r.GetOrdinal("id")),
+                KitchenId = r.IsDBNull(r.GetOrdinal("kitchen_id")) ? null : r.GetString(r.GetOrdinal("kitchen_id")),
+                Code = r.GetString(r.GetOrdinal("code")),
+                DiscountType = r.GetString(r.GetOrdinal("discount_type")),
+                DiscountValue = r.GetDecimal(r.GetOrdinal("discount_value")),
+                MaxDiscount = r.GetDecimal(r.GetOrdinal("max_discount")),
+                MinOrder = r.GetDecimal(r.GetOrdinal("min_order")),
+                ExpiryDate = r.GetDateTime(r.GetOrdinal("expiry_date")),
+                IsActive = r.GetBoolean(r.GetOrdinal("is_active")),
+                CreatedAt = r.GetDateTime(r.GetOrdinal("created_at"))
             };
         }
     }
@@ -95,6 +97,7 @@ namespace CloudeKicten.Models.DatabaseLayer
     public class CouponDb
     {
         public string Id { get; set; } = string.Empty;
+        public string? KitchenId { get; set; }
         public string Code { get; set; } = string.Empty;
         public string DiscountType { get; set; } = "percentage"; // percentage, fixed
         public decimal DiscountValue { get; set; }

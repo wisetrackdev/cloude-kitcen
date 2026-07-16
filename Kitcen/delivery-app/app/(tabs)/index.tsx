@@ -162,7 +162,7 @@ export default function RiderDashboard() {
     todayStart.setHours(0, 0, 0, 0);
     return orders
       .filter(o => o.riderId === riderId && o.status === 'delivered' && o.deliveredAt && new Date(o.deliveredAt.replace(' ', 'T')) >= todayStart)
-      .reduce((sum, o) => sum + Number(o.deliveryCharge || 40), 0);
+      .reduce((sum, o) => sum + Number(o.deliveryCharge ?? 0), 0);
   };
 
   // Chat state
@@ -764,7 +764,7 @@ export default function RiderDashboard() {
                         </View>
                       </View>
                       <View style={styles.poolPayout}>
-                        <Text style={styles.payoutVal}>₹{Number(order.deliveryCharge || 40).toFixed(0)}</Text>
+                        <Text style={styles.payoutVal}>₹{Number(order.deliveryCharge ?? 0).toFixed(0)}</Text>
                         <Text style={styles.payoutLabel}>Est. Payout</Text>
                       </View>
                     </View>
@@ -800,7 +800,7 @@ export default function RiderDashboard() {
                 </View>
                 <View style={styles.statsItem}>
                   <Text style={[styles.statsVal, { color: themeColors.text }]}>
-                    ₹{orders.filter(o => o.riderId === riderId && o.status === 'delivered').reduce((sum, o) => sum + Number(o.deliveryCharge || 40), 0)}
+                    ₹{orders.filter(o => o.riderId === riderId && o.status === 'delivered').reduce((sum, o) => sum + Number(o.deliveryCharge ?? 0), 0)}
                   </Text>
                   <Text style={styles.statsLabel}>Delivery Earnings</Text>
                 </View>

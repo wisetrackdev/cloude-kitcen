@@ -150,6 +150,16 @@ namespace CloudeKicten.Models.DatabaseLayer
 
             try
             {
+                cmd.CommandText = "ALTER TABLE coupons ADD COLUMN IF NOT EXISTS kitchen_id VARCHAR(50) NULL REFERENCES shops(id) ON DELETE CASCADE;";
+                await cmd.ExecuteNonQueryAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[DB MIGRATION WARNING] Failed to alter coupons table: {ex.Message}");
+            }
+
+            try
+            {
                 cmd.CommandText = "ALTER TABLE orders ADD COLUMN IF NOT EXISTS latitude NUMERIC(10,8) NULL, ADD COLUMN IF NOT EXISTS longitude NUMERIC(11,8) NULL, ADD COLUMN IF NOT EXISTS is_rider_settled BOOLEAN DEFAULT FALSE, ADD COLUMN IF NOT EXISTS is_seller_settled BOOLEAN DEFAULT FALSE;";
                 await cmd.ExecuteNonQueryAsync();
             }

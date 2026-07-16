@@ -13,6 +13,7 @@ import {
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Trash2, Tag, ChevronRight, Plus, Minus, CreditCard, MapPin, Navigation } from 'lucide-react-native';
 import { theme } from '../styles/theme';
+import { API_BASE_URL } from '../store/apiConfig';
 import { useCartStore } from '../store/useCartStore';
 import { useKitchenStore } from '../store/useKitchenStore';
 import { useAuthStore } from '../store/useAuthStore';
@@ -48,12 +49,54 @@ export default function CartScreen() {
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'wallet' | 'card' | 'paytm'>('paytm');
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [loadingLocation, setLoadingLocation] = useState(false);
+  const [adminUpiId, setAdminUpiId] = useState('8527430152@slc');
+  const [adminUpiNumber, setAdminUpiNumber] = useState('8527430152');
+  const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
 
   useEffect(() => {
     if (userLocation?.addressName) {
       setDeliveryAddress(userLocation.addressName);
     }
   }, [userLocation]);
+
+  useEffect(() => {
+    const fetchAdminDetails = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/auth/users`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && Array.isArray(json.data)) {
+            const admin = json.data.find((u: any) => u.role === 'superadmin');
+            if (admin) {
+              setAdminUpiId(admin.upiId || '8527430152@slc');
+              setAdminUpiNumber(admin.upiNumber || '8527430152');
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Could not fetch admin UPI, using default');
+      }
+    };
+    fetchAdminDetails();
+  }, []);
+
+  useEffect(() => {
+    const fetchAvailableCoupons = async () => {
+      if (!restaurantId) return;
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/coupons?kitchenId=${restaurantId}`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && Array.isArray(json.data)) {
+            setAvailableCoupons(json.data);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to fetch coupons:', err);
+      }
+    };
+    fetchAvailableCoupons();
+  }, [restaurantId]);
 
   const themeColors = {
     background: isDarkMode ? '#0B0B0C' : '#F5F6F8',
@@ -103,19 +146,50 @@ export default function CartScreen() {
     }
   };
 
-  const handleApplyCoupon = () => {
-    if (promoCodeInput.toUpperCase() === 'ITALY50') {
-      applyCoupon({
-        code: 'ITALY50',
-        discountType: 'percentage',
-        discountValue: 50,
-        maxDiscount: 120,
-        minOrderValue: 200
-      });
-      Alert.alert('Success', 'Promo applied successfully!');
-    } else {
-      Alert.alert('Invalid', 'Invalid coupon code. Try "ITALY50"');
+  const handleApplyCoupon = async () => {
+    if (!promoCodeInput.trim()) {
+      Alert.alert('Required', 'Please enter a coupon code.');
+      return;
     }
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/coupons/apply?code=${promoCodeInput.trim().toUpperCase()}&orderTotal=${totals.subtotal}`);
+      const json = await res.json();
+      if (res.ok && json.success) {
+        const cpn = json.data;
+        if (cpn.kitchenId && cpn.kitchenId !== restaurantId) {
+          Alert.alert('Invalid', 'This coupon is not valid for this kitchen.');
+          return;
+        }
+        applyCoupon({
+          code: cpn.code,
+          discountType: cpn.discountType,
+          discountValue: Number(cpn.discountValue),
+          maxDiscount: Number(cpn.maxDiscount),
+          minOrderValue: Number(cpn.minOrder)
+        });
+        Alert.alert('Success', 'Coupon applied successfully!');
+      } else {
+        Alert.alert('Invalid', json.message || 'Failed to apply coupon.');
+      }
+    } catch (err) {
+      console.warn(err);
+      Alert.alert('Error', 'Failed to verify coupon with server.');
+    }
+  };
+
+  const handleSelectCoupon = (cpn: any) => {
+    if (totals.subtotal < Number(cpn.minOrder)) {
+      Alert.alert('Min Order Required', `Minimum order value of ₹${cpn.minOrder} is required to apply "${cpn.code}"`);
+      return;
+    }
+    applyCoupon({
+      code: cpn.code,
+      discountType: cpn.discountType,
+      discountValue: Number(cpn.discountValue),
+      maxDiscount: Number(cpn.maxDiscount),
+      minOrderValue: Number(cpn.minOrder)
+    });
+    Alert.alert('Success', `Coupon "${cpn.code}" applied!`);
   };
 
   const handleCheckout = async () => {
@@ -125,8 +199,8 @@ export default function CartScreen() {
       return;
     }
 
-    const sellerUpi = kitchen?.upiId || (kitchen?.upiNumber ? `${kitchen.upiNumber}@paytm` : 'sdev70817@paytm');
-    const upiUrl = `upi://pay?pa=${sellerUpi}&pn=${encodeURIComponent(kitchen?.name || 'Cloud Kitchen')}&am=${totals.total}&cu=INR&tn=${encodeURIComponent('Food Order')}`;
+    const finalAdminUpi = adminUpiId || '8527430152@slc';
+    const upiUrl = `upi://pay?pa=${finalAdminUpi}&pn=${encodeURIComponent('Cloud Kitchen Admin')}&am=${totals.total}&cu=INR&tn=${encodeURIComponent('Food Order')}`;
 
     const navigateToVerify = () => {
       router.push({
@@ -148,7 +222,7 @@ export default function CartScreen() {
             price: item.price,
             quantity: item.quantity
           }))),
-          upiId: sellerUpi
+          upiId: finalAdminUpi
         }
       });
     };
@@ -164,7 +238,7 @@ export default function CartScreen() {
       } else {
         Alert.alert(
           'UPI App Not Found',
-          `Could not open UPI apps automatically. Please pay ₹${totals.total} to UPI ID: ${sellerUpi} manually, then click Proceed to verify.`,
+          `Could not open UPI apps automatically. Please pay ₹${totals.total} to UPI ID: ${finalAdminUpi} manually, then click Proceed to verify.`,
           [
             { text: 'Proceed to Verify', onPress: navigateToVerify },
             { text: 'Cancel', style: 'cancel' }
@@ -278,7 +352,7 @@ export default function CartScreen() {
           <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Apply Coupon</Text>
           <View style={styles.couponRow}>
             <TextInput
-              placeholder="Enter promo code (Try: ITALY50)"
+              placeholder="Enter promo code"
               placeholderTextColor="#888"
               autoCapitalize="characters"
               value={promoCodeInput}
@@ -289,6 +363,30 @@ export default function CartScreen() {
               <Text style={styles.couponApplyBtnText}>Apply</Text>
             </TouchableOpacity>
           </View>
+
+          {availableCoupons.length > 0 && (
+            <View style={{ marginTop: 10 }}>
+              <Text style={{ fontSize: 11, color: themeColors.textSecondary, marginBottom: 6, fontWeight: 'bold' }}>Available Offers:</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row' }}>
+                {availableCoupons.map((cpn) => (
+                  <TouchableOpacity 
+                    key={cpn.id} 
+                    style={{ backgroundColor: isDarkMode ? '#1a1a24' : '#f0f5ff', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: '#FFCC00', marginRight: 8, minWidth: 120 }}
+                    onPress={() => handleSelectCoupon(cpn)}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#FFCC00' }}>{cpn.code}</Text>
+                    <Text style={{ fontSize: 9, color: themeColors.text, marginTop: 2 }}>
+                      {cpn.discountType === 'percentage' ? `${cpn.discountValue}% Off` : `Flat ₹${cpn.discountValue} Off`}
+                    </Text>
+                    <Text style={{ fontSize: 8, color: themeColors.textSecondary, marginTop: 1 }}>
+                      Min Order: ₹{cpn.minOrder}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
           {coupon && (
             <View style={styles.couponSuccessBadge}>
               <Tag size={12} color="#2ecc71" />
@@ -297,7 +395,7 @@ export default function CartScreen() {
           )}
         </View>
 
-        {/* Payments selection */}
+        {/* Payments section */}
         <View style={[styles.section, { backgroundColor: themeColors.card, borderBottomColor: themeColors.border }]}>
           <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Payment Method</Text>
           <View style={styles.paymentMethodRow}>
@@ -313,13 +411,13 @@ export default function CartScreen() {
             </TouchableOpacity>
           </View>
           
-          {/* Display Seller UPI Details */}
+          {/* Display Admin UPI Details */}
           <View style={{ marginTop: 12, padding: 12, backgroundColor: isDarkMode ? '#1a1a10' : '#fffdeb', borderRadius: 10, borderWidth: 1, borderColor: '#FFCC00' }}>
             <Text style={{ fontSize: 11, color: themeColors.text, fontWeight: 'bold' }}>
-              Direct Pay to Seller UPI:
+              Direct Pay to Admin UPI:
             </Text>
             <Text style={{ fontSize: 15, color: '#FFCC00', fontWeight: 'bold', marginTop: 4 }}>
-              {kitchen?.upiId ? `${kitchen.upiId}` : (kitchen?.upiNumber ? `${kitchen.upiNumber}@paytm` : 'sdev70817@paytm')}
+              {adminUpiId}
             </Text>
             <Text style={{ fontSize: 9, color: themeColors.textSecondary, marginTop: 4, lineHeight: 12 }}>
               Please copy this UPI ID to make payment using Paytm, PhonePe, or Google Pay. Cash on Delivery is disabled.

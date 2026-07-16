@@ -18,9 +18,9 @@ namespace CloudeKicten.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetActive()
+        public async Task<IActionResult> GetActive([FromQuery] string? kitchenId = null)
         {
-            var result = await _businessLayer.GetActiveCouponsAsync();
+            var result = await _businessLayer.GetActiveCouponsAsync(kitchenId);
             return Ok(result);
         }
 

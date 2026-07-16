@@ -83,7 +83,8 @@ namespace CloudeKicten
                 longitude NUMERIC(11,8) NULL,
                 is_approved VARCHAR(50) DEFAULT 'pending',
                 bank_account VARCHAR(150) NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                gst_number VARCHAR(100) NULL
             );";
 
         public const string AlterShopsTable = @"
@@ -95,6 +96,7 @@ namespace CloudeKicten
             ALTER TABLE shops ADD COLUMN IF NOT EXISTS longitude NUMERIC(11,8) NULL;
             ALTER TABLE shops ADD COLUMN IF NOT EXISTS is_approved VARCHAR(50) DEFAULT 'pending';
             ALTER TABLE shops ADD COLUMN IF NOT EXISTS bank_account VARCHAR(150) NULL;
+            ALTER TABLE shops ADD COLUMN IF NOT EXISTS gst_number VARCHAR(100) NULL;
 
             -- Re-bind vendor_id reference to user_register(id) instead of vendors(id)
             DO $$
@@ -351,6 +353,7 @@ namespace CloudeKicten
         public const string CreateCouponsTable = @"
             CREATE TABLE IF NOT EXISTS coupons (
                 id VARCHAR(50) PRIMARY KEY,
+                kitchen_id VARCHAR(50) NULL REFERENCES shops(id) ON DELETE CASCADE,
                 code VARCHAR(50) NOT NULL UNIQUE,
                 discount_type VARCHAR(20) NOT NULL,
                 discount_value NUMERIC(18,2) NOT NULL,
@@ -434,18 +437,18 @@ namespace CloudeKicten
         // ==========================================
 
         public const string InsertCoupon = @"
-            INSERT INTO coupons (id, code, discount_type, discount_value, max_discount, min_order, expiry_date, is_active, created_at)
-            VALUES (@Id, @Code, @DiscountType, @DiscountValue, @MaxDiscount, @MinOrder, @ExpiryDate, @IsActive, CURRENT_TIMESTAMP);
+            INSERT INTO coupons (id, kitchen_id, code, discount_type, discount_value, max_discount, min_order, expiry_date, is_active, created_at)
+            VALUES (@Id, @KitchenId, @Code, @DiscountType, @DiscountValue, @MaxDiscount, @MinOrder, @ExpiryDate, @IsActive, CURRENT_TIMESTAMP);
         ";
 
         public const string GetAllCoupons = @"
-            SELECT id, code, discount_type, discount_value, max_discount, min_order, expiry_date, is_active, created_at
+            SELECT id, kitchen_id, code, discount_type, discount_value, max_discount, min_order, expiry_date, is_active, created_at
             FROM coupons
             WHERE is_active = TRUE AND expiry_date > CURRENT_TIMESTAMP;
         ";
 
         public const string GetCouponByCode = @"
-            SELECT id, code, discount_type, discount_value, max_discount, min_order, expiry_date, is_active, created_at
+            SELECT id, kitchen_id, code, discount_type, discount_value, max_discount, min_order, expiry_date, is_active, created_at
             FROM coupons
             WHERE code = @Code;
         ";
@@ -573,12 +576,12 @@ namespace CloudeKicten
         // ==========================================
 
         public const string InsertKitchen = @"
-            INSERT INTO shops (id, vendor_id, name, type, cuisines, rating, rating_count, prep_time, distance, offer, image_url, is_live, revenue, orders_count, logo_url, address, floor, office_gali_number, latitude, longitude, is_approved, bank_account, cover_image_url, bank_name, account_number, ifsc_code, utr_number, payment_screenshot, created_at)
-            VALUES (@Id, @VendorId, @Name, @Type, @Cuisines, @Rating, @RatingCount, @Time, @Distance, @Offer, @Image, @IsLive, @Revenue, @OrdersCount, @LogoUrl, @Address, @Floor, @OfficeGaliNumber, @Latitude, @Longitude, @IsApproved, @BankAccount, @CoverImageUrl, @BankName, @AccountNumber, @IfscCode, @UtrNumber, @PaymentScreenshot, CURRENT_TIMESTAMP);
+            INSERT INTO shops (id, vendor_id, name, type, cuisines, rating, rating_count, prep_time, distance, offer, image_url, is_live, revenue, orders_count, logo_url, address, floor, office_gali_number, latitude, longitude, is_approved, bank_account, cover_image_url, bank_name, account_number, ifsc_code, utr_number, payment_screenshot, created_at, gst_number)
+            VALUES (@Id, @VendorId, @Name, @Type, @Cuisines, @Rating, @RatingCount, @Time, @Distance, @Offer, @Image, @IsLive, @Revenue, @OrdersCount, @LogoUrl, @Address, @Floor, @OfficeGaliNumber, @Latitude, @Longitude, @IsApproved, @BankAccount, @CoverImageUrl, @BankName, @AccountNumber, @IfscCode, @UtrNumber, @PaymentScreenshot, CURRENT_TIMESTAMP, @GstNumber);
         ";
 
         public const string GetAllKitchens = @"
-            SELECT s.id, s.vendor_id, s.name, s.type, s.cuisines, s.rating, s.rating_count, s.prep_time, s.distance, s.offer, s.image_url, s.is_live, s.revenue, s.orders_count, s.logo_url, s.address, s.floor, s.office_gali_number, s.latitude, s.longitude, s.is_approved, s.bank_account, s.cover_image_url, s.utr_number, s.payment_screenshot, s.created_at,
+            SELECT s.id, s.vendor_id, s.name, s.type, s.cuisines, s.rating, s.rating_count, s.prep_time, s.distance, s.offer, s.image_url, s.is_live, s.revenue, s.orders_count, s.logo_url, s.address, s.floor, s.office_gali_number, s.latitude, s.longitude, s.is_approved, s.bank_account, s.cover_image_url, s.utr_number, s.payment_screenshot, s.created_at, s.gst_number,
                    COALESCE(s.bank_name, u.bank_name) AS bank_name,
                    COALESCE(s.account_number, u.account_number) AS account_number,
                    COALESCE(s.ifsc_code, u.ifsc_code) AS ifsc_code,
@@ -592,7 +595,7 @@ namespace CloudeKicten
         ";
 
         public const string GetKitchenById = @"
-            SELECT s.id, s.vendor_id, s.name, s.type, s.cuisines, s.rating, s.rating_count, s.prep_time, s.distance, s.offer, s.image_url, s.is_live, s.revenue, s.orders_count, s.logo_url, s.address, s.floor, s.office_gali_number, s.latitude, s.longitude, s.is_approved, s.bank_account, s.cover_image_url, s.utr_number, s.payment_screenshot, s.created_at,
+            SELECT s.id, s.vendor_id, s.name, s.type, s.cuisines, s.rating, s.rating_count, s.prep_time, s.distance, s.offer, s.image_url, s.is_live, s.revenue, s.orders_count, s.logo_url, s.address, s.floor, s.office_gali_number, s.latitude, s.longitude, s.is_approved, s.bank_account, s.cover_image_url, s.utr_number, s.payment_screenshot, s.created_at, s.gst_number,
                    COALESCE(s.bank_name, u.bank_name) AS bank_name,
                    COALESCE(s.account_number, u.account_number) AS account_number,
                    COALESCE(s.ifsc_code, u.ifsc_code) AS ifsc_code,
@@ -607,7 +610,7 @@ namespace CloudeKicten
 
         public const string UpdateKitchen = @"
             UPDATE shops
-            SET name = @Name, type = @Type, cuisines = @Cuisines, prep_time = @Time, distance = @Distance, offer = @Offer, image_url = @Image, is_live = @IsLive, logo_url = @LogoUrl, address = @Address, floor = @Floor, office_gali_number = @OfficeGaliNumber, latitude = @Latitude, longitude = @Longitude, is_approved = @IsApproved, bank_account = @BankAccount, cover_image_url = @CoverImageUrl, bank_name = @BankName, account_number = @AccountNumber, ifsc_code = @IfscCode, utr_number = @UtrNumber, payment_screenshot = @PaymentScreenshot
+            SET name = @Name, type = @Type, cuisines = @Cuisines, prep_time = @Time, distance = @Distance, offer = @Offer, image_url = @Image, is_live = @IsLive, logo_url = @LogoUrl, address = @Address, floor = @Floor, office_gali_number = @OfficeGaliNumber, latitude = @Latitude, longitude = @Longitude, is_approved = @IsApproved, bank_account = @BankAccount, cover_image_url = @CoverImageUrl, bank_name = @BankName, account_number = @AccountNumber, ifsc_code = @IfscCode, utr_number = @UtrNumber, payment_screenshot = @PaymentScreenshot, gst_number = @GstNumber
             WHERE id = @Id;
         ";
 

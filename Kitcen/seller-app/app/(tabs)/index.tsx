@@ -156,6 +156,10 @@ export default function SellerDashboard() {
   const [newCouponExpiryDays, setNewCouponExpiryDays] = useState('30');
   const [isLoadingCoupons, setIsLoadingCoupons] = useState(false);
 
+  const [renewalUtr, setRenewalUtr] = useState('');
+  const [renewalScreenshot, setRenewalScreenshot] = useState('');
+  const [isSubmittingRenewal, setIsSubmittingRenewal] = useState(false);
+
   // Banners list & inputs
   const [banners, setBanners] = useState<any[]>([]);
   const [newBannerImage, setNewBannerImage] = useState('');
@@ -315,7 +319,7 @@ export default function SellerDashboard() {
   const fetchCoupons = async () => {
     setIsLoadingCoupons(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/coupons`);
+      const res = await fetch(`${API_BASE_URL}/api/coupons?kitchenId=${selectedKitchenId}`);
       if (res.ok) {
         const json = await res.json();
         if (json.success) setCoupons(json.data);
@@ -336,6 +340,7 @@ export default function SellerDashboard() {
     expiryDate.setDate(expiryDate.getDate() + days);
 
     const payload = {
+      kitchenId: selectedKitchenId,
       code: newCouponCode.trim().toUpperCase(),
       discountType: newCouponDiscountType,
       discountValue: parseFloat(newCouponValue) || 0,
@@ -369,6 +374,116 @@ export default function SellerDashboard() {
       setNewCouponMinOrder('');
       setNewCouponMaxDiscount('');
       Alert.alert('Offline Mode', 'Coupon created locally.');
+    }
+  };
+
+  const handleSelectRenewalScreenshot = async (source: 'camera' | 'gallery') => {
+    try {
+      const { status } = source === 'camera'
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Permission is required to choose a photo.');
+        return;
+      }
+
+      const result = source === 'camera'
+        ? await ImagePicker.launchCameraAsync({
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+          })
+        : await ImagePicker.launchImageLibraryAsync({
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+          });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setIsSubmittingRenewal(true);
+        const localUri = result.assets[0].uri;
+        const uploadedUrl = await uploadImageToServer(localUri);
+        setIsSubmittingRenewal(false);
+        if (uploadedUrl) {
+          setRenewalScreenshot(uploadedUrl);
+          Alert.alert('Success', 'Screenshot uploaded successfully!');
+        } else {
+          Alert.alert('Error', 'Failed to upload screenshot to server.');
+        }
+      }
+    } catch (err) {
+      setIsSubmittingRenewal(false);
+      console.warn('Failed to pick screenshot', err);
+    }
+  };
+
+  const requestRenewalScreenshotSource = () => {
+    Alert.alert(
+      'Screenshot Source',
+      'Select screenshot source:',
+      [
+        { text: 'Camera 📸', onPress: () => handleSelectRenewalScreenshot('camera') },
+        { text: 'Gallery 🖼️', onPress: () => handleSelectRenewalScreenshot('gallery') },
+        { text: 'Cancel', style: 'cancel' }
+      ]
+    );
+  };
+
+  const handleSubmitRenewal = async () => {
+    if (!renewalUtr.trim()) {
+      Alert.alert('Error', 'Please enter your payment UTR Number.');
+      return;
+    }
+    if (!renewalScreenshot) {
+      Alert.alert('Error', 'Please upload your payment screenshot.');
+      return;
+    }
+
+    setIsSubmittingRenewal(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/kitchens/${myKitchen.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          id: myKitchen.id,
+          name: myKitchen.name,
+          ownerId: user?.id,
+          type: myKitchen.type,
+          cuisines: myKitchen.cuisines || 'Indian',
+          time: myKitchen.time,
+          distance: myKitchen.distance,
+          offer: myKitchen.offer,
+          image: myKitchen.image,
+          logoUrl: myKitchen.logoUrl,
+          coverImageUrl: myKitchen.coverImageUrl,
+          address: myKitchen.address,
+          bankName: myKitchen.bankName,
+          accountNumber: myKitchen.accountNumber,
+          ifscCode: myKitchen.ifscCode,
+          isLive: false,
+          isApproved: 'pending',
+          utrNumber: renewalUtr.trim(),
+          paymentScreenshot: renewalScreenshot
+        })
+      });
+      const json = await res.json();
+      setIsSubmittingRenewal(false);
+      if (json.success) {
+        Alert.alert('Renewal Submitted', 'Your renewal payment details have been submitted. Admin will approve it shortly.');
+        setRenewalUtr('');
+        setRenewalScreenshot('');
+        fetchKitchens(); // refresh store
+      } else {
+        Alert.alert('Error', json.message || 'Failed to submit renewal request.');
+      }
+    } catch (err) {
+      setIsSubmittingRenewal(false);
+      console.warn('Renewal error:', err);
+      Alert.alert('Error', 'Failed to connect to server.');
     }
   };
 
@@ -535,6 +650,75 @@ export default function SellerDashboard() {
     }
     await updateOrderStatus(orderId, nextStatus);
   };
+
+  const checkSubscriptionExpired = () => {
+    if (!myKitchen?.createdAt) return false;
+    const createdDate = new Date(myKitchen.createdAt);
+    const diffTime = Math.abs(new Date().getTime() - createdDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 30;
+  };
+
+  const isSubscriptionExpired = checkSubscriptionExpired();
+
+  if (isApproved && isSubscriptionExpired) {
+    return (
+      <View style={[styles.container, { backgroundColor: themeColors.background, padding: 24 }]}>
+        <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center' }} showsVerticalScrollIndicator={false}>
+          <Clock size={72} color="#FF9500" style={{ marginBottom: 20 }} />
+          <Text style={{ color: '#FF9500', fontSize: 22, fontWeight: 'bold', textAlign: 'center', marginBottom: 12 }}>
+            Subscription Expired (30 Days Completed)
+          </Text>
+          <Text style={{ color: themeColors.text, fontSize: 13, textAlign: 'center', lineHeight: 22, paddingHorizontal: 10, marginBottom: 20 }}>
+            Your 30-day kitchen subscription has ended. Please renew to continue accepting customer orders.
+          </Text>
+
+          <View style={{ backgroundColor: themeColors.card, width: '100%', padding: 20, borderRadius: 12, borderWidth: 1, borderColor: '#FFCC00', marginBottom: 20 }}>
+            <Text style={{ fontSize: 14, color: themeColors.text, fontWeight: 'bold', marginBottom: 10 }}>Renewal Instructions:</Text>
+            <Text style={{ fontSize: 12, color: themeColors.textSecondary, lineHeight: 18, marginBottom: 10 }}>
+              1. Pay <Text style={{ fontWeight: 'bold', color: themeColors.text }}>₹1.00</Text> to SuperAdmin UPI.
+            </Text>
+            <Text style={{ fontSize: 13, color: '#FFCC00', fontWeight: 'bold', marginBottom: 15, textAlign: 'center' }}>
+              SuperAdmin UPI ID: 8527430152@slc
+            </Text>
+            
+            <Text style={{ fontSize: 12, color: themeColors.textSecondary, marginBottom: 5 }}>UTR Number / Txn Ref ID:</Text>
+            <TextInput
+              placeholder="Enter 12-digit UTR number"
+              placeholderTextColor="#888"
+              value={renewalUtr}
+              onChangeText={setRenewalUtr}
+              style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border, width: '100%', marginBottom: 15 }]}
+            />
+
+            <Text style={{ fontSize: 12, color: themeColors.textSecondary, marginBottom: 5 }}>Payment Screenshot:</Text>
+            <TouchableOpacity 
+              style={[styles.textInput, { marginBottom: 15, backgroundColor: themeColors.inputBg, borderColor: themeColors.border, justifyContent: 'center', alignItems: 'center', height: 45 }]} 
+              onPress={requestRenewalScreenshotSource}
+            >
+              {renewalScreenshot ? (
+                <Text style={{ color: '#2ecc71', fontSize: 12, fontWeight: 'bold' }}>✓ Screenshot Uploaded</Text>
+              ) : (
+                <Text style={{ color: themeColors.textSecondary, fontSize: 12 }}>Choose Screenshot Image</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.saveBtn, { backgroundColor: '#FFCC00', marginTop: 10 }]} 
+              onPress={handleSubmitRenewal}
+              disabled={isSubmittingRenewal}
+            >
+              {isSubmittingRenewal ? (
+                <ActivityIndicator size="small" color="#000" />
+              ) : (
+                <Text style={[styles.saveBtnText, { color: '#000' }]}>Submit Renewal & Continue</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
 
   if (!isApproved) {
     const isRejected = myKitchen?.isApproved === 'rejected';

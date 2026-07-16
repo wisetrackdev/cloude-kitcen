@@ -98,11 +98,28 @@ namespace CloudeKicten.Models.DatabaseLayer
                 cmd1.Parameters.AddWithValue("@IsApproved", status);
                 await cmd1.ExecuteNonQueryAsync();
 
-                if (status.Equals("approved", StringComparison.OrdinalIgnoreCase))
+                // Get user_id from vendors
+                string userId = "";
+                using (var cmdGetUserId = new NpgsqlCommand("SELECT user_id FROM vendors WHERE id = @Id;", conn, tx))
                 {
-                    using var cmd2 = new NpgsqlCommand("UPDATE shops SET is_live = TRUE WHERE vendor_id = @Id;", conn, tx);
-                    cmd2.Parameters.AddWithValue("@Id", id);
-                    await cmd2.ExecuteNonQueryAsync();
+                    cmdGetUserId.Parameters.AddWithValue("@Id", id);
+                    var val = await cmdGetUserId.ExecuteScalarAsync();
+                    userId = val?.ToString() ?? "";
+                }
+
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    using var cmdShop = new NpgsqlCommand(@"
+                        UPDATE shops 
+                        SET is_approved = @IsApproved, 
+                            is_live = @IsLive, 
+                            created_at = CURRENT_TIMESTAMP 
+                        WHERE vendor_id = @UserId;
+                    ", conn, tx);
+                    cmdShop.Parameters.AddWithValue("@IsApproved", status);
+                    cmdShop.Parameters.AddWithValue("@IsLive", status.Equals("approved", StringComparison.OrdinalIgnoreCase));
+                    cmdShop.Parameters.AddWithValue("@UserId", userId);
+                    await cmdShop.ExecuteNonQueryAsync();
                 }
 
                 await tx.CommitAsync();

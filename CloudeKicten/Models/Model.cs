@@ -65,6 +65,7 @@ namespace CloudeKicten.Models
         public bool IsLive { get; set; } = true;
         public string? UpiNumber { get; set; }
         public string? UpiId { get; set; }
+        public string? GstNumber { get; set; }
     }
 
     public class ProductDb
@@ -273,6 +274,7 @@ namespace CloudeKicten.Models
         public string? UtrNumber { get; set; }
         public string? PaymentScreenshot { get; set; }
         public bool IsLive { get; set; } = true;
+        public string? GstNumber { get; set; }
     }
 
     public class KitchenUpdateDto
@@ -290,7 +292,7 @@ namespace CloudeKicten.Models
         public string? OfficeGaliNumber { get; set; }
         public decimal? Latitude { get; set; }
         public decimal? Longitude { get; set; }
-        public string IsApproved { get; set; } = "pending";
+        public string? IsApproved { get; set; } = null;
         public string? BankAccount { get; set; }
         public string? CoverImageUrl { get; set; }
         public string? BankName { get; set; }
@@ -299,6 +301,7 @@ namespace CloudeKicten.Models
         public string? UtrNumber { get; set; }
         public string? PaymentScreenshot { get; set; }
         public bool IsLive { get; set; } = true;
+        public string? GstNumber { get; set; }
     }
 
     public class ProductCreateDto

@@ -95,8 +95,26 @@ namespace CloudeKicten.Models.DatabaseLayer
             cmd.Parameters.AddWithValue("@UtrNumber", (object?)kitchen.UtrNumber ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@PaymentScreenshot", (object?)kitchen.PaymentScreenshot ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@IsLive", kitchen.IsLive);
+            cmd.Parameters.AddWithValue("@GstNumber", (object?)kitchen.GstNumber ?? DBNull.Value);
 
             var result = await cmd.ExecuteNonQueryAsync();
+            
+            // Sync/Insert into vendors table to make sure admin pending approval works
+            string vendorId = "v" + Guid.NewGuid().ToString("N").Substring(0, 6);
+            using var cmdVendor = new NpgsqlCommand(@"
+                INSERT INTO vendors (id, user_id, business_name, owner_name, cuisines, type, is_approved, commission_rate, created_at)
+                VALUES (@Id, @UserId, @BusinessName, @OwnerName, @Cuisines, @Type, @IsApproved, 10.0, CURRENT_TIMESTAMP)
+                ON CONFLICT (id) DO NOTHING;
+            ", conn);
+            cmdVendor.Parameters.AddWithValue("@Id", vendorId);
+            cmdVendor.Parameters.AddWithValue("@UserId", kitchen.OwnerId);
+            cmdVendor.Parameters.AddWithValue("@BusinessName", kitchen.Name);
+            cmdVendor.Parameters.AddWithValue("@OwnerName", kitchen.OwnerName ?? "");
+            cmdVendor.Parameters.AddWithValue("@Cuisines", kitchen.Cuisines);
+            cmdVendor.Parameters.AddWithValue("@Type", kitchen.Type);
+            cmdVendor.Parameters.AddWithValue("@IsApproved", kitchen.IsApproved ?? "pending");
+            await cmdVendor.ExecuteNonQueryAsync();
+
             return result > 0;
         }
 
@@ -128,8 +146,23 @@ namespace CloudeKicten.Models.DatabaseLayer
             cmd.Parameters.AddWithValue("@UtrNumber", (object?)kitchen.UtrNumber ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@PaymentScreenshot", (object?)kitchen.PaymentScreenshot ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@IsLive", kitchen.IsLive);
+            cmd.Parameters.AddWithValue("@GstNumber", (object?)kitchen.GstNumber ?? DBNull.Value);
 
             var result = await cmd.ExecuteNonQueryAsync();
+
+            // Sync/Update vendors table is_approved and details
+            using var cmdVendorUpdate = new NpgsqlCommand(@"
+                UPDATE vendors
+                SET business_name = @Name, cuisines = @Cuisines, type = @Type, is_approved = @IsApproved
+                WHERE user_id = @UserId;
+            ", conn);
+            cmdVendorUpdate.Parameters.AddWithValue("@Name", kitchen.Name);
+            cmdVendorUpdate.Parameters.AddWithValue("@Cuisines", kitchen.Cuisines);
+            cmdVendorUpdate.Parameters.AddWithValue("@Type", kitchen.Type);
+            cmdVendorUpdate.Parameters.AddWithValue("@IsApproved", kitchen.IsApproved ?? "pending");
+            cmdVendorUpdate.Parameters.AddWithValue("@UserId", kitchen.OwnerId);
+            await cmdVendorUpdate.ExecuteNonQueryAsync();
+
             return result > 0;
         }
 
@@ -192,7 +225,8 @@ namespace CloudeKicten.Models.DatabaseLayer
                 PaymentScreenshot = r.IsDBNull(r.GetOrdinal("payment_screenshot")) ? null : r.GetString(r.GetOrdinal("payment_screenshot")),
                 IsLive = r.IsDBNull(r.GetOrdinal("is_live")) ? true : r.GetBoolean(r.GetOrdinal("is_live")),
                 UpiNumber = r.IsDBNull(r.GetOrdinal("upi_number")) ? null : r.GetString(r.GetOrdinal("upi_number")),
-                UpiId = r.IsDBNull(r.GetOrdinal("upi_id")) ? null : r.GetString(r.GetOrdinal("upi_id"))
+                UpiId = r.IsDBNull(r.GetOrdinal("upi_id")) ? null : r.GetString(r.GetOrdinal("upi_id")),
+                GstNumber = r.IsDBNull(r.GetOrdinal("gst_number")) ? null : r.GetString(r.GetOrdinal("gst_number"))
             };
         }
 

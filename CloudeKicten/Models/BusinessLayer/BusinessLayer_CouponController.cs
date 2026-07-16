@@ -7,7 +7,7 @@ namespace CloudeKicten.Models.BusinessLayer
 {
     public interface IBusinessLayer_CouponController
     {
-        Task<ApiResponse<List<CouponDb>>> GetActiveCouponsAsync();
+        Task<ApiResponse<List<CouponDb>>> GetActiveCouponsAsync(string? kitchenId);
         Task<ApiResponse<CouponDb>> CreateCouponAsync(CouponDb coupon);
         Task<ApiResponse<CouponDb>> ApplyCouponAsync(string code, decimal orderTotal);
     }
@@ -21,9 +21,13 @@ namespace CloudeKicten.Models.BusinessLayer
             this._databaseLayer = databaseLayer;
         }
 
-        public async Task<ApiResponse<List<CouponDb>>> GetActiveCouponsAsync()
+        public async Task<ApiResponse<List<CouponDb>>> GetActiveCouponsAsync(string? kitchenId)
         {
             var list = await _databaseLayer.GetAllActiveCouponsAsync();
+            if (!string.IsNullOrEmpty(kitchenId))
+            {
+                list = list.FindAll(c => c.KitchenId == kitchenId);
+            }
             return ApiResponse<List<CouponDb>>.Ok(list);
         }
 

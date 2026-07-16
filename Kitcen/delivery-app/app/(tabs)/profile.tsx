@@ -227,7 +227,7 @@ export default function RiderProfile() {
 
   // Calculation Metrics from Zustand Store
   const riderCompletedOrders = orders.filter(o => o.riderId === user.id && o.status === 'delivered');
-  const dynamicEarnings = riderCompletedOrders.reduce((sum, o) => sum + Number(o.deliveryCharge || 40), 0);
+  const dynamicEarnings = riderCompletedOrders.reduce((sum, o) => sum + Number(o.deliveryCharge ?? 0), 0);
 
   const renderHeader = (title: string) => (
     <View style={[styles.tabHeaderFixed, { backgroundColor: '#FFCC00', borderBottomColor: '#E2B200' }]}>

@@ -197,10 +197,27 @@ export default function AdminOrdersScreen() {
                   {item.quantity}x {item.name} (₹{item.price})
                 </Text>
               ))}
-              <View style={[styles.totalRow, { borderTopColor: themeColors.border }]}>
-                <Text style={[styles.totalLabel, { color: themeColors.textSecondary }]}>Total Payout Amount:</Text>
-                <Text style={[styles.totalVal, { color: themeColors.primary }]}>₹{order.total}</Text>
-              </View>
+              {order.discount > 0 ? (
+                <>
+                  <View style={[styles.totalRow, { borderTopColor: themeColors.border, paddingBottom: 4 }]}>
+                    <Text style={[styles.totalLabel, { color: themeColors.textSecondary }]}>Original Price:</Text>
+                    <Text style={[styles.totalVal, { color: themeColors.textSecondary, textDecorationLine: 'line-through' }]}>₹{order.subtotal}</Text>
+                  </View>
+                  <View style={[styles.totalRow, { borderTopWidth: 0, paddingBottom: 4 }]}>
+                    <Text style={[styles.totalLabel, { color: themeColors.success }]}>Discount Applied:</Text>
+                    <Text style={[styles.totalVal, { color: themeColors.success }]}>- ₹{order.discount}</Text>
+                  </View>
+                  <View style={[styles.totalRow, { borderTopWidth: 0 }]}>
+                    <Text style={[styles.totalLabel, { color: themeColors.textSecondary, fontWeight: 'bold' }]}>Real Price (Paid to Admin):</Text>
+                    <Text style={[styles.totalVal, { color: themeColors.primary, fontSize: 13, fontWeight: 'bold' }]}>₹{order.total}</Text>
+                  </View>
+                </>
+              ) : (
+                <View style={[styles.totalRow, { borderTopColor: themeColors.border }]}>
+                  <Text style={[styles.totalLabel, { color: themeColors.textSecondary }]}>Total Payout Amount:</Text>
+                  <Text style={[styles.totalVal, { color: themeColors.primary }]}>₹{order.total}</Text>
+                </View>
+              )}
             </View>
 
             {/* Addresses Box */}

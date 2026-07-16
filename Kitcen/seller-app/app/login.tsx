@@ -56,6 +56,8 @@ export default function LoginScreen() {
   const [shopImage, setShopImage] = useState('');
   const [shopLogo, setShopLogo] = useState('');
   const [shopAddress, setShopAddress] = useState('');
+  const [shopLandmark, setShopLandmark] = useState('');
+  const [shopCity, setShopCity] = useState('');
   const [shopFloor, setShopFloor] = useState('');
   const [shopGaliNumber, setShopGaliNumber] = useState('');
   const [shopState, setShopState] = useState('');
@@ -140,8 +142,8 @@ export default function LoginScreen() {
   };
 
   const handleProceedToPayment = async () => {
-    if (!shopName.trim() || !shopAddress.trim() || !shopImage || !shopLogo || !shopState.trim() || !shopPincode.trim() || !shopGst.trim()) {
-      Alert.alert('Error', 'Shop Name, Street Address, State, Pin Code, GST Number, Logo, and Banner Image are all mandatory.');
+    if (!shopName.trim() || !shopAddress.trim() || !shopLandmark.trim() || !shopCity.trim() || !shopImage || !shopLogo || !shopState.trim() || !shopPincode.trim() || !shopGst.trim()) {
+      Alert.alert('Error', 'Shop Name, Street Address, Near/Landmark, City, State, Pin Code, GST Number, Logo, and Banner Image are all mandatory.');
       return;
     }
 
@@ -470,7 +472,7 @@ export default function LoginScreen() {
       return;
     }
 
-    const completeAddress = `${shopAddress.trim()}, Floor: ${shopFloor.trim()}, Gali/Office: ${shopGaliNumber.trim()}, State: ${shopState.trim()}, PinCode: ${shopPincode.trim()} | GST: ${shopGst.trim()}`;
+    const completeAddress = `${shopAddress.trim()}, Near: ${shopLandmark.trim()}, City: ${shopCity.trim()}, Floor: ${shopFloor.trim()}, Gali/Office: ${shopGaliNumber.trim()}, State: ${shopState.trim()}, PinCode: ${shopPincode.trim()}`;
     
     try {
       // POST new kitchen request to backend (initially pending)
@@ -502,7 +504,8 @@ export default function LoginScreen() {
           bankName: bankName.trim(),
           accountNumber: accountNumber.trim(),
           ifscCode: ifscCode.trim(),
-          bankAccount: `${bankName.trim()} A/C ${accountNumber.trim()} | UPI: ${upiId.trim()}`
+          bankAccount: `${bankName.trim()} A/C ${accountNumber.trim()} | UPI: ${upiId.trim()}`,
+          gstNumber: shopGst.trim()
         })
       });
 
@@ -673,10 +676,32 @@ export default function LoginScreen() {
                 <View style={styles.inputWrapper}>
                   <MapPin size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />
                   <TextInput
-                    placeholder="Gali / Street Address"
+                    placeholder="Street Address (e.g. 12th Main Road)"
                     placeholderTextColor="#888"
                     value={shopAddress}
                     onChangeText={setShopAddress}
+                    style={styles.inputField}
+                  />
+                </View>
+
+                <View style={styles.inputWrapper}>
+                  <MapPin size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />
+                  <TextInput
+                    placeholder="Near / Landmark (e.g. Near Metro Station)"
+                    placeholderTextColor="#888"
+                    value={shopLandmark}
+                    onChangeText={setShopLandmark}
+                    style={styles.inputField}
+                  />
+                </View>
+
+                <View style={styles.inputWrapper}>
+                  <MapPin size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />
+                  <TextInput
+                    placeholder="City (e.g. Noida)"
+                    placeholderTextColor="#888"
+                    value={shopCity}
+                    onChangeText={setShopCity}
                     style={styles.inputField}
                   />
                 </View>

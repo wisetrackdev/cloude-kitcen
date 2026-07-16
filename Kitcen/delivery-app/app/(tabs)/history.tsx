@@ -88,7 +88,7 @@ export default function RiderHistoryScreen() {
   };
 
   const filteredList = getFilteredOrders();
-  const totalEarnings = filteredList.reduce((sum, o) => sum + Number(o.deliveryCharge || 40), 0);
+  const totalEarnings = filteredList.reduce((sum, o) => sum + Number(o.deliveryCharge ?? 0), 0);
 
   return (
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
@@ -170,7 +170,7 @@ export default function RiderHistoryScreen() {
                   <Text style={styles.orderDate}>{order.date}</Text>
                 </View>
                 <View style={styles.earningsBadge}>
-                  <Text style={styles.earningsAmt}>+₹{order.deliveryCharge || 40}</Text>
+                  <Text style={styles.earningsAmt}>+₹{order.deliveryCharge ?? 0}</Text>
                 </View>
               </View>
 

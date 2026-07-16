@@ -78,7 +78,8 @@ namespace CloudeKicten.Models.BusinessLayer
                 PaymentScreenshot = dto.PaymentScreenshot,
                 IsLive = dto.IsLive,
                 Revenue = 0.0m,
-                OrdersCount = 0
+                OrdersCount = 0,
+                GstNumber = dto.GstNumber
             };
 
             await _databaseLayer.InsertKitchenAsync(kitchen);
@@ -131,6 +132,7 @@ namespace CloudeKicten.Models.BusinessLayer
             kitchen.UtrNumber = dto.UtrNumber ?? kitchen.UtrNumber;
             kitchen.PaymentScreenshot = dto.PaymentScreenshot ?? kitchen.PaymentScreenshot;
             kitchen.IsLive = dto.IsLive;
+            kitchen.GstNumber = dto.GstNumber ?? kitchen.GstNumber;
 
             await _databaseLayer.UpdateKitchenAsync(id, kitchen);
             return ApiResponse<KitchenDb>.Ok(kitchen, "Kitchen updated successfully.");
