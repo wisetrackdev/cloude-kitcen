@@ -296,9 +296,30 @@ namespace CloudeKicten.Models.BusinessLayer
             var customer = await _authDatabaseLayer.GetUserByIdAsync(dbOrder.CustomerId);
 
             UserDb? rider = null;
+            string? riderVehicleType = null;
+            string? riderVehicleNumber = null;
             if (!string.IsNullOrEmpty(dbOrder.RiderId))
             {
                 rider = await _authDatabaseLayer.GetUserByIdAsync(dbOrder.RiderId);
+                try
+                {
+                    using (var conn = new Npgsql.NpgsqlConnection(_configuration.GetConnectionString("AppDbContext")))
+                    {
+                        await conn.OpenAsync();
+                        using var cmd = new Npgsql.NpgsqlCommand("SELECT vehicle_type, vehicle_number FROM delivery_partners WHERE id = @Id;", conn);
+                        cmd.Parameters.AddWithValue("@Id", dbOrder.RiderId);
+                        using var reader = await cmd.ExecuteReaderAsync();
+                        if (await reader.ReadAsync())
+                        {
+                            riderVehicleType = reader.IsDBNull(0) ? null : reader.GetString(0);
+                            riderVehicleNumber = reader.IsDBNull(1) ? null : reader.GetString(1);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error fetching rider vehicle info: {ex.Message}");
+                }
             }
 
             var items = JsonSerializer.Deserialize<List<OrderItemDto>>(dbOrder.ItemsJson) ?? new();
@@ -325,6 +346,8 @@ namespace CloudeKicten.Models.BusinessLayer
                 RiderName = rider != null ? $"{rider.FirstName} {rider.LastName}".Trim() : "Vikram Singh",
                 RiderPhone = rider != null && !string.IsNullOrEmpty(rider.Phone) ? rider.Phone : "+91 9876543210",
                 RiderAvatar = rider?.Avatar,
+                RiderVehicleType = riderVehicleType,
+                RiderVehicleNumber = riderVehicleNumber,
                 CustomerPhone = customer != null && !string.IsNullOrEmpty(customer.Phone) ? customer.Phone : "+91 9876543210",
                 DeliveryAddress = dbOrder.DeliveryAddress,
                 PickedUpAt = dbOrder.PickedUpAt?.ToString("yyyy-MM-dd HH:mm:ss"),

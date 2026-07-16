@@ -43,6 +43,7 @@ namespace CloudeKicten.Models.DatabaseLayer
                 return new RiderDb
                 {
                     Id = reader.GetString(reader.GetOrdinal("id")),
+                    VehicleType = reader.IsDBNull(reader.GetOrdinal("vehicle_type")) ? null : reader.GetString(reader.GetOrdinal("vehicle_type")),
                     VehicleNumber = reader.GetString(reader.GetOrdinal("vehicle_number")),
                     LicenseNumber = reader.GetString(reader.GetOrdinal("license_number")),
                     IsActive = reader.GetBoolean(reader.GetOrdinal("is_active")),
@@ -79,6 +80,7 @@ namespace CloudeKicten.Models.DatabaseLayer
                 list.Add(new RiderDb
                 {
                     Id = reader.GetString(reader.GetOrdinal("id")),
+                    VehicleType = reader.IsDBNull(reader.GetOrdinal("vehicle_type")) ? null : reader.GetString(reader.GetOrdinal("vehicle_type")),
                     VehicleNumber = reader.GetString(reader.GetOrdinal("vehicle_number")),
                     LicenseNumber = reader.GetString(reader.GetOrdinal("license_number")),
                     IsActive = reader.GetBoolean(reader.GetOrdinal("is_active")),
@@ -108,6 +110,7 @@ namespace CloudeKicten.Models.DatabaseLayer
             await conn.OpenAsync();
             using var cmd = new NpgsqlCommand(Sql.InsertRider, conn);
             cmd.Parameters.AddWithValue("@Id", r.Id);
+            cmd.Parameters.AddWithValue("@VehicleType", (object?)r.VehicleType ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@VehicleNumber", r.VehicleNumber);
             cmd.Parameters.AddWithValue("@LicenseNumber", r.LicenseNumber);
             cmd.Parameters.AddWithValue("@IsActive", r.IsActive);
@@ -131,11 +134,12 @@ namespace CloudeKicten.Models.DatabaseLayer
                 // 1. Update delivery_partners
                 using var cmd1 = new NpgsqlCommand(@"
                     UPDATE delivery_partners
-                    SET vehicle_number = @VehicleNumber, license_number = @LicenseNumber, delivery_zone = @DeliveryZone,
+                    SET vehicle_type = @VehicleType, vehicle_number = @VehicleNumber, license_number = @LicenseNumber, delivery_zone = @DeliveryZone,
                         rc_number = @RcNumber, bank_name = @BankName, account_number = @AccountNumber, ifsc_code = @IfscCode
                     WHERE id = @Id;
                 ", conn, tx);
                 cmd1.Parameters.AddWithValue("@Id", r.Id);
+                cmd1.Parameters.AddWithValue("@VehicleType", (object?)r.VehicleType ?? DBNull.Value);
                 cmd1.Parameters.AddWithValue("@VehicleNumber", r.VehicleNumber);
                 cmd1.Parameters.AddWithValue("@LicenseNumber", r.LicenseNumber);
                 cmd1.Parameters.AddWithValue("@DeliveryZone", (object?)r.DeliveryZone ?? DBNull.Value);

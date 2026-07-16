@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import * as Location from 'expo-location';
 import { 
   StyleSheet, 
   Text, 
@@ -71,6 +72,29 @@ export default function HomeScreen() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [liveBanners, setLiveBanners] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [locationPermissionGranted, setLocationPermissionGranted] = useState(false);
+  const [isDetecting, setIsDetecting] = useState(false);
+
+  const handleRequestLocation = async () => {
+    setIsDetecting(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'You must allow location permission to enter Clude Kitchen.');
+        setIsDetecting(false);
+        return;
+      }
+      
+      const detectLoc = useAuthStore.getState().detectLocation;
+      await detectLoc();
+      
+      setLocationPermissionGranted(true);
+    } catch (err: any) {
+      Alert.alert('Location Error', 'Failed to detect location. Please try again.');
+    } finally {
+      setIsDetecting(false);
+    }
+  };
 
   // Address Selector (Zepto style) States
   const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
@@ -309,6 +333,40 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
+      
+      {/* Forced Location Permission Modal */}
+      <Modal
+        visible={!locationPermissionGranted}
+        animationType="slide"
+        transparent={false}
+      >
+        <View style={{ flex: 1, backgroundColor: '#0B0B0C', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+          <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255, 204, 0, 0.1)', justifyContent: 'center', alignItems: 'center', marginBottom: 24 }}>
+            <MapPin size={40} color="#FFCC00" />
+          </View>
+          <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#FFF', textAlign: 'center', marginBottom: 12 }}>
+            Enable Location Services
+          </Text>
+          <Text style={{ fontSize: 14, color: '#AAA', textAlign: 'center', marginBottom: 32, lineHeight: 20 }}>
+            We need your permission to access your current location. This helps us find the nearest kitchens and coordinate delivery riders for you.
+          </Text>
+          
+          <TouchableOpacity 
+            style={{ width: '100%', height: 50, borderRadius: 25, backgroundColor: '#FFCC00', justifyContent: 'center', alignItems: 'center', flexDirection: 'row', marginBottom: 16 }}
+            onPress={handleRequestLocation}
+            disabled={isDetecting}
+          >
+            {isDetecting ? (
+              <ActivityIndicator color="#000" />
+            ) : (
+              <>
+                <MapPin size={18} color="#000" style={{ marginRight: 8 }} />
+                <Text style={{ color: '#000', fontWeight: 'bold', fontSize: 16 }}>Allow & Detect Location</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      </Modal>
       
       {/* 1. Gold/Yellow Top Header Block */}
       <View style={styles.goldHeader}>

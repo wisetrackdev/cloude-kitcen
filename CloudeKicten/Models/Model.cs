@@ -145,6 +145,7 @@ namespace CloudeKicten.Models
     public class RiderDb
     {
         public string Id { get; set; } = string.Empty;
+        public string? VehicleType { get; set; }
         public string VehicleNumber { get; set; } = string.Empty;
         public string LicenseNumber { get; set; } = string.Empty;
         public bool IsActive { get; set; } = true;
@@ -229,6 +230,7 @@ namespace CloudeKicten.Models
     public class RiderRegisterDto
     {
         public string UserId { get; set; } = string.Empty;
+        public string? VehicleType { get; set; }
         public string VehicleNumber { get; set; } = string.Empty;
         public string LicenseNumber { get; set; } = string.Empty;
         public string? DeliveryZone { get; set; }
@@ -370,6 +372,8 @@ namespace CloudeKicten.Models
         public string? RiderName { get; set; }
         public string? RiderPhone { get; set; }
         public string? RiderAvatar { get; set; }
+        public string? RiderVehicleType { get; set; }
+        public string? RiderVehicleNumber { get; set; }
         public string? CustomerPhone { get; set; }
         public string? DeliveryAddress { get; set; }
         public string? PickedUpAt { get; set; }
@@ -393,6 +397,7 @@ namespace CloudeKicten.Models
 
     public class RiderProfileUpdateDto
     {
+        public string? VehicleType { get; set; }
         public string VehicleNumber { get; set; } = string.Empty;
         public string LicenseNumber { get; set; } = string.Empty;
         public string? RcNumber { get; set; }

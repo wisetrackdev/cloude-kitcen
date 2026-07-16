@@ -807,15 +807,15 @@ namespace CloudeKicten
         // ==========================================
 
         public const string InsertRider = @"
-            INSERT INTO delivery_partners (id, vehicle_number, license_number, is_approved, is_active, current_latitude, current_longitude, delivery_zone, rc_number, bank_name, account_number, ifsc_code, rating, rating_count, created_at)
-            VALUES (@Id, @VehicleNumber, @LicenseNumber, FALSE, @IsActive, NULL, NULL, @DeliveryZone, @RcNumber, @BankName, @AccountNumber, @IfscCode, 5.0, 0, CURRENT_TIMESTAMP)
+            INSERT INTO delivery_partners (id, vehicle_type, vehicle_number, license_number, is_approved, is_active, current_latitude, current_longitude, delivery_zone, rc_number, bank_name, account_number, ifsc_code, rating, rating_count, created_at)
+            VALUES (@Id, @VehicleType, @VehicleNumber, @LicenseNumber, FALSE, @IsActive, NULL, NULL, @DeliveryZone, @RcNumber, @BankName, @AccountNumber, @IfscCode, 5.0, 0, CURRENT_TIMESTAMP)
             ON CONFLICT (id) DO UPDATE 
-            SET vehicle_number = EXCLUDED.vehicle_number, license_number = EXCLUDED.license_number, is_active = EXCLUDED.is_active, delivery_zone = EXCLUDED.delivery_zone,
+            SET vehicle_type = EXCLUDED.vehicle_type, vehicle_number = EXCLUDED.vehicle_number, license_number = EXCLUDED.license_number, is_active = EXCLUDED.is_active, delivery_zone = EXCLUDED.delivery_zone,
                 rc_number = EXCLUDED.rc_number, bank_name = EXCLUDED.bank_name, account_number = EXCLUDED.account_number, ifsc_code = EXCLUDED.ifsc_code;
         ";
 
         public const string GetRiderById = @"
-            SELECT r.id, r.vehicle_number, r.license_number, r.is_approved, r.is_active, r.current_latitude, r.current_longitude, r.delivery_zone, r.created_at,
+            SELECT r.id, r.vehicle_type, r.vehicle_number, r.license_number, r.is_approved, r.is_active, r.current_latitude, r.current_longitude, r.delivery_zone, r.created_at,
                    r.rc_number, r.bank_name, r.account_number, r.ifsc_code, r.rating, r.rating_count,
                    u.phone_number, u.gender, u.first_name, u.last_name, u.email
             FROM delivery_partners r
@@ -824,7 +824,7 @@ namespace CloudeKicten
         ";
 
         public const string GetAllRiders = @"
-            SELECT r.id, r.vehicle_number, r.license_number, r.is_approved, r.is_active, r.current_latitude, r.current_longitude, r.delivery_zone, r.created_at,
+            SELECT r.id, r.vehicle_type, r.vehicle_number, r.license_number, r.is_approved, r.is_active, r.current_latitude, r.current_longitude, r.delivery_zone, r.created_at,
                    r.rc_number, r.bank_name, r.account_number, r.ifsc_code, r.rating, r.rating_count,
                    u.phone_number, u.gender, u.first_name, u.last_name, u.email
             FROM delivery_partners r

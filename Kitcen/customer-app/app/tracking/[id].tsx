@@ -271,7 +271,9 @@ export default function OrderTrackingScreen() {
                 />
                 <View>
                   <Text style={[styles.riderName, { color: themeColors.text }]}>{activeOrder?.riderName || 'Vikram Singh'} (Rider Assigned)</Text>
-                  <Text style={[styles.riderVehicle, { color: themeColors.textSecondary }]}>Hero Splendor (MH-02-AB-9831)</Text>
+                  <Text style={[styles.riderVehicle, { color: themeColors.textSecondary }]}>
+                    {activeOrder?.riderVehicleType || 'Hero Splendor'} ({activeOrder?.riderVehicleNumber || 'MH-02-AB-9831'})
+                  </Text>
                 </View>
               </View>
               <View style={styles.riderActions}>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import * as Location from 'expo-location';
 import { 
   StyleSheet, 
   Text, 
@@ -58,10 +59,88 @@ export default function SellerDashboard() {
   const updateOrderStatus = useKitchenStore(state => state.updateOrderStatus);
   const fetchCategoriesGlobal = useKitchenStore(state => state.fetchCategories);
 
-  // Theme states
+  const [locationPermissionGranted, setLocationPermissionGranted] = useState(false);
+  const [isDetecting, setIsDetecting] = useState(false);
   const isDarkMode = useAuthStore(state => state.isDarkMode);
-
   const [activeTab, setActiveTab] = useState<OrderTabFilter>('live');
+
+  const handleRequestLocation = async () => {
+    if (!myKitchen?.id) {
+      Alert.alert('Error', 'Kitchen not loaded yet.');
+      return;
+    }
+    setIsDetecting(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'You must allow location permission to open your kitchen shop.');
+        setIsDetecting(false);
+        return;
+      }
+      
+      const currentLoc = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      const { latitude: lat, longitude: lng } = currentLoc.coords;
+      let addressName = myKitchen.address || 'Detected Location';
+      const geocode = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
+      if (geocode && geocode.length > 0) {
+        const place = geocode[0];
+        addressName = [
+          place.name || place.street,
+          place.district || place.subregion,
+          place.city || place.region
+        ].filter(Boolean).join(', ') || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      }
+
+      // Update kitchen coordinates and address on backend
+      const res = await fetch(`${API_BASE_URL}/api/kitchens/${myKitchen.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          id: myKitchen.id,
+          name: myKitchen.name,
+          ownerId: user?.id,
+          type: myKitchen.type,
+          cuisines: myKitchen.cuisines || 'Indian',
+          time: myKitchen.time,
+          distance: myKitchen.distance,
+          offer: myKitchen.offer,
+          image: myKitchen.image,
+          logoUrl: myKitchen.logoUrl,
+          coverImageUrl: myKitchen.coverImageUrl,
+          address: addressName,
+          latitude: lat,
+          longitude: lng,
+          isLive: myKitchen.isLive !== false,
+          isApproved: myKitchen.isApproved
+        })
+      });
+
+      const json = await res.json();
+      if (json.success) {
+        fetchKitchens();
+        setLocationPermissionGranted(true);
+        Alert.alert('Location Updated', `Kitchen location successfully verified at: ${addressName}`);
+      } else {
+        Alert.alert('Error', json.message || 'Failed to update kitchen location.');
+      }
+    } catch (err: any) {
+      Alert.alert('Location Error', 'Failed to detect location. Please try again.');
+    } finally {
+      setIsDetecting(false);
+    }
+  };
+
+  useEffect(() => {
+    if (myKitchen && myKitchen.latitude && myKitchen.longitude) {
+      setLocationPermissionGranted(true);
+    }
+  }, [myKitchen]);
 
   useEffect(() => {
     fetchKitchens();
@@ -589,6 +668,40 @@ export default function SellerDashboard() {
 
   return (
     <>
+      {/* Forced Location Permission Modal */}
+      <Modal
+        visible={!locationPermissionGranted}
+        animationType="slide"
+        transparent={false}
+      >
+        <View style={{ flex: 1, backgroundColor: '#0B0B0C', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+          <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255, 204, 0, 0.1)', justifyContent: 'center', alignItems: 'center', marginBottom: 24 }}>
+            <MapPin size={40} color="#FFCC00" />
+          </View>
+          <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#FFF', textAlign: 'center', marginBottom: 12 }}>
+            Kitchen Location Verification
+          </Text>
+          <Text style={{ fontSize: 14, color: '#AAA', textAlign: 'center', marginBottom: 32, lineHeight: 20 }}>
+            To receive customer orders and coordinate delivery partners, you must allow current location access for your kitchen shop.
+          </Text>
+          
+          <TouchableOpacity 
+            style={{ width: '100%', height: 50, borderRadius: 25, backgroundColor: '#FFCC00', justifyContent: 'center', alignItems: 'center', flexDirection: 'row', marginBottom: 16 }}
+            onPress={handleRequestLocation}
+            disabled={isDetecting}
+          >
+            {isDetecting ? (
+              <ActivityIndicator color="#000" />
+            ) : (
+              <>
+                <MapPin size={18} color="#000" style={{ marginRight: 8 }} />
+                <Text style={{ color: '#000', fontWeight: 'bold', fontSize: 16 }}>Allow & Detect Location</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      </Modal>
+
       <ScrollView style={[styles.container, { backgroundColor: themeColors.background }]} showsVerticalScrollIndicator={false}>
       {/* Brand Header */}
       <View style={[styles.header, { backgroundColor: '#FFCC00' }]}>

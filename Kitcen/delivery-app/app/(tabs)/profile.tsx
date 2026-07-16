@@ -59,6 +59,7 @@ export default function RiderProfile() {
   const [avatar, setAvatar] = useState(user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80');
 
   // Vehicle states
+  const [vehicleType, setVehicleType] = useState('');
   const [vehicleNumber, setVehicleNumber] = useState('');
   const [licenseNumber, setLicenseNumber] = useState('');
   const [rcNumber, setRcNumber] = useState('');
@@ -88,6 +89,7 @@ export default function RiderProfile() {
       const json = await res.json();
       if (json.success && json.data) {
         const r = json.data;
+        setVehicleType(r.vehicleType || '');
         setVehicleNumber(r.vehicleNumber || '');
         setLicenseNumber(r.licenseNumber || '');
         setRcNumber(r.rcNumber || '');
@@ -172,6 +174,7 @@ export default function RiderProfile() {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
+          vehicleType: vehicleType.trim(),
           vehicleNumber: vehicleNumber.trim(),
           licenseNumber: licenseNumber.trim(),
           rcNumber: rcNumber.trim(),
@@ -313,7 +316,7 @@ export default function RiderProfile() {
                 </View>
                 <View>
                   <Text style={[styles.rowTitle, { color: themeColors.text }]}>Vehicle & Zone details</Text>
-                  <Text style={styles.rowDesc}>Plate number, RC book and delivery zone</Text>
+                  <Text style={styles.rowDesc}>Vehicle name, plate number, RC book and zone</Text>
                 </View>
               </View>
               <ChevronRight size={16} color="#555" />
@@ -414,6 +417,15 @@ export default function RiderProfile() {
       {activeTab === 'vehicle' && (
         <ScrollView style={[styles.tabContent, { padding: 16 }]} showsVerticalScrollIndicator={false}>
           <View style={[styles.inputCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+            <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Vehicle Name / Model</Text>
+            <TextInput
+              style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
+              value={vehicleType}
+              onChangeText={setVehicleType}
+              placeholder="e.g. Hero Splendor Plus"
+              placeholderTextColor="#888"
+            />
+
             <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Vehicle Plate Number</Text>
             <TextInput
               style={[styles.textInput, { backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}

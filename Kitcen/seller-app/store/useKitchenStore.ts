@@ -75,6 +75,10 @@ export interface OrderRecord {
   deliveryAddress?: string | null;
   kitchenAddress?: string | null;
   kitchenPhone?: string | null;
+  riderId?: string | null;
+  riderName?: string | null;
+  riderPhone?: string | null;
+  riderAvatar?: string | null;
 }
 
 interface KitchenState {
@@ -240,7 +244,11 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
           paymentMethod: o.paymentMethod,
           deliveryAddress: o.deliveryAddress || null,
           kitchenAddress: o.kitchenAddress || null,
-          kitchenPhone: o.kitchenPhone || null
+          kitchenPhone: o.kitchenPhone || null,
+          riderId: o.riderId || null,
+          riderName: o.riderName || null,
+          riderPhone: o.riderPhone || null,
+          riderAvatar: o.riderAvatar || null
         }));
         set({ orders: mappedOrders, isLoading: false });
       } else {

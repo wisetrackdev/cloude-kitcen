@@ -75,6 +75,8 @@ export interface OrderRecord {
   riderName?: string | null;
   riderPhone?: string | null;
   riderAvatar?: string | null;
+  riderVehicleType?: string | null;
+  riderVehicleNumber?: string | null;
   customerPhone?: string | null;
   deliveryAddress?: string | null;
   kitchenAddress?: string | null;
@@ -335,6 +337,8 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
           riderName: o.riderName || null,
           riderPhone: o.riderPhone || null,
           riderAvatar: o.riderAvatar || null,
+          riderVehicleType: o.riderVehicleType || null,
+          riderVehicleNumber: o.riderVehicleNumber || null,
           customerPhone: o.customerPhone || null,
           deliveryAddress: o.deliveryAddress || null,
           kitchenAddress: o.kitchenAddress || null,

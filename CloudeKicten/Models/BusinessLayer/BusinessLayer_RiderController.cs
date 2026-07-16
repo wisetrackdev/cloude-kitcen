@@ -54,6 +54,7 @@ namespace CloudeKicten.Models.BusinessLayer
             var rider = new RiderDb
             {
                 Id = dto.UserId,
+                VehicleType = dto.VehicleType,
                 VehicleNumber = dto.VehicleNumber,
                 LicenseNumber = dto.LicenseNumber,
                 DeliveryZone = dto.DeliveryZone,
@@ -73,6 +74,7 @@ namespace CloudeKicten.Models.BusinessLayer
             var rider = await _databaseLayer.GetRiderByIdAsync(id);
             if (rider == null) return ApiResponse<RiderDb>.Fail("Rider not found.");
 
+            rider.VehicleType = dto.VehicleType ?? rider.VehicleType;
             rider.VehicleNumber = dto.VehicleNumber;
             rider.LicenseNumber = dto.LicenseNumber;
             rider.RcNumber = dto.RcNumber ?? rider.RcNumber;
