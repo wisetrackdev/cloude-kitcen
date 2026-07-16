@@ -705,34 +705,26 @@ export default function SellerDashboard() {
                   ))}
                 </View>
 
-                {/* Right Aligned Chat & Call buttons (Rider only logic) */}
+                {/* Right Aligned Chat & Call buttons for Customer */}
                 <View style={{ alignItems: 'flex-end' }}>
-                  {order.riderId ? (
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <Text style={{ fontSize: 10, color: themeColors.textSecondary, marginRight: 8, maxWidth: 80 }} numberOfLines={1}>
-                        🏍️ {order.riderName || 'Rider'}
-                      </Text>
-                      <TouchableOpacity 
-                        style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,179,0,0.1)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: ZOMATO_RED, marginRight: 8 }}
-                        onPress={() => router.push({ pathname: '/chat-customer', params: { orderId: order.id, customerName: order.riderName || 'Rider' } })}
-                      >
-                        <MessageSquare size={14} color={ZOMATO_RED} />
-                      </TouchableOpacity>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 10, color: themeColors.textSecondary, marginRight: 8, maxWidth: 80 }} numberOfLines={1}>
+                      👤 Customer
+                    </Text>
+                    <TouchableOpacity 
+                      style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,179,0,0.1)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: ZOMATO_RED, marginRight: 8 }}
+                      onPress={() => router.push({ pathname: '/chat-customer', params: { orderId: order.id, customerName: order.customerName } })}
+                    >
+                      <MessageSquare size={14} color={ZOMATO_RED} />
+                    </TouchableOpacity>
 
-                      <TouchableOpacity 
-                        style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(46,204,113,0.1)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#2ecc71' }}
-                        onPress={() => Linking.openURL(`tel:${(order as any).riderPhone || ''}`)}
-                      >
-                        <Phone size={14} color="#2ecc71" />
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                    <View style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, backgroundColor: themeColors.inputBg, borderWidth: 1, borderColor: themeColors.border }}>
-                      <Text style={{ fontSize: 10, color: themeColors.textSecondary, fontStyle: 'italic' }}>
-                        Waiting for Rider...
-                      </Text>
-                    </View>
-                  )}
+                    <TouchableOpacity 
+                      style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(46,204,113,0.1)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#2ecc71' }}
+                      onPress={() => Linking.openURL(`tel:${order.customerPhone || '8527430152'}`)}
+                    >
+                      <Phone size={14} color="#2ecc71" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
 
@@ -744,6 +736,37 @@ export default function SellerDashboard() {
                   </Text>
                 </View>
               )}
+
+              {/* Rider Contact Row */}
+              <View style={{ borderTopWidth: 1, borderTopColor: themeColors.border, paddingTop: 10, marginTop: 10, marginHorizontal: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={{ fontSize: 11, fontWeight: 'bold', color: themeColors.text }}>Delivery Rider</Text>
+                {order.riderId ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 10, color: themeColors.textSecondary, marginRight: 8, maxWidth: 100 }} numberOfLines={1}>
+                      🏍️ {order.riderName || 'Rider'}
+                    </Text>
+                    <TouchableOpacity 
+                      style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,179,0,0.05)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: ZOMATO_RED + '50', marginRight: 6 }}
+                      onPress={() => router.push({ pathname: '/chat-customer', params: { orderId: order.id, customerName: order.riderName || 'Rider' } })}
+                    >
+                      <MessageSquare size={12} color={ZOMATO_RED} />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity 
+                      style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(46,204,113,0.05)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(46,204,113,0.3)' }}
+                      onPress={() => Linking.openURL(`tel:${order.riderPhone || ''}`)}
+                    >
+                      <Phone size={12} color="#2ecc71" />
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <View style={{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, backgroundColor: themeColors.inputBg, borderWidth: 1, borderColor: themeColors.border }}>
+                    <Text style={{ fontSize: 10, color: themeColors.textSecondary, fontStyle: 'italic' }}>
+                      Waiting for Rider...
+                    </Text>
+                  </View>
+                )}
+              </View>
 
               {/* Action and Price footer */}
               <View style={[styles.cardFooter, { borderTopColor: themeColors.border }]}>
