@@ -629,7 +629,7 @@ export default function RiderDashboard() {
                         <Text style={[styles.orderId, { color: themeColors.text }]}>{delivery.id}</Text>
                         <View style={[styles.statusBadge, { backgroundColor: isPickedUp ? 'rgba(46,204,113,0.1)' : 'rgba(255,204,0,0.1)' }]}>
                           <Text style={[styles.statusText, { color: isPickedUp ? '#2ecc71' : theme.colors.warning }]}>
-                            {delivery.status === 'preparing' ? 'SELLER PREPARING' : delivery.status.toUpperCase()}
+                            {['preparing', 'confirmed', 'placed'].includes(delivery.status) ? 'SELLER PREPARING' : delivery.status.toUpperCase()}
                           </Text>
                         </View>
                       </View>
@@ -746,12 +746,12 @@ export default function RiderDashboard() {
                       {/* Complete Buttons */}
                       <View style={styles.cardFooter}>
                         <TouchableOpacity 
-                          style={[styles.actionBtn, { flex: 1, backgroundColor: delivery.status === 'preparing' ? '#333' : theme.colors.primary }]}
-                          disabled={delivery.status === 'preparing'}
+                          style={[styles.actionBtn, { flex: 1, backgroundColor: ['preparing', 'confirmed', 'placed'].includes(delivery.status) ? '#333' : theme.colors.primary }]}
+                          disabled={['preparing', 'confirmed', 'placed'].includes(delivery.status)}
                           onPress={() => handleUpdateStatus(delivery.id, delivery.status)}
                         >
-                          <Text style={[styles.actionBtnText, { color: delivery.status === 'preparing' ? '#888' : '#000', textAlign: 'center' }]}>
-                            {delivery.status === 'preparing' 
+                          <Text style={[styles.actionBtnText, { color: ['preparing', 'confirmed', 'placed'].includes(delivery.status) ? '#888' : '#000', textAlign: 'center' }]}>
+                            {['preparing', 'confirmed', 'placed'].includes(delivery.status) 
                               ? 'Waiting for Vendor...' 
                               : delivery.status === 'ready' 
                                 ? '📸 Pick Up Order' 

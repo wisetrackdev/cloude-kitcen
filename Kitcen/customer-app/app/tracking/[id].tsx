@@ -266,7 +266,7 @@ export default function OrderTrackingScreen() {
             <View style={[styles.riderCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
               <View style={styles.riderMeta}>
                 <Image 
-                  source={{ uri: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80' }} 
+                  source={{ uri: activeOrder?.riderAvatar || 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=120&auto=format&fit=crop&q=80' }} 
                   style={styles.riderAvatar} 
                 />
                 <View>

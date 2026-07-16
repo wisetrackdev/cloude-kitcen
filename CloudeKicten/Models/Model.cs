@@ -369,6 +369,7 @@ namespace CloudeKicten.Models
         public string? RiderId { get; set; }
         public string? RiderName { get; set; }
         public string? RiderPhone { get; set; }
+        public string? RiderAvatar { get; set; }
         public string? CustomerPhone { get; set; }
         public string? DeliveryAddress { get; set; }
         public string? PickedUpAt { get; set; }

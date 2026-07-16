@@ -324,6 +324,7 @@ namespace CloudeKicten.Models.BusinessLayer
                 RiderId = dbOrder.RiderId,
                 RiderName = rider != null ? $"{rider.FirstName} {rider.LastName}".Trim() : "Vikram Singh",
                 RiderPhone = rider != null && !string.IsNullOrEmpty(rider.Phone) ? rider.Phone : "+91 9876543210",
+                RiderAvatar = rider?.Avatar,
                 CustomerPhone = customer != null && !string.IsNullOrEmpty(customer.Phone) ? customer.Phone : "+91 9876543210",
                 DeliveryAddress = dbOrder.DeliveryAddress,
                 PickedUpAt = dbOrder.PickedUpAt?.ToString("yyyy-MM-dd HH:mm:ss"),

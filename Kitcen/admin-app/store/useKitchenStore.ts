@@ -70,10 +70,11 @@ export interface OrderRecord {
   tax: number;
   discount: number;
   total: number;
-  status: 'placed' | 'preparing' | 'ready' | 'on_the_way' | 'delivered' | 'cancelled';
+  status: 'placed' | 'preparing' | 'ready' | 'on_the_way' | 'delivered' | 'cancelled' | 'confirmed';
   date: string;
   paymentMethod: string;
   riderId?: string | null;
+  riderAvatar?: string | null;
   customerPhone?: string | null;
   deliveryAddress?: string | null;
   kitchenAddress?: string | null;
@@ -251,6 +252,7 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
           date: o.date,
           paymentMethod: o.paymentMethod,
           riderId: o.riderId || null,
+          riderAvatar: o.riderAvatar || null,
           customerPhone: o.customerPhone || null,
           deliveryAddress: o.deliveryAddress || null,
           kitchenAddress: o.kitchenAddress || null,
@@ -487,7 +489,7 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
       const res = await fetch(`${API_BASE_URL}/api/orders/${orderId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status })
+        body: JSON.stringify({ status, Status: status })
       });
       const json = await res.json();
       if (json.success) {

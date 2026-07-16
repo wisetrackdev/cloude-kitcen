@@ -69,7 +69,7 @@ export interface OrderRecord {
   tax: number;
   discount: number;
   total: number;
-  status: 'placed' | 'preparing' | 'ready' | 'on_the_way' | 'delivered' | 'cancelled';
+  status: 'placed' | 'preparing' | 'ready' | 'on_the_way' | 'delivered' | 'cancelled' | 'confirmed';
   date: string;
   paymentMethod: string;
   deliveryAddress?: string | null;
@@ -474,7 +474,7 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
       const res = await fetch(`${API_BASE_URL}/api/orders/${orderId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status })
+        body: JSON.stringify({ status, Status: status })
       });
       
       const contentType = res.headers.get('content-type');

@@ -704,8 +704,8 @@ namespace CloudeKicten
             SET status = @Status,
                 picked_up_at = CASE WHEN @Status = 'on_the_way' THEN CURRENT_TIMESTAMP ELSE picked_up_at END,
                 delivered_at = CASE WHEN @Status = 'delivered' THEN CURRENT_TIMESTAMP ELSE delivered_at END,
-                pickup_photo_url = CASE WHEN @PickupPhotoUrl IS NOT NULL THEN @PickupPhotoUrl ELSE pickup_photo_url END,
-                delivery_photo_url = CASE WHEN @DeliveryPhotoUrl IS NOT NULL THEN @DeliveryPhotoUrl ELSE delivery_photo_url END
+                pickup_photo_url = COALESCE(NULLIF(CAST(@PickupPhotoUrl AS VARCHAR), ''), pickup_photo_url),
+                delivery_photo_url = COALESCE(NULLIF(CAST(@DeliveryPhotoUrl AS VARCHAR), ''), delivery_photo_url)
             WHERE id = @Id;
         ";
 
