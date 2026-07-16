@@ -30,6 +30,7 @@ interface Rider {
   firstName?: string;
   lastName?: string;
   email?: string;
+  isApproved?: boolean;
 }
 
 export default function AdminRidersScreen() {
@@ -38,6 +39,7 @@ export default function AdminRidersScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRider, setSelectedRider] = useState<Rider | null>(null);
+  const [isSettingApproval, setIsSettingApproval] = useState(false);
 
   const isDarkMode = useAuthStore(state => state.isDarkMode);
 
@@ -50,6 +52,27 @@ export default function AdminRidersScreen() {
     inputBg: isDarkMode ? '#0F0F0F' : '#F0F2F4',
     primary: '#FFB300', // Gold/Yellow primary
     success: '#34C759',
+  };
+
+  const handleApproveRider = async (riderId: string, approveStatus: boolean) => {
+    setIsSettingApproval(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/riders/${riderId}/approve?adminUserId=${useAuthStore.getState().user?.id || 'usr-admin-simulated'}&isApproved=${approveStatus}`, {
+        method: 'POST'
+      });
+      if (res.ok) {
+        Alert.alert('Success', approveStatus ? 'Rider Approved' : 'Rider Disapproved');
+        fetchRiderData();
+        setSelectedRider(prev => prev ? { ...prev, isApproved: approveStatus } : null);
+      } else {
+        Alert.alert('Error', 'Failed to update rider approval status');
+      }
+    } catch (err) {
+      console.warn(err);
+      Alert.alert('Error', 'Network error updating approval status');
+    } finally {
+      setIsSettingApproval(false);
+    }
   };
 
   const fetchRiderData = async () => {
@@ -104,8 +127,8 @@ export default function AdminRidersScreen() {
       return orderDate >= oneWeekAgo;
     });
 
-    const weekly = weeklyOrders.reduce((sum, o) => sum + Number(o.deliveryCharge || 40), 0);
-    const total = riderCompleted.reduce((sum, o) => sum + Number(o.deliveryCharge || 40), 0);
+    const weekly = weeklyOrders.reduce((sum, o) => sum + Number(o.deliveryCharge ?? 0), 0);
+    const total = riderCompleted.reduce((sum, o) => sum + Number(o.deliveryCharge ?? 0), 0);
     const historic = total - weekly;
 
     return {
@@ -126,12 +149,27 @@ export default function AdminRidersScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: '#FFCC00' }]}>
-        <Bike size={28} color={'#FFF'} />
-        <View style={styles.headerMeta}>
-          <Text style={[styles.roleText, { color: 'rgba(255, 255, 255, 0.85)' }]}>Super Admin Panel</Text>
-          <Text style={[styles.kitchenName, { color: '#FFF' }]}>Rider Directory & Payouts</Text>
+      {/* Sticky Global Header */}
+      <View style={{
+        backgroundColor: '#FFCC00',
+        paddingTop: 50,
+        paddingHorizontal: 20,
+        paddingBottom: 15,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        borderBottomLeftRadius: 16,
+        borderBottomRightRadius: 16,
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+        zIndex: 100
+      }}>
+        <View>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#000' }}>Cloud Kitchen</Text>
+          <Text style={{ fontSize: 9, fontWeight: 'bold', color: 'rgba(0, 0, 0, 0.6)', textTransform: 'uppercase' }}>Superadmin Riders & Payouts</Text>
         </View>
       </View>
 
@@ -191,8 +229,15 @@ export default function AdminRidersScreen() {
               </View>
 
               <View style={styles.cardFooter}>
-                <Text style={[styles.completedCountText, { color: themeColors.textSecondary }]}>Jobs Done: <Text style={{ color: themeColors.text, fontWeight: 'bold' }}>{completedCount}</Text></Text>
-                <Text style={[styles.earningsText, { color: themeColors.textSecondary }]}>7-Day Due: <Text style={{ color: themeColors.primary, fontWeight: 'bold' }}>₹{earnings.weekly}</Text></Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.completedCountText, { color: themeColors.textSecondary }]}>Jobs Done: <Text style={{ color: themeColors.text, fontWeight: 'bold' }}>{completedCount}</Text></Text>
+                  <Text style={[styles.earningsText, { color: themeColors.textSecondary }]}>7-Day Due: <Text style={{ color: themeColors.primary, fontWeight: 'bold' }}>₹{earnings.weekly}</Text></Text>
+                </View>
+                <View style={{ marginRight: 10 }}>
+                  <Text style={{ fontSize: 9, fontWeight: 'bold', color: rider.isApproved ? '#2ecc71' : '#FF9500' }}>
+                    {rider.isApproved ? '✓ APPROVED' : '⌛ PENDING'}
+                  </Text>
+                </View>
                 <ChevronRight size={14} color="#888" />
               </View>
             </TouchableOpacity>
@@ -245,6 +290,33 @@ export default function AdminRidersScreen() {
                   </View>
                 </View>
 
+                {/* Rider approval toggle actions */}
+                <Text style={[styles.modalSectionTitle, { color: themeColors.primary }]}>Rider Status & Approvals</Text>
+                <View style={[styles.detailsGroup, { backgroundColor: themeColors.background, borderColor: themeColors.border, padding: 12, marginBottom: 20 }]}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Text style={{ fontSize: 13, color: themeColors.text, fontWeight: 'bold' }}>
+                      Status: {selectedRider.isApproved ? 'Approved & Active' : 'Blocked / Pending Approval'}
+                    </Text>
+                    {isSettingApproval ? (
+                      <ActivityIndicator size="small" color={themeColors.primary} />
+                    ) : (
+                      <TouchableOpacity
+                        style={{
+                          backgroundColor: selectedRider.isApproved ? '#FF3B30' : '#2ecc71',
+                          paddingVertical: 6,
+                          paddingHorizontal: 12,
+                          borderRadius: 6
+                        }}
+                        onPress={() => handleApproveRider(selectedRider.id, !selectedRider.isApproved)}
+                      >
+                        <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 11 }}>
+                          {selectedRider.isApproved ? 'Disapprove' : 'Approve Rider'}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+
                 {/* Bank Account Section */}
                 <Text style={[styles.modalSectionTitle, { color: themeColors.primary }]}>Bank & Document Details</Text>
                 <View style={[styles.detailsGroup, { backgroundColor: themeColors.background, borderColor: themeColors.border }]}>
@@ -291,7 +363,7 @@ export default function AdminRidersScreen() {
                       <Text style={[styles.jobText, { color: themeColors.textSecondary }]}>To: {order.deliveryAddress || 'Customer Location'}</Text>
                     </View>
                     <View style={[styles.jobFooter, { borderTopColor: themeColors.border }]}>
-                      <Text style={styles.jobCharge}>Payout: ₹{order.deliveryCharge || 40}</Text>
+                      <Text style={styles.jobCharge}>Payout: ₹{order.deliveryCharge ?? 0}</Text>
                       <Text style={styles.jobDelivered}>✓ DELIVERED</Text>
                     </View>
                   </View>

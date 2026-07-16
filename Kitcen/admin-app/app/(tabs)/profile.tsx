@@ -385,12 +385,44 @@ export default function AdminProfile() {
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: themeColors.background }]} showsVerticalScrollIndicator={false}>
-      {/* Profile info */}
-      <TouchableOpacity 
-        style={[styles.profileHeader, { backgroundColor: '#FFCC00' }]}
-        onPress={() => setShowProfileModal(true)}
-      >
+    <View style={[styles.container, { backgroundColor: themeColors.background }]}>
+      {/* Sticky Global Header */}
+      <View style={{
+        backgroundColor: '#FFCC00',
+        paddingTop: 50,
+        paddingHorizontal: 20,
+        paddingBottom: 15,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        borderBottomLeftRadius: 16,
+        borderBottomRightRadius: 16,
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+        zIndex: 100
+      }}>
+        <View>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#000' }}>Cloud Kitchen</Text>
+          <Text style={{ fontSize: 9, fontWeight: 'bold', color: 'rgba(0, 0, 0, 0.6)', textTransform: 'uppercase' }}>Superadmin System Settings</Text>
+        </View>
+        
+        <TouchableOpacity 
+          style={{ padding: 6, backgroundColor: 'rgba(0,0,0,0.06)', borderRadius: 20 }}
+          onPress={() => setTheme(!isDarkMode)}
+        >
+          {isDarkMode ? <Sun size={18} color="#000" /> : <Moon size={18} color="#000" />}
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+        {/* Profile info */}
+        <TouchableOpacity 
+          style={[styles.profileHeader, { backgroundColor: '#FFCC00', marginTop: 10 }]}
+          onPress={() => setShowProfileModal(true)}
+        >
         <View style={{ position: 'relative' }}>
           <Image 
             source={{ uri: user?.avatar || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80' }} 
@@ -453,20 +485,7 @@ export default function AdminProfile() {
 
       {/* Theme Settings switcher & Management */}
       <View style={[styles.optionGroup, { backgroundColor: themeColors.card, borderColor: themeColors.border, padding: 16, borderRadius: 18, marginTop: 16 }]}>
-        <Text style={[styles.groupHeader, { color: themeColors.text }]}>System Management & Theme</Text>
-
-        {/* Theme switch button */}
-        <TouchableOpacity 
-          style={[styles.themeToggleBtn, { borderColor: themeColors.border, marginBottom: 12 }]}
-          onPress={() => setTheme(!isDarkMode)}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            {isDarkMode ? <Sun size={18} color="#FFCC00" style={{ marginRight: 8 }} /> : <Moon size={18} color="#000" style={{ marginRight: 8 }} />}
-            <Text style={{ color: themeColors.text, fontWeight: 'bold', fontSize: 13 }}>
-              {isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            </Text>
-          </View>
-        </TouchableOpacity>
+        <Text style={[styles.groupHeader, { color: themeColors.text }]}>System Management</Text>
 
         <TouchableOpacity style={styles.optionRow} onPress={() => handleAction('Commission Rates')}>
           <View style={styles.optionLeft}>
@@ -478,14 +497,7 @@ export default function AdminProfile() {
         <TouchableOpacity style={styles.optionRow} onPress={() => handleAction('Commission Records')}>
           <View style={styles.optionLeft}>
             <Clock size={16} color={themeColors.textSecondary} />
-            <Text style={[styles.optionLabel, { color: themeColors.text }]}>Monthly Payout Approvals</Text>
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.optionRow} onPress={() => handleAction('Rider Management')}>
-          <View style={styles.optionLeft}>
-            <Users size={16} color={themeColors.textSecondary} />
-            <Text style={[styles.optionLabel, { color: themeColors.text }]}>Verify Delivery Riders</Text>
+            <Text style={[styles.optionLabel, { color: themeColors.text }]}>View Commission Payout Logs</Text>
           </View>
         </TouchableOpacity>
 
@@ -493,50 +505,6 @@ export default function AdminProfile() {
           <View style={styles.optionLeft}>
             <ShieldCheck size={16} color={themeColors.textSecondary} />
             <Text style={[styles.optionLabel, { color: themeColors.text }]}>Platform System Security Audit</Text>
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.optionRow} 
-          onPress={() => {
-            Alert.alert(
-              'Reset Database',
-              'Are you sure you want to TRUNCATE and RESET all database tables? All orders, products, shops, and user profiles (except Superadmin) will be deleted.',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                { 
-                  text: 'Reset Database', 
-                  style: 'destructive',
-                  onPress: async () => {
-                    try {
-                      setIsLoading(true);
-                      const res = await fetch(`${API_BASE_URL}/api/admin/truncate?adminUserId=${user?.id || 'usr-admin-simulated'}`, {
-                        method: 'POST'
-                      });
-                      setIsLoading(false);
-                      if (res.ok) {
-                        const json = await res.json();
-                        if (json.success) {
-                          Alert.alert('Database Reset', 'All tables have been truncated and default categories re-seeded successfully!');
-                        } else {
-                          Alert.alert('Error', json.message || 'Failed to truncate database');
-                        }
-                      } else {
-                        Alert.alert('Error', 'Failed to connect to server to reset database');
-                      }
-                    } catch (e: any) {
-                      setIsLoading(false);
-                      Alert.alert('Error', 'An error occurred: ' + e.message);
-                    }
-                  }
-                }
-              ]
-            );
-          }}
-        >
-          <View style={styles.optionLeft}>
-            <Trash2 size={16} color="#FF3B30" />
-            <Text style={[styles.optionLabel, { color: '#FF3B30', fontWeight: 'bold' }]}>Truncate All Tables (Reset DB)</Text>
           </View>
         </TouchableOpacity>
       </View>
@@ -547,6 +515,7 @@ export default function AdminProfile() {
         <Text style={styles.logoutBtnText}>Logout System</Text>
       </TouchableOpacity>
       <View style={{ height: 40 }} />
+      </ScrollView>
 
       {/* EDIT PROFILE DETAILS MODAL */}
       <Modal
@@ -699,7 +668,7 @@ export default function AdminProfile() {
           </View>
         </View>
       </Modal>
-    </ScrollView>
+    </View>
   );
 }
 

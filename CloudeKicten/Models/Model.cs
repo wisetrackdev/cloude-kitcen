@@ -79,6 +79,7 @@ namespace CloudeKicten.Models
         public bool IsVeg { get; set; }
         public string? Image { get; set; }
         public bool Customizable { get; set; }
+        public string? AvailableDays { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 
@@ -159,6 +160,7 @@ namespace CloudeKicten.Models
         public string? IfscCode { get; set; }
         public decimal Rating { get; set; } = 5.0m;
         public int RatingCount { get; set; } = 0;
+        public bool IsApproved { get; set; } = false;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         // User Profile extensions
@@ -314,6 +316,7 @@ namespace CloudeKicten.Models
         public bool IsVeg { get; set; }
         public string? Image { get; set; }
         public bool Customizable { get; set; }
+        public string? AvailableDays { get; set; }
     }
 
     public class ProductUpdateDto
@@ -325,6 +328,7 @@ namespace CloudeKicten.Models
         public bool IsVeg { get; set; }
         public string? Image { get; set; }
         public bool Customizable { get; set; }
+        public string? AvailableDays { get; set; }
     }
 
     public class OrderItemDto

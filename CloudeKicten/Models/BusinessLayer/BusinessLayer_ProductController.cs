@@ -66,7 +66,8 @@ namespace CloudeKicten.Models.BusinessLayer
                 Category = dto.Category,
                 IsVeg = dto.IsVeg,
                 Image = dto.Image ?? "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&auto=format&fit=crop&q=80",
-                Customizable = dto.Customizable
+                Customizable = dto.Customizable,
+                AvailableDays = dto.AvailableDays ?? "Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday"
             };
 
             await _databaseLayer.InsertProductAsync(product);
@@ -85,6 +86,7 @@ namespace CloudeKicten.Models.BusinessLayer
             product.IsVeg = dto.IsVeg;
             product.Image = dto.Image ?? product.Image;
             product.Customizable = dto.Customizable;
+            product.AvailableDays = dto.AvailableDays ?? product.AvailableDays;
 
             await _databaseLayer.UpdateProductAsync(id, product);
             return ApiResponse<ProductDb>.Ok(product, "Product updated successfully.");

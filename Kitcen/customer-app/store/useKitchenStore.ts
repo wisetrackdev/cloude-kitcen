@@ -12,6 +12,7 @@ export interface ProductItem {
   image: string;
   customizable?: boolean;
   kitchenId?: string;
+  availableDays?: string;
   kitchenName?: string;
 }
 
@@ -256,7 +257,8 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
           category: p.category,
           isVeg: p.isVeg,
           image: p.image,
-          customizable: p.customizable
+          customizable: p.customizable,
+          availableDays: p.availableDays
         }));
         set((state) => ({
           products: {
@@ -290,7 +292,8 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
           image: p.imageUrl || p.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=150',
           customizable: p.customizable,
           kitchenId: p.kitchenId,
-          kitchenName: p.kitchenName || 'Kitchen Partner'
+          kitchenName: p.kitchenName || 'Kitchen Partner',
+          availableDays: p.availableDays
         }));
         set({ allProducts: mappedProducts, isLoading: false });
       } else {

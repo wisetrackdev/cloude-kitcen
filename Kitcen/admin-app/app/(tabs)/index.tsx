@@ -59,6 +59,10 @@ export default function AdminDashboard() {
   const deleteCategory = useKitchenStore(state => state.deleteCategory);
 
   const [activeSubTab, setActiveSubTab] = useState<SubTab>('analytics');
+  const [banners, setBanners] = useState<any[]>([]);
+  const [selectedRoleDetail, setSelectedRoleDetail] = useState<'none' | 'customer' | 'vendor' | 'rider' | 'all'>('none');
+  const isDarkMode = useAuthStore(state => state.isDarkMode);
+  const setTheme = useAuthStore(state => state.setTheme);
   const [selectedKitchen, setSelectedKitchen] = useState<any>(null);
   const [selectedSellerForStats, setSelectedSellerForStats] = useState<any>(null);
 
@@ -79,7 +83,6 @@ export default function AdminDashboard() {
 
   // Hamburger Drawer & Live Banner Manager States
   const [showDrawer, setShowDrawer] = useState(false);
-  const [banners, setBanners] = useState<any[]>([]);
   const [bannerImageUrl, setBannerImageUrl] = useState('');
   const [bannerLinkUrl, setBannerLinkUrl] = useState('');
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
@@ -454,50 +457,72 @@ export default function AdminDashboard() {
   return (
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
       
-      {/* 1. Yellow/Gold Header block */}
-      <View style={styles.goldHeader}>
-        <View style={styles.headerTopRow}>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <TouchableOpacity onPress={() => setShowDrawer(true)} style={{ marginRight: 12 }}>
-              <Menu size={24} color="#FFF" />
-            </TouchableOpacity>
-            <Users size={22} color="#FFF" />
-            <View style={{ marginLeft: 10 }}>
-              <Text style={styles.roleText}>Super Admin Panel</Text>
-              <Text style={styles.titleText}>Global Control</Text>
-            </View>
+      {/* Sticky Top Header */}
+      <View style={{
+        backgroundColor: '#FFCC00',
+        paddingTop: 50,
+        paddingHorizontal: 20,
+        paddingBottom: 15,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        borderBottomLeftRadius: 16,
+        borderBottomRightRadius: 16,
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+        zIndex: 100
+      }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <TouchableOpacity onPress={() => setShowDrawer(true)} style={{ marginRight: 12 }}>
+            <Menu size={24} color="#000" />
+          </TouchableOpacity>
+          <View>
+            <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#000' }}>Cloud Kitchen</Text>
+            <Text style={{ fontSize: 9, fontWeight: 'bold', color: 'rgba(0, 0, 0, 0.6)', textTransform: 'uppercase' }}>Super Admin Panel</Text>
           </View>
-
+        </View>
+        
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <TouchableOpacity 
-            style={styles.adminSupportBtn}
+            style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.06)', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 12 }}
             onPress={() => setShowSupportModal(true)}
           >
-            <MessageSquare size={16} color="#FFF" style={{ marginRight: 6 }} />
-            <Text style={styles.adminSupportBtnText}>Support Chats</Text>
+            <MessageSquare size={14} color="#000" style={{ marginRight: 4 }} />
+            <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#000' }}>Support</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={{ padding: 6, backgroundColor: 'rgba(0,0,0,0.06)', borderRadius: 20 }}
+            onPress={() => setTheme(!isDarkMode)}
+          >
+            {isDarkMode ? <Sun size={18} color="#000" /> : <Moon size={18} color="#000" />}
           </TouchableOpacity>
         </View>
+      </View>
 
-        {/* Top Tab Navigator Buttons */}
-        <View style={styles.subTabBar}>
-          <TouchableOpacity 
-            style={[styles.subTabItem, activeSubTab === 'analytics' && styles.subTabActive]}
-            onPress={() => setActiveSubTab('analytics')}
-          >
-            <Text style={[styles.subTabText, activeSubTab === 'analytics' && styles.subTabTextActive]}>Dashboard</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.subTabItem, activeSubTab === 'categories' && styles.subTabActive]}
-            onPress={() => setActiveSubTab('categories')}
-          >
-            <Text style={[styles.subTabText, activeSubTab === 'categories' && styles.subTabTextActive]}>Categories</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.subTabItem, activeSubTab === 'sellers' && styles.subTabActive]}
-            onPress={() => setActiveSubTab('sellers')}
-          >
-            <Text style={[styles.subTabText, activeSubTab === 'sellers' && styles.subTabTextActive]}>Sellers Stats</Text>
-          </TouchableOpacity>
-        </View>
+      {/* Sub Tab selection row right below header */}
+      <View style={{ flexDirection: 'row', backgroundColor: themeColors.card, borderBottomColor: themeColors.border, borderBottomWidth: 1, paddingVertical: 10, paddingHorizontal: 16, justifyContent: 'space-between' }}>
+        <TouchableOpacity 
+          style={[{ paddingVertical: 6, paddingHorizontal: 12, borderRadius: 16 }, activeSubTab === 'analytics' ? { backgroundColor: '#FFCC00' } : {}]}
+          onPress={() => setActiveSubTab('analytics')}
+        >
+          <Text style={{ fontSize: 12, fontWeight: 'bold', color: activeSubTab === 'analytics' ? '#000' : themeColors.textSecondary }}>Dashboard</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[{ paddingVertical: 6, paddingHorizontal: 12, borderRadius: 16 }, activeSubTab === 'categories' ? { backgroundColor: '#FFCC00' } : {}]}
+          onPress={() => setActiveSubTab('categories')}
+        >
+          <Text style={{ fontSize: 12, fontWeight: 'bold', color: activeSubTab === 'categories' ? '#000' : themeColors.textSecondary }}>Categories</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[{ paddingVertical: 6, paddingHorizontal: 12, borderRadius: 16 }, activeSubTab === 'sellers' ? { backgroundColor: '#FFCC00' } : {}]}
+          onPress={() => setActiveSubTab('sellers')}
+        >
+          <Text style={{ fontSize: 12, fontWeight: 'bold', color: activeSubTab === 'sellers' ? '#000' : themeColors.textSecondary }}>Sellers Stats</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
@@ -527,26 +552,38 @@ export default function AdminDashboard() {
             {/* User Base Stats Breakdown Grid */}
             <Text style={{ fontSize: 11, fontWeight: 'bold', color: themeColors.textSecondary, marginHorizontal: 20, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>User Base Stats</Text>
             <View style={styles.userGrid}>
-              <View style={[styles.userCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+              <TouchableOpacity 
+                style={[styles.userCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}
+                onPress={() => setSelectedRoleDetail('customer')}
+              >
                 <Users size={16} color="#FF9500" />
                 <Text style={[styles.kpiValue, { color: themeColors.text }]}>{systemUsers.filter(u => u.role === 'customer').length}</Text>
                 <Text style={[styles.kpiLabel, { color: themeColors.textSecondary }]}>Customers</Text>
-              </View>
-              <View style={[styles.userCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.userCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}
+                onPress={() => setSelectedRoleDetail('vendor')}
+              >
                 <Store size={16} color="#34C759" />
                 <Text style={[styles.kpiValue, { color: themeColors.text }]}>{systemUsers.filter(u => u.role === 'vendor' || u.role === 'seller').length}</Text>
                 <Text style={[styles.kpiLabel, { color: themeColors.textSecondary }]}>Vendors / Sellers</Text>
-              </View>
-              <View style={[styles.userCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.userCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}
+                onPress={() => setSelectedRoleDetail('rider')}
+              >
                 <Bike size={16} color="#007AFF" />
                 <Text style={[styles.kpiValue, { color: themeColors.text }]}>{systemUsers.filter(u => u.role === 'rider').length}</Text>
                 <Text style={[styles.kpiLabel, { color: themeColors.textSecondary }]}>Riders</Text>
-              </View>
-              <View style={[styles.userCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.userCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}
+                onPress={() => setSelectedRoleDetail('all')}
+              >
                 <ShieldCheck size={16} color="#5856D6" />
                 <Text style={[styles.kpiValue, { color: themeColors.text }]}>{systemUsers.length}</Text>
                 <Text style={[styles.kpiLabel, { color: themeColors.textSecondary }]}>Total Registered</Text>
-              </View>
+              </TouchableOpacity>
             </View>
 
             {/* Listed Kitchens approving panel */}
@@ -614,52 +651,64 @@ export default function AdminDashboard() {
               ))}
             </View>
 
-            {/* Registered Platform Users Log */}
-            <View style={styles.sellerSection}>
-              <Text style={[styles.sellerSectionTitle, { color: themeColors.text }]}>Registered Platform Users ({systemUsers.length})</Text>
-              {systemUsers.map((u) => (
-                <View key={u.id} style={[styles.kitchenAdminCard, { backgroundColor: themeColors.card, borderColor: themeColors.border, padding: 12 }]}>
-                  <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
-                    <Image 
-                      source={{ uri: u.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80' }} 
-                      style={{ width: 36, height: 36, borderRadius: 18, marginRight: 12, backgroundColor: '#EEE' }} 
-                    />
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.kitchenAdminName, { color: themeColors.text, fontSize: 13 }]}>{u.firstName} {u.lastName}</Text>
-                      <Text style={{ fontSize: 10, color: themeColors.textSecondary }}>{u.email} • Role: {u.role.toUpperCase()}</Text>
-                    </View>
-                  </View>
-                  <Text style={{ fontSize: 10, color: themeColors.textSecondary }}>Joined: {new Date(u.createdAt).toLocaleDateString()}</Text>
-                </View>
-              ))}
-            </View>
-
-            {/* Global Transactions Log */}
-            <View style={styles.sellerSection}>
-              <Text style={[styles.sellerSectionTitle, { color: themeColors.text }]}>Global Transactions Log</Text>
-              {orders.map((order) => (
-                <View key={order.id} style={[styles.logCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
-                  <View style={styles.logHeader}>
-                    <Text style={[styles.logId, { color: themeColors.text }]}>{order.id}</Text>
-                    <Text style={[styles.logDate, { color: themeColors.textSecondary }]}>{order.date}</Text>
-                  </View>
-                  <Text style={[styles.logSummary, { color: themeColors.textSecondary }]}>
-                    Customer <Text style={{ color: themeColors.text }}>{order.customerName}</Text> paid <Text style={{ color: themeColors.text }}>₹{order.total}</Text> to <Text style={{ color: themeColors.text }}>{order.kitchenName}</Text>
-                  </Text>
-                  <View style={[styles.logStatus, { 
-                    backgroundColor: order.status === 'delivered' ? 'rgba(46,204,113,0.1)' : 'rgba(255,179,0,0.1)',
-                  }]}>
-                    <Text style={{ 
-                      fontSize: 9, 
-                      fontWeight: 'bold', 
-                      color: order.status === 'delivered' ? '#2ecc71' : themeColors.primary 
-                    }}>
-                      {order.status.toUpperCase()}
+            {/* User detail modal overlay */}
+            {selectedRoleDetail !== 'none' && (
+              <Modal
+                animationType="slide"
+                transparent={false}
+                visible={selectedRoleDetail !== 'none'}
+                onRequestClose={() => setSelectedRoleDetail('none')}
+              >
+                <View style={{ flex: 1, backgroundColor: themeColors.background }}>
+                  {/* Header */}
+                  <View style={{ backgroundColor: '#FFCC00', paddingTop: 50, paddingHorizontal: 20, paddingBottom: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <TouchableOpacity onPress={() => setSelectedRoleDetail('none')} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <ArrowLeft size={20} color="#000" style={{ marginRight: 8 }} />
+                      <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#000' }}>
+                        {selectedRoleDetail === 'customer' ? 'Customers Directory' :
+                         selectedRoleDetail === 'vendor' ? 'Vendors & Sellers' :
+                         selectedRoleDetail === 'rider' ? 'Delivery Riders' : 'Total Registered Users'}
+                      </Text>
+                    </TouchableOpacity>
+                    <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#000' }}>
+                      ({
+                        selectedRoleDetail === 'all' 
+                          ? systemUsers.length 
+                          : systemUsers.filter(u => u.role === selectedRoleDetail || (selectedRoleDetail === 'vendor' && u.role === 'seller')).length
+                      })
                     </Text>
                   </View>
+                  
+                  {/* List */}
+                  <ScrollView contentContainerStyle={{ padding: 16 }}>
+                    {(selectedRoleDetail === 'all' 
+                      ? systemUsers 
+                      : systemUsers.filter(u => u.role === selectedRoleDetail || (selectedRoleDetail === 'vendor' && (u.role === 'seller' || u.role === 'vendor')))
+                    ).map((u) => (
+                      <View key={u.id} style={{ backgroundColor: themeColors.card, borderColor: themeColors.border, borderWidth: 1, borderRadius: 12, padding: 14, marginBottom: 12, flexDirection: 'row', alignItems: 'center' }}>
+                        <Image
+                          source={{ uri: u.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80' }}
+                          style={{ width: 44, height: 44, borderRadius: 22, marginRight: 12, backgroundColor: '#FFF' }}
+                        />
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 14, fontWeight: 'bold', color: themeColors.text }}>{u.firstName} {u.lastName}</Text>
+                          <Text style={{ fontSize: 11, color: themeColors.textSecondary, marginTop: 2 }}>Email: {u.email}</Text>
+                          <Text style={{ fontSize: 11, color: themeColors.textSecondary, marginTop: 2 }}>Phone: {u.phoneNumber || 'N/A'}</Text>
+                          <Text style={{ fontSize: 11, color: themeColors.textSecondary, marginTop: 2 }}>Gender: {u.gender || 'N/A'}</Text>
+                          <Text style={{ fontSize: 10, color: themeColors.textSecondary, marginTop: 4 }}>Registered: {new Date(u.createdAt).toLocaleDateString()}</Text>
+                        </View>
+                        <View style={{ backgroundColor: u.role === 'admin' ? '#FF3B30' : u.role === 'rider' ? '#007AFF' : u.role === 'vendor' || u.role === 'seller' ? '#34C759' : '#FF9500', paddingVertical: 4, paddingHorizontal: 8, borderRadius: 10 }}>
+                          <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#FFF', textTransform: 'uppercase' }}>{u.role}</Text>
+                        </View>
+                      </View>
+                    ))}
+                    {systemUsers.filter(u => selectedRoleDetail === 'all' || u.role === selectedRoleDetail || (selectedRoleDetail === 'vendor' && (u.role === 'seller' || u.role === 'vendor'))).length === 0 && (
+                      <Text style={{ color: themeColors.textSecondary, fontSize: 12, textAlign: 'center', marginVertical: 40 }}>No users registered under this role.</Text>
+                    )}
+                  </ScrollView>
                 </View>
-              ))}
-            </View>
+              </Modal>
+            )}
           </View>
         )}
 

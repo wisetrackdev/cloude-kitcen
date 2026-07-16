@@ -90,6 +90,7 @@ namespace CloudeKicten.Models.DatabaseLayer
             cmd.Parameters.AddWithValue("@IsVeg", product.IsVeg);
             cmd.Parameters.AddWithValue("@Image", (object?)product.Image ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@Customizable", product.Customizable);
+            cmd.Parameters.AddWithValue("@AvailableDays", (object?)product.AvailableDays ?? "Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday");
 
             var result = await cmd.ExecuteNonQueryAsync();
             return result > 0;
@@ -108,6 +109,7 @@ namespace CloudeKicten.Models.DatabaseLayer
             cmd.Parameters.AddWithValue("@IsVeg", product.IsVeg);
             cmd.Parameters.AddWithValue("@Image", (object?)product.Image ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@Customizable", product.Customizable);
+            cmd.Parameters.AddWithValue("@AvailableDays", (object?)product.AvailableDays ?? "Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday");
 
             var result = await cmd.ExecuteNonQueryAsync();
             return result > 0;
@@ -137,6 +139,7 @@ namespace CloudeKicten.Models.DatabaseLayer
                 IsVeg = r.GetBoolean(r.GetOrdinal("is_veg")),
                 Image = r.IsDBNull(r.GetOrdinal("image_url")) ? null : r.GetString(r.GetOrdinal("image_url")),
                 Customizable = r.GetBoolean(r.GetOrdinal("customizable")),
+                AvailableDays = r.IsDBNull(r.GetOrdinal("available_days")) ? "Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday" : r.GetString(r.GetOrdinal("available_days")),
                 CreatedAt = r.GetDateTime(r.GetOrdinal("created_at"))
             };
         }

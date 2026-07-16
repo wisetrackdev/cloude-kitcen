@@ -229,6 +229,45 @@ export default function RiderProfile() {
   const riderCompletedOrders = orders.filter(o => o.riderId === user.id && o.status === 'delivered');
   const dynamicEarnings = riderCompletedOrders.reduce((sum, o) => sum + Number(o.deliveryCharge ?? 0), 0);
 
+  const getWeeklyBreakdown = () => {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const result: { [key: string]: { count: number; earnings: number } } = {};
+    
+    const today = new Date();
+    for (let i = 0; i < 7; i++) {
+      const d = new Date();
+      d.setDate(today.getDate() - i);
+      const dayName = days[d.getDay()];
+      const dateString = d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+      const key = `${dayName} (${dateString})`;
+      result[key] = { count: 0, earnings: 0 };
+    }
+
+    riderCompletedOrders.forEach(o => {
+      const orderDate = new Date(o.createdAt || o.date || Date.now());
+      for (let i = 0; i < 7; i++) {
+        const d = new Date();
+        d.setDate(today.getDate() - i);
+        if (orderDate.toDateString() === d.toDateString()) {
+          const dayName = days[d.getDay()];
+          const dateString = d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+          const key = `${dayName} (${dateString})`;
+          result[key].count += 1;
+          result[key].earnings += Number(o.deliveryCharge ?? 0);
+        }
+      }
+    });
+
+    return Object.keys(result).map(key => ({
+      day: key,
+      count: result[key].count,
+      earnings: result[key].earnings
+    }));
+  };
+
+  const weeklyBreakdown = getWeeklyBreakdown();
+  const totalWeeklyEarnings = weeklyBreakdown.reduce((sum, item) => sum + item.earnings, 0);
+
   const renderHeader = (title: string) => (
     <View style={[styles.tabHeaderFixed, { backgroundColor: '#FFCC00', borderBottomColor: '#E2B200' }]}>
       <TouchableOpacity onPress={() => setActiveTab('main')} style={[styles.backBtn, { backgroundColor: 'rgba(0,0,0,0.1)' }]}>
@@ -335,6 +374,19 @@ export default function RiderProfile() {
               <ChevronRight size={16} color="#555" />
             </TouchableOpacity>
 
+            <TouchableOpacity style={[styles.zomatoRow, { backgroundColor: themeColors.card, borderColor: themeColors.border }]} onPress={() => setActiveTab('weekly_metrics')}>
+              <View style={styles.rowLeft}>
+                <View style={[styles.iconBg, { backgroundColor: 'rgba(255,204,0,0.1)' }]}>
+                  <Calendar size={18} color="#FFCC00" />
+                </View>
+                <View>
+                  <Text style={[styles.rowTitle, { color: themeColors.text }]}>Weekly Work Metrics (7 Days)</Text>
+                  <Text style={styles.rowDesc}>View day-by-day jobs and earnings</Text>
+                </View>
+              </View>
+              <ChevronRight size={16} color="#555" />
+            </TouchableOpacity>
+
             <TouchableOpacity style={[styles.zomatoRow, { backgroundColor: themeColors.card, borderColor: themeColors.border }]} onPress={() => setActiveTab('help')}>
               <View style={styles.rowLeft}>
                 <View style={[styles.iconBg, { backgroundColor: 'rgba(255,45,85,0.1)' }]}>
@@ -363,6 +415,35 @@ export default function RiderProfile() {
           </View>
           <View style={{ height: 40 }} />
         </ScrollView>
+      )}
+
+      {/* Tab: Weekly Metrics */}
+      {activeTab === 'weekly_metrics' && (
+        <View style={{ flex: 1 }}>
+          {renderHeader('Weekly Metrics (Last 7 Days)')}
+          <ScrollView style={[styles.tabContent, { padding: 16 }]} showsVerticalScrollIndicator={false}>
+            <View style={[styles.inputCard, { backgroundColor: themeColors.card, borderColor: themeColors.border, padding: 16, alignItems: 'center' }]}>
+              <Text style={{ fontSize: 13, color: themeColors.textSecondary }}>Last 7 Days Total Earnings</Text>
+              <Text style={{ fontSize: 32, fontWeight: 'bold', color: '#FFCC00', marginTop: 4 }}>₹{totalWeeklyEarnings.toFixed(2)}</Text>
+              <Text style={{ fontSize: 11, color: themeColors.textSecondary, marginTop: 4 }}>Total Jobs: {weeklyBreakdown.reduce((sum, item) => sum + item.count, 0)} completed</Text>
+            </View>
+
+            <Text style={{ fontSize: 13, fontWeight: 'bold', color: themeColors.textSecondary, marginTop: 15, marginBottom: 10, textTransform: 'uppercase' }}>Day-by-Day Breakdown</Text>
+            
+            {weeklyBreakdown.map((item, idx) => (
+              <View key={idx} style={[styles.zomatoRow, { backgroundColor: themeColors.card, borderColor: themeColors.border, marginVertical: 4, paddingVertical: 12 }]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.rowTitle, { color: themeColors.text, fontWeight: 'bold' }]}>{item.day}</Text>
+                  <Text style={{ fontSize: 10, color: themeColors.textSecondary, marginTop: 2 }}>{item.count} orders delivered</Text>
+                </View>
+                <Text style={{ fontSize: 16, fontWeight: 'bold', color: item.earnings > 0 ? '#2ecc71' : themeColors.textSecondary }}>
+                  +₹{item.earnings.toFixed(0)}
+                </Text>
+              </View>
+            ))}
+            <View style={{ height: 40 }} />
+          </ScrollView>
+        </View>
       )}
 
       {/* Tab: Profile */}

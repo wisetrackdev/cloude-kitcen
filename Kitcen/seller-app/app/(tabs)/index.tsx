@@ -159,6 +159,7 @@ export default function SellerDashboard() {
   const [renewalUtr, setRenewalUtr] = useState('');
   const [renewalScreenshot, setRenewalScreenshot] = useState('');
   const [isSubmittingRenewal, setIsSubmittingRenewal] = useState(false);
+  const [salesFilter, setSalesFilter] = useState<'all' | 'today' | 'month' | 'last_2_months'>('all');
 
   // Banners list & inputs
   const [banners, setBanners] = useState<any[]>([]);
@@ -755,7 +756,34 @@ export default function SellerDashboard() {
   const liveOrders = kitchenOrders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled');
   const pastOrders = kitchenOrders.filter(o => o.status === 'delivered' || o.status === 'cancelled');
 
-  const totalEarnings = pastOrders.filter(o => o.status === 'delivered').reduce((sum, o) => sum + Number(o.total), 0);
+  const getFilteredEarnings = () => {
+    let list = pastOrders.filter(o => o.status === 'delivered');
+    const now = new Date();
+    
+    if (salesFilter === 'today') {
+      const todayStr = now.toDateString();
+      list = list.filter(o => {
+        const orderDate = new Date(o.createdAt || o.date || Date.now());
+        return orderDate.toDateString() === todayStr;
+      });
+    } else if (salesFilter === 'month') {
+      list = list.filter(o => {
+        const orderDate = new Date(o.createdAt || o.date || Date.now());
+        return orderDate.getMonth() === now.getMonth() && orderDate.getFullYear() === now.getFullYear();
+      });
+    } else if (salesFilter === 'last_2_months') {
+      const twoMonthsAgo = new Date();
+      twoMonthsAgo.setMonth(now.getMonth() - 2);
+      list = list.filter(o => {
+        const orderDate = new Date(o.createdAt || o.date || Date.now());
+        return orderDate >= twoMonthsAgo;
+      });
+    }
+    
+    return list.reduce((sum, o) => sum + (Number(o.subtotal) - Number(o.discount || 0)), 0);
+  };
+
+  const filteredEarnings = getFilteredEarnings();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -802,14 +830,36 @@ export default function SellerDashboard() {
         </TouchableOpacity>
       </View>
 
+      {/* Sales Filter Segment */}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginHorizontal: 20, marginTop: 10 }}>
+        {(['all', 'today', 'month', 'last_2_months'] as const).map((filterOpt) => (
+          <TouchableOpacity
+            key={filterOpt}
+            style={{
+              backgroundColor: salesFilter === filterOpt ? ZOMATO_RED : themeColors.card,
+              paddingVertical: 6,
+              paddingHorizontal: 12,
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: salesFilter === filterOpt ? ZOMATO_RED : themeColors.border
+            }}
+            onPress={() => setSalesFilter(filterOpt)}
+          >
+            <Text style={{ fontSize: 10, fontWeight: 'bold', color: salesFilter === filterOpt ? '#FFF' : themeColors.text }}>
+              {filterOpt === 'all' ? 'All Time' : filterOpt === 'today' ? 'Today' : filterOpt === 'month' ? 'This Month' : 'Last 2 Months'}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
       {/* KPI Stats Panel */}
       <View style={styles.kpiContainer}>
         <View style={[styles.kpiCard, { backgroundColor: themeColors.card, borderColor: themeColors.border, borderLeftColor: ZOMATO_RED, borderLeftWidth: 3 }]}>
           <View style={styles.kpiRow}>
-            <Text style={[styles.kpiVal, { color: themeColors.text }]}>₹{totalEarnings.toFixed(0)}</Text>
+            <Text style={[styles.kpiVal, { color: themeColors.text }]}>₹{filteredEarnings.toFixed(0)}</Text>
             <TrendingUp size={16} color="#34C759" />
           </View>
-          <Text style={[styles.kpiLabel, { color: themeColors.textSecondary }]}>Today's Earnings</Text>
+          <Text style={[styles.kpiLabel, { color: themeColors.textSecondary }]}>Shop Earnings</Text>
         </View>
 
         <View style={[styles.kpiCard, { backgroundColor: themeColors.card, borderColor: themeColors.border, borderLeftColor: '#007AFF', borderLeftWidth: 3 }]}>

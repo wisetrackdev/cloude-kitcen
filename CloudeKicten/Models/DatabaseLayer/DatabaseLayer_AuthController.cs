@@ -168,6 +168,16 @@ namespace CloudeKicten.Models.DatabaseLayer
                 Console.WriteLine($"[DB MIGRATION WARNING] Failed to alter orders table: {ex.Message}");
             }
 
+            try
+            {
+                cmd.CommandText = "ALTER TABLE products ADD COLUMN IF NOT EXISTS available_days VARCHAR(500) DEFAULT 'Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday';";
+                await cmd.ExecuteNonQueryAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[DB MIGRATION WARNING] Failed to alter products table: {ex.Message}");
+            }
+
             // Seeding disabled: no automatic database inserts on startup. All data will be managed manually or through the frontend.
             /*
             try

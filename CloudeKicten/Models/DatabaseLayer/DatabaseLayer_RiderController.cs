@@ -61,6 +61,7 @@ namespace CloudeKicten.Models.DatabaseLayer
                     FirstName = reader.IsDBNull(reader.GetOrdinal("first_name")) ? null : reader.GetString(reader.GetOrdinal("first_name")),
                     LastName = reader.IsDBNull(reader.GetOrdinal("last_name")) ? null : reader.GetString(reader.GetOrdinal("last_name")),
                     Email = reader.IsDBNull(reader.GetOrdinal("email")) ? null : reader.GetString(reader.GetOrdinal("email")),
+                    IsApproved = reader.IsDBNull(reader.GetOrdinal("is_approved")) ? false : reader.GetBoolean(reader.GetOrdinal("is_approved")),
                     CreatedAt = reader.GetDateTime(reader.GetOrdinal("created_at"))
                 };
             }
@@ -98,6 +99,7 @@ namespace CloudeKicten.Models.DatabaseLayer
                     FirstName = reader.IsDBNull(reader.GetOrdinal("first_name")) ? null : reader.GetString(reader.GetOrdinal("first_name")),
                     LastName = reader.IsDBNull(reader.GetOrdinal("last_name")) ? null : reader.GetString(reader.GetOrdinal("last_name")),
                     Email = reader.IsDBNull(reader.GetOrdinal("email")) ? null : reader.GetString(reader.GetOrdinal("email")),
+                    IsApproved = reader.IsDBNull(reader.GetOrdinal("is_approved")) ? false : reader.GetBoolean(reader.GetOrdinal("is_approved")),
                     CreatedAt = reader.GetDateTime(reader.GetOrdinal("created_at"))
                 });
             }

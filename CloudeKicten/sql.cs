@@ -198,6 +198,7 @@ namespace CloudeKicten
                 is_veg BOOLEAN NOT NULL,
                 image_url VARCHAR(500) NULL,
                 customizable BOOLEAN DEFAULT FALSE,
+                available_days VARCHAR(500) DEFAULT 'Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );";
 
@@ -629,30 +630,30 @@ namespace CloudeKicten
         // ==========================================
 
         public const string InsertProduct = @"
-            INSERT INTO products (id, kitchen_id, name, price, description, category_name, is_veg, image_url, customizable, created_at)
-            VALUES (@Id, @KitchenId, @Name, @Price, @Description, @Category, @IsVeg, @Image, @Customizable, CURRENT_TIMESTAMP);
+            INSERT INTO products (id, kitchen_id, name, price, description, category_name, is_veg, image_url, customizable, available_days, created_at)
+            VALUES (@Id, @KitchenId, @Name, @Price, @Description, @Category, @IsVeg, @Image, @Customizable, @AvailableDays, CURRENT_TIMESTAMP);
         ";
 
         public const string GetAllProducts = @"
-            SELECT id, kitchen_id, name, price, description, category_name, is_veg, image_url, customizable, created_at
+            SELECT id, kitchen_id, name, price, description, category_name, is_veg, image_url, customizable, available_days, created_at
             FROM products;
         ";
 
         public const string GetProductsByKitchenId = @"
-            SELECT id, kitchen_id, name, price, description, category_name, is_veg, image_url, customizable, created_at
+            SELECT id, kitchen_id, name, price, description, category_name, is_veg, image_url, customizable, available_days, created_at
             FROM products
             WHERE kitchen_id = @KitchenId;
         ";
 
         public const string GetProductById = @"
-            SELECT id, kitchen_id, name, price, description, category_name, is_veg, image_url, customizable, created_at
+            SELECT id, kitchen_id, name, price, description, category_name, is_veg, image_url, customizable, available_days, created_at
             FROM products
             WHERE id = @Id;
         ";
 
         public const string UpdateProduct = @"
             UPDATE products
-            SET name = @Name, price = @Price, description = @Description, category_name = @Category, is_veg = @IsVeg, image_url = @Image, customizable = @Customizable
+            SET name = @Name, price = @Price, description = @Description, category_name = @Category, is_veg = @IsVeg, image_url = @Image, customizable = @Customizable, available_days = @AvailableDays
             WHERE id = @Id;
         ";
 

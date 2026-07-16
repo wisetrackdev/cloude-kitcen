@@ -10,6 +10,7 @@ export interface ProductItem {
   isVeg: boolean;
   image: string;
   customizable?: boolean;
+  availableDays?: string;
 }
 
 export interface Kitchen {
@@ -194,7 +195,8 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
           category: p.category,
           isVeg: p.isVeg,
           image: p.image,
-          customizable: p.customizable
+          customizable: p.customizable,
+          availableDays: p.availableDays
         }));
         set((state) => ({
           products: {
@@ -361,7 +363,8 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
           category: newProduct.category,
           isVeg: newProduct.isVeg,
           image: newProduct.image,
-          customizable: newProduct.customizable || false
+          customizable: newProduct.customizable || false,
+          availableDays: newProduct.availableDays
         })
       });
       const json = await res.json();

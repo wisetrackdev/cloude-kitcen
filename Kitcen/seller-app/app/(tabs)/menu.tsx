@@ -87,6 +87,23 @@ export default function SellerMenuScreen() {
   const [newDishImage, setNewDishImage] = useState('');
   const [newDishVeg, setNewDishVeg] = useState(true);
   const [newDishCat, setNewDishCat] = useState('Tiffin Meals');
+  const [selectedDays, setSelectedDays] = useState<string[]>(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
+  const [selectedDayFilter, setSelectedDayFilter] = useState<string>('All');
+
+  const getNext7Days = () => {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const list = [{ name: 'All', dateStr: 'All Items' }];
+    const today = new Date();
+    for (let i = 0; i < 7; i++) {
+      const d = new Date();
+      d.setDate(today.getDate() + i);
+      const dayName = days[d.getDay()];
+      const dateStr = d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+      list.push({ name: dayName, dateStr: `${dayName.substring(0, 3)}, ${dateStr}` });
+    }
+    return list;
+  };
+  const filterDaysList = getNext7Days();
 
   const [hiddenCategories, setHiddenCategories] = useState<string[]>([]);
 
@@ -129,7 +146,8 @@ export default function SellerMenuScreen() {
   };
 
   const visibleProducts = kitchenProducts.filter(
-    item => !hiddenCategories.includes(item.category.toLowerCase())
+    item => !hiddenCategories.includes(item.category.toLowerCase()) &&
+            (selectedDayFilter === 'All' || (item.availableDays && item.availableDays.includes(selectedDayFilter)))
   );
 
   const pickFromCamera = async () => {
@@ -198,13 +216,15 @@ export default function SellerMenuScreen() {
         : 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=300&auto=format&fit=crop&q=80';
     }
 
+    const daysStr = selectedDays.length > 0 ? selectedDays.join(',') : 'Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday';
     await addProduct(selectedKitchenId, {
       name: newDishName,
       price: parseFloat(newDishPrice),
       desc: newDishDesc,
       category: finalCategory,
       isVeg: newDishVeg,
-      image: finalImageUrl
+      image: finalImageUrl,
+      availableDays: daysStr
     });
 
     setNewDishName('');
@@ -262,8 +282,34 @@ export default function SellerMenuScreen() {
 
       <View style={{ paddingHorizontal: 16 }}>
 
+      {/* Day / Date availability filter */}
+      <View style={{ marginTop: 15 }}>
+        <Text style={{ fontSize: 13, fontWeight: 'bold', color: themeColors.text, marginBottom: 8 }}>Filter by Scheduled Day:</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row' }}>
+          {filterDaysList.map((dayItem) => (
+            <TouchableOpacity
+              key={dayItem.name}
+              style={{
+                backgroundColor: selectedDayFilter === dayItem.name ? '#FFCC00' : themeColors.card,
+                borderWidth: 1,
+                borderColor: selectedDayFilter === dayItem.name ? '#FFCC00' : themeColors.border,
+                paddingVertical: 8,
+                paddingHorizontal: 12,
+                borderRadius: 20,
+                marginRight: 8
+              }}
+              onPress={() => setSelectedDayFilter(dayItem.name)}
+            >
+              <Text style={{ fontSize: 12, fontWeight: selectedDayFilter === dayItem.name ? 'bold' : 'normal', color: selectedDayFilter === dayItem.name ? '#000' : themeColors.text }}>
+                {dayItem.dateStr}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
       {/* Shop Categories Section with Delete option */}
-      <View style={styles.shopCategoriesSection}>
+      <View style={[styles.shopCategoriesSection, { marginTop: 20 }]}>
         <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Shop Categories</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesScroll}>
           {Array.from(new Set(kitchenProducts.map(p => p.category)))
@@ -308,6 +354,11 @@ export default function SellerMenuScreen() {
               <View style={{ marginLeft: 10 }}>
                 <Text style={[styles.dishCardName, { color: themeColors.text }]}>{item.name}</Text>
                 <Text style={[styles.dishCardPrice, { color: themeColors.textSecondary }]}>₹{item.price} • {item.category}</Text>
+                {item.availableDays && (
+                  <Text style={{ fontSize: 9, color: '#FFCC00', marginTop: 2, fontWeight: 'bold' }}>
+                    Days: {item.availableDays.split(',').map(d => d.substring(0, 3)).join(', ')}
+                  </Text>
+                )}
               </View>
             </View>
             <TouchableOpacity onPress={() => deleteProduct(selectedKitchenId, item.id)}>
@@ -416,6 +467,38 @@ export default function SellerMenuScreen() {
                     {newDishVeg ? 'VEG' : 'NON-VEG'}
                   </Text>
                 </TouchableOpacity>
+              </View>
+
+              {/* Day Scheduling Selection */}
+              <Text style={[styles.sectionLabel, { color: themeColors.text, marginTop: 10 }]}>Schedule Available Days</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginVertical: 8 }}>
+                {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => {
+                  const isSelected = selectedDays.includes(day);
+                  return (
+                    <TouchableOpacity
+                      key={day}
+                      style={{
+                        backgroundColor: isSelected ? '#FFCC00' : themeColors.inputBg,
+                        borderWidth: 1,
+                        borderColor: isSelected ? '#FFCC00' : themeColors.border,
+                        paddingVertical: 6,
+                        paddingHorizontal: 10,
+                        borderRadius: 6
+                      }}
+                      onPress={() => {
+                        if (isSelected) {
+                          setSelectedDays(selectedDays.filter(d => d !== day));
+                        } else {
+                          setSelectedDays([...selectedDays, day]);
+                        }
+                      }}
+                    >
+                      <Text style={{ fontSize: 10, fontWeight: isSelected ? 'bold' : 'normal', color: isSelected ? '#000' : themeColors.textSecondary }}>
+                        {day.substring(0, 3)}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
 
               <TouchableOpacity style={styles.saveDishBtn} onPress={handleAddDish}>

@@ -43,7 +43,8 @@ import {
   Calendar, 
   Inbox, 
   ShieldAlert,
-  Sparkles
+  Sparkles,
+  ChefHat
 } from 'lucide-react-native';
 import { theme } from '../../styles/theme';
 import { useKitchenStore } from '../../store/useKitchenStore';
@@ -56,7 +57,29 @@ import * as Location from 'expo-location';
 
 export default function RiderDashboard() {
   const user = useAuthStore(state => state.user);
+  const logout = useAuthStore(state => state.logout);
   const riderId = user?.id || 'usr-rider-simulated';
+  const [isRiderApproved, setIsRiderApproved] = useState(true);
+
+  useEffect(() => {
+    const checkRiderApproval = async () => {
+      if (!user?.id) return;
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/riders/${user.id}`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && json.data) {
+            setIsRiderApproved(json.data.isApproved);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to check rider approval status', err);
+      }
+    };
+    checkRiderApproval();
+    const approvalInterval = setInterval(checkRiderApproval, 10000);
+    return () => clearInterval(approvalInterval);
+  }, [user]);
 
   const orders = useKitchenStore(state => state.orders);
   const kitchens = useKitchenStore(state => state.kitchens);
@@ -403,6 +426,36 @@ export default function RiderDashboard() {
     text: isDarkMode ? '#FFFFFF' : '#1E2022',
     textSecondary: isDarkMode ? '#8E8E93' : '#686E73',
   };
+
+  if (!isRiderApproved) {
+    return (
+      <View style={[styles.container, { backgroundColor: themeColors.background, justifyContent: 'center', alignItems: 'center', padding: 24 }]}>
+        <ChefHat size={72} color={ZOMATO_RED} style={{ marginBottom: 20 }} />
+        <Text style={{ color: ZOMATO_RED, fontSize: 22, fontWeight: 'bold', textAlign: 'center', marginBottom: 12 }}>
+          Rider Account Pending Approval
+        </Text>
+        <Text style={{ color: themeColors.text, fontSize: 13, textAlign: 'center', lineHeight: 22, paddingHorizontal: 10, marginBottom: 10 }}>
+          Your rider account is currently under review by the SuperAdmin.
+        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255, 149, 0, 0.1)', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 16, marginBottom: 15 }}>
+          <Clock size={14} color="#FF9500" />
+          <Text style={{ color: '#FF9500', fontSize: 11, fontWeight: 'bold' }}>
+            Status: Under Review
+          </Text>
+        </View>
+        <Text style={{ color: themeColors.textSecondary, fontSize: 11, textAlign: 'center', marginTop: 15, lineHeight: 18, paddingHorizontal: 20 }}>
+          You will be able to take and deliver orders once the SuperAdmin approves your profile. Thank you for your patience!
+        </Text>
+        
+        <TouchableOpacity 
+          style={{ backgroundColor: '#FF3B30', marginTop: 25, width: 120, height: 40, borderRadius: 8, justifyContent: 'center', alignItems: 'center' }} 
+          onPress={() => logout()}
+        >
+          <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Log Out</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>

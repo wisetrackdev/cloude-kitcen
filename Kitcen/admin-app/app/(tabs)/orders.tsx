@@ -101,10 +101,28 @@ export default function AdminOrdersScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
-      {/* Title Header */}
-      <View style={[styles.header, { backgroundColor: '#FFCC00' }]}>
-        <Text style={[styles.subtitle, { color: 'rgba(255, 255, 255, 0.85)' }]}>Superadmin Dashboard</Text>
-        <Text style={[styles.title, { color: '#FFF' }]}>All System Orders</Text>
+      {/* Sticky Global Header */}
+      <View style={{
+        backgroundColor: '#FFCC00',
+        paddingTop: 50,
+        paddingHorizontal: 20,
+        paddingBottom: 15,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        borderBottomLeftRadius: 16,
+        borderBottomRightRadius: 16,
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+        zIndex: 100
+      }}>
+        <View>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#000' }}>Cloud Kitchen</Text>
+          <Text style={{ fontSize: 9, fontWeight: 'bold', color: 'rgba(0, 0, 0, 0.6)', textTransform: 'uppercase' }}>Superadmin Order Logs</Text>
+        </View>
       </View>
 
       {/* Metrics Row */}
