@@ -83,6 +83,8 @@ export interface OrderRecord {
   deliveredAt?: string | null;
   acceptedByRiderAt?: string | null;
   createdAt?: string | null;
+  isRiderSettled?: boolean;
+  isSellerSettled?: boolean;
 }
 
 interface KitchenState {
@@ -260,7 +262,9 @@ export const useKitchenStore = create<KitchenState>((set, get) => ({
           pickedUpAt: o.pickedUpAt || null,
           deliveredAt: o.deliveredAt || null,
           acceptedByRiderAt: o.acceptedByRiderAt || null,
-          createdAt: o.createdAt || null
+          createdAt: o.createdAt || null,
+          isRiderSettled: o.isRiderSettled,
+          isSellerSettled: o.isSellerSettled
         }));
         set({ orders: mappedOrders, isLoading: false });
       } else {

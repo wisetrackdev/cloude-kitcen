@@ -173,7 +173,7 @@ namespace CloudeKicten.Models.DatabaseLayer
             }
             else if (role.Equals("seller", StringComparison.OrdinalIgnoreCase) || role.Equals("vendor", StringComparison.OrdinalIgnoreCase))
             {
-                using var cmdUnpaid = new NpgsqlCommand("SELECT COALESCE(SUM(total), 0) FROM orders WHERE kitchen_id IN (SELECT id FROM shops WHERE vendor_id = @UserId) AND status = 'delivered' AND is_seller_settled = FALSE;", conn);
+                using var cmdUnpaid = new NpgsqlCommand("SELECT COALESCE(SUM(subtotal - discount), 0) FROM orders WHERE kitchen_id IN (SELECT id FROM shops WHERE vendor_id = @UserId) AND status = 'delivered' AND is_seller_settled = FALSE;", conn);
                 cmdUnpaid.Parameters.AddWithValue("@UserId", userId);
                 unpaid = Convert.ToDecimal(await cmdUnpaid.ExecuteScalarAsync());
             }

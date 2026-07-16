@@ -172,16 +172,46 @@ namespace CloudeKicten.Models.DatabaseLayer
         {
             using var conn = GetConnection();
             await conn.OpenAsync();
-            using var cmd = new NpgsqlCommand("INSERT INTO settlements (id, user_type, user_id, amount, status, transaction_details, settled_at) VALUES (@Id, @UserType, @UserId, @Amount, @Status, @TransactionDetails, CURRENT_TIMESTAMP);", conn);
-            cmd.Parameters.AddWithValue("@Id", s.Id);
-            cmd.Parameters.AddWithValue("@UserType", s.UserType);
-            cmd.Parameters.AddWithValue("@UserId", s.UserId);
-            cmd.Parameters.AddWithValue("@Amount", s.Amount);
-            cmd.Parameters.AddWithValue("@Status", s.Status);
-            cmd.Parameters.AddWithValue("@TransactionDetails", (object?)s.TransactionDetails ?? DBNull.Value);
+            using var tx = await conn.BeginTransactionAsync();
 
-            var result = await cmd.ExecuteNonQueryAsync();
-            return result > 0;
+            try
+            {
+                using (var cmd = new NpgsqlCommand("INSERT INTO settlements (id, user_type, user_id, amount, status, transaction_details, settled_at) VALUES (@Id, @UserType, @UserId, @Amount, @Status, @TransactionDetails, CURRENT_TIMESTAMP);", conn, tx))
+                {
+                    cmd.Parameters.AddWithValue("@Id", s.Id);
+                    cmd.Parameters.AddWithValue("@UserType", s.UserType);
+                    cmd.Parameters.AddWithValue("@UserId", s.UserId);
+                    cmd.Parameters.AddWithValue("@Amount", s.Amount);
+                    cmd.Parameters.AddWithValue("@Status", s.Status);
+                    cmd.Parameters.AddWithValue("@TransactionDetails", (object?)s.TransactionDetails ?? DBNull.Value);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+
+                // Mark orders as settled if status is 'settled' or 'success'
+                if ((s.Status.Equals("settled", StringComparison.OrdinalIgnoreCase) || s.Status.Equals("success", StringComparison.OrdinalIgnoreCase)) && !string.IsNullOrEmpty(s.UserId))
+                {
+                    if (s.UserType.Equals("rider", StringComparison.OrdinalIgnoreCase) || s.UserType.Equals("delivery_boy", StringComparison.OrdinalIgnoreCase))
+                    {
+                        using var cmdSettleRider = new NpgsqlCommand("UPDATE orders SET is_rider_settled = TRUE WHERE rider_id = @UserId AND status = 'delivered';", conn, tx);
+                        cmdSettleRider.Parameters.AddWithValue("@UserId", s.UserId);
+                        await cmdSettleRider.ExecuteNonQueryAsync();
+                    }
+                    else if (s.UserType.Equals("vendor", StringComparison.OrdinalIgnoreCase) || s.UserType.Equals("seller", StringComparison.OrdinalIgnoreCase))
+                    {
+                        using var cmdSettleSeller = new NpgsqlCommand("UPDATE orders SET is_seller_settled = TRUE WHERE kitchen_id IN (SELECT id FROM shops WHERE vendor_id = @UserId) AND status = 'delivered';", conn, tx);
+                        cmdSettleSeller.Parameters.AddWithValue("@UserId", s.UserId);
+                        await cmdSettleSeller.ExecuteNonQueryAsync();
+                    }
+                }
+
+                await tx.CommitAsync();
+                return true;
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                throw;
+            }
         }
 
         public async Task<bool> UpdateSettlementStatusAsync(string id, string status, string txDetails)
@@ -215,8 +245,8 @@ namespace CloudeKicten.Models.DatabaseLayer
                     await cmdUpdate.ExecuteNonQueryAsync();
                 }
 
-                // 3. Mark corresponding orders as settled if status is 'settled'
-                if (status.Equals("settled", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(userId))
+                // 3. Mark corresponding orders as settled if status is 'settled' or 'success'
+                if ((status.Equals("settled", StringComparison.OrdinalIgnoreCase) || status.Equals("success", StringComparison.OrdinalIgnoreCase)) && !string.IsNullOrEmpty(userId))
                 {
                     if (userType.Equals("rider", StringComparison.OrdinalIgnoreCase) || userType.Equals("delivery_boy", StringComparison.OrdinalIgnoreCase))
                     {

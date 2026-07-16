@@ -11,6 +11,7 @@ import { Wallet, CheckCircle, Clock, MapPin, Award } from 'lucide-react-native';
 import { theme } from '../../styles/theme';
 import { useKitchenStore } from '../../store/useKitchenStore';
 import { useAuthStore } from '../../store/useAuthStore';
+import { API_BASE_URL } from '../../store/apiConfig';
 
 type TimeFilter = 'today' | 'week' | 'all';
 
@@ -24,9 +25,31 @@ export default function RiderHistoryScreen() {
   const fetchOrders = useKitchenStore(state => state.fetchOrders);
 
   const [activeFilter, setActiveFilter] = useState<TimeFilter>('all');
+  const [activeTab, setActiveTab] = useState<'deliveries' | 'payouts'>('deliveries');
+  const [payoutInfo, setPayoutInfo] = useState<any>(null);
+  const [payoutLoading, setPayoutLoading] = useState(false);
+  const [payoutFilter, setPayoutFilter] = useState<'7days' | 'all'>('7days');
+
+  const fetchPayoutInfo = async () => {
+    setPayoutLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/wallet/${riderId}/payout-info`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success) {
+          setPayoutInfo(json.data);
+        }
+      }
+    } catch (err) {
+      console.warn('Error fetching payout info:', err);
+    } finally {
+      setPayoutLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchOrders();
+    fetchPayoutInfo();
   }, []);
 
   // Theme-based colors
@@ -106,125 +129,232 @@ export default function RiderHistoryScreen() {
       </View>
 
       {/* Scrollable Content (Only body scrolls) */}
-      <ScrollView 
-        style={{ flex: 1 }} 
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 40 }}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Earnings Summary Card */}
-        <View style={[styles.summaryCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
-          <Text style={[styles.summaryTitle, { color: themeColors.textSecondary }]}>YOUR SUMMARY PERFORMANCE</Text>
-          <View style={styles.metricsRow}>
-            <View style={styles.metricItem}>
-              <View style={[styles.iconBg, { backgroundColor: 'rgba(52,199,89,0.1)' }]}>
-                <Wallet size={20} color={theme.colors.success} />
-              </View>
-              <Text style={[styles.metricVal, { color: themeColors.text }]}>₹{totalEarnings}</Text>
-              <Text style={styles.metricLabel}>Total Payout</Text>
-            </View>
-            
-            <View style={[styles.dividerLine, { backgroundColor: themeColors.border }]} />
+      {/* Primary Tab Bar */}
+      <View style={{ flexDirection: 'row', backgroundColor: themeColors.card, borderBottomColor: themeColors.border, borderBottomWidth: 1 }}>
+        <TouchableOpacity 
+          style={{ flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: activeTab === 'deliveries' ? 3 : 0, borderBottomColor: '#FFCC00' }}
+          onPress={() => setActiveTab('deliveries')}
+        >
+          <Text style={{ fontWeight: 'bold', fontSize: 13, color: activeTab === 'deliveries' ? '#000' : themeColors.textSecondary }}>Deliveries History</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={{ flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: activeTab === 'payouts' ? 3 : 0, borderBottomColor: '#FFCC00' }}
+          onPress={() => {
+            setActiveTab('payouts');
+            fetchPayoutInfo();
+          }}
+        >
+          <Text style={{ fontWeight: 'bold', fontSize: 13, color: activeTab === 'payouts' ? '#000' : themeColors.textSecondary }}>Weekly Payouts History</Text>
+        </TouchableOpacity>
+      </View>
 
-            <View style={styles.metricItem}>
-              <View style={[styles.iconBg, { backgroundColor: 'rgba(255,107,0,0.1)' }]}>
-                <CheckCircle size={20} color={theme.colors.primary} />
+      {/* Deliveries History List */}
+      {activeTab === 'deliveries' && (
+        <ScrollView 
+          style={{ flex: 1 }} 
+          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 40 }}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Earnings Summary Card */}
+          <View style={[styles.summaryCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+            <Text style={[styles.summaryTitle, { color: themeColors.textSecondary }]}>YOUR SUMMARY PERFORMANCE</Text>
+            <View style={styles.metricsRow}>
+              <View style={styles.metricItem}>
+                <View style={[styles.iconBg, { backgroundColor: 'rgba(52,199,89,0.1)' }]}>
+                  <Wallet size={20} color={theme.colors.success} />
+                </View>
+                <Text style={[styles.metricVal, { color: themeColors.text }]}>₹{totalEarnings}</Text>
+                <Text style={styles.metricLabel}>Total Payout</Text>
               </View>
-              <Text style={[styles.metricVal, { color: themeColors.text }]}>{filteredList.length}</Text>
-              <Text style={styles.metricLabel}>Trips Done</Text>
+              
+              <View style={[styles.dividerLine, { backgroundColor: themeColors.border }]} />
+
+              <View style={styles.metricItem}>
+                <View style={[styles.iconBg, { backgroundColor: 'rgba(255,107,0,0.1)' }]}>
+                  <CheckCircle size={20} color={theme.colors.primary} />
+                </View>
+                <Text style={[styles.metricVal, { color: themeColors.text }]}>{filteredList.length}</Text>
+                <Text style={styles.metricLabel}>Trips Done</Text>
+              </View>
             </View>
           </View>
-        </View>
 
-        {/* Filter Tabs */}
-        <View style={[styles.filterRow, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
-          {(['today', 'week', 'all'] as TimeFilter[]).map((filter) => (
-            <TouchableOpacity
-              key={filter}
-              style={[
-                styles.filterTab,
-                activeFilter === filter && styles.filterTabActive
-              ]}
-              onPress={() => setActiveFilter(filter)}
-            >
-              <Text
+          {/* Filter Tabs */}
+          <View style={[styles.filterRow, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+            {(['today', 'week', 'all'] as TimeFilter[]).map((filter) => (
+              <TouchableOpacity
+                key={filter}
                 style={[
-                  styles.filterText,
-                  activeFilter === filter && styles.filterTextActive
+                  styles.filterTab,
+                  activeFilter === filter && styles.filterTabActive
                 ]}
+                onPress={() => setActiveFilter(filter)}
               >
-                {filter === 'today' ? 'Today' : filter === 'week' ? 'This Week' : 'All History'}
-              </Text>
+                <Text
+                  style={[
+                    styles.filterText,
+                    activeFilter === filter && styles.filterTextActive
+                  ]}
+                >
+                  {filter === 'today' ? 'Today' : filter === 'week' ? 'This Week' : 'All History'}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Logs List */}
+          <View style={styles.listContainer}>
+            {isLoading ? (
+              <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginTop: 40 }} />
+            ) : filteredList.map((order) => (
+              <View key={order.id} style={[styles.orderCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+                <View style={[styles.cardHeader, { borderBottomColor: themeColors.border }]}>
+                  <View>
+                    <Text style={[styles.orderId, { color: themeColors.text }]}>{order.id}</Text>
+                    <Text style={styles.orderDate}>{order.date}</Text>
+                  </View>
+                  <View style={styles.earningsBadge}>
+                    <Text style={styles.earningsAmt}>+₹{order.deliveryCharge ?? 0}</Text>
+                  </View>
+                </View>
+
+                {/* Path details */}
+                <View style={styles.pathBox}>
+                  <View style={styles.pathNode}>
+                    <MapPin size={12} color={theme.colors.veg} />
+                    <Text style={[styles.pathText, { color: themeColors.text }]} numberOfLines={1}>
+                      From: <Text style={styles.boldText}>{order.kitchenName}</Text>
+                    </Text>
+                  </View>
+                  <View style={styles.pathNode}>
+                    <MapPin size={12} color={theme.colors.primary} />
+                    <Text style={[styles.pathText, { color: themeColors.text }]} numberOfLines={1}>
+                      To: <Text style={styles.boldText}>{order.customerName}</Text>
+                    </Text>
+                  </View>
+                  <Text style={styles.addressText} numberOfLines={2}>
+                    📍 Address: {order.deliveryAddress || 'Customer Location'}
+                  </Text>
+                </View>
+
+                {/* Timestamps */}
+                <View style={[styles.timestampsBlock, { borderTopColor: themeColors.border }]}>
+                  <Text style={styles.timestampRow}>
+                    🕒 Ordered: <Text style={styles.timeVal}>{order.createdAt || order.date}</Text>
+                  </Text>
+                  {order.pickedUpAt && (
+                    <Text style={styles.timestampRow}>
+                      📦 Picked Up: <Text style={styles.timeVal}>{order.pickedUpAt}</Text>
+                    </Text>
+                  )}
+                  {order.deliveredAt && (
+                    <Text style={styles.timestampRow}>
+                      ✅ Delivered: <Text style={styles.timeVal}>{order.deliveredAt}</Text>
+                    </Text>
+                  )}
+                </View>
+
+                <View style={[styles.cardFooter, { borderTopColor: themeColors.border }]}>
+                  <Text style={styles.successLabel}>✓ DELIVERED SUCCESSFUL</Text>
+                  <Text style={styles.commissionLabel}>Payout: Cash/Online</Text>
+                </View>
+              </View>
+            ))}
+
+            {!isLoading && filteredList.length === 0 && (
+              <View style={styles.emptyContainer}>
+                <Clock size={44} color="#555" style={{ marginBottom: 12 }} />
+                <Text style={styles.emptyText}>No completed delivery records found in this timeframe.</Text>
+              </View>
+            )}
+          </View>
+        </ScrollView>
+      )}
+
+      {/* Payouts History Tab */}
+      {activeTab === 'payouts' && (
+        <ScrollView 
+          style={{ flex: 1 }} 
+          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 40 }}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Unpaid Balance Card */}
+          <View style={[styles.summaryCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+            <Text style={{ fontSize: 10, fontWeight: 'bold', color: themeColors.textSecondary, textTransform: 'uppercase' }}>Unpaid Weekly Balance</Text>
+            <Text style={{ fontSize: 32, fontWeight: 'bold', color: '#FFB300', marginTop: 5 }}>
+              ₹{payoutInfo?.unpaidBalance ? Number(payoutInfo.unpaidBalance).toFixed(2) : '0.00'}
+            </Text>
+            <Text style={{ fontSize: 11, color: themeColors.textSecondary, marginTop: 4 }}>
+              Next Automated Settlement Date: <Text style={{ fontWeight: 'bold', color: themeColors.text }}>{payoutInfo?.nextPayoutDate || 'Monday'}</Text>
+            </Text>
+          </View>
+
+          {/* Filter options */}
+          <View style={{ flexDirection: 'row', gap: 10, marginBottom: 15 }}>
+            <TouchableOpacity 
+              style={[{ paddingVertical: 6, paddingHorizontal: 12, borderRadius: 16, backgroundColor: themeColors.card, borderWidth: 1, borderColor: themeColors.border }, payoutFilter === '7days' && { backgroundColor: '#FFCC00', borderColor: '#FFCC00' }]}
+              onPress={() => setPayoutFilter('7days')}
+            >
+              <Text style={{ fontSize: 11, fontWeight: 'bold', color: payoutFilter === '7days' ? '#000' : themeColors.textSecondary }}>Last 7 Days</Text>
             </TouchableOpacity>
-          ))}
-        </View>
+            <TouchableOpacity 
+              style={[{ paddingVertical: 6, paddingHorizontal: 12, borderRadius: 16, backgroundColor: themeColors.card, borderWidth: 1, borderColor: themeColors.border }, payoutFilter === 'all' && { backgroundColor: '#FFCC00', borderColor: '#FFCC00' }]}
+              onPress={() => setPayoutFilter('all')}
+            >
+              <Text style={{ fontSize: 11, fontWeight: 'bold', color: payoutFilter === 'all' ? '#000' : themeColors.textSecondary }}>All Payouts</Text>
+            </TouchableOpacity>
+          </View>
 
-        {/* Logs List */}
-        <View style={styles.listContainer}>
-          {isLoading ? (
-            <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginTop: 40 }} />
-          ) : filteredList.map((order) => (
-            <View key={order.id} style={[styles.orderCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
-              <View style={[styles.cardHeader, { borderBottomColor: themeColors.border }]}>
-                <View>
-                  <Text style={[styles.orderId, { color: themeColors.text }]}>{order.id}</Text>
-                  <Text style={styles.orderDate}>{order.date}</Text>
-                </View>
-                <View style={styles.earningsBadge}>
-                  <Text style={styles.earningsAmt}>+₹{order.deliveryCharge ?? 0}</Text>
-                </View>
-              </View>
+          {/* Payout Logs list */}
+          <View style={styles.listContainer}>
+            {payoutLoading ? (
+              <ActivityIndicator size="large" color="#FFCC00" style={{ marginTop: 40 }} />
+            ) : (
+              (() => {
+                let list = payoutInfo?.payoutHistory || [];
+                if (payoutFilter === '7days') {
+                  const cutoff = new Date();
+                  cutoff.setDate(cutoff.getDate() - 7);
+                  list = list.filter((p: any) => new Date(p.settledAt || p.settled_at) >= cutoff);
+                }
 
-              {/* Path details */}
-              <View style={styles.pathBox}>
-                <View style={styles.pathNode}>
-                  <MapPin size={12} color={theme.colors.veg} />
-                  <Text style={[styles.pathText, { color: themeColors.text }]} numberOfLines={1}>
-                    From: <Text style={styles.boldText}>{order.kitchenName}</Text>
-                  </Text>
-                </View>
-                <View style={styles.pathNode}>
-                  <MapPin size={12} color={theme.colors.primary} />
-                  <Text style={[styles.pathText, { color: themeColors.text }]} numberOfLines={1}>
-                    To: <Text style={styles.boldText}>{order.customerName}</Text>
-                  </Text>
-                </View>
-                <Text style={styles.addressText} numberOfLines={2}>
-                  📍 Address: {order.deliveryAddress || 'Customer Location'}
-                </Text>
-              </View>
+                if (list.length === 0) {
+                  return (
+                    <View style={{ padding: 30, alignItems: 'center' }}>
+                      <Text style={{ color: themeColors.textSecondary, fontSize: 13 }}>No payouts recorded in this period.</Text>
+                    </View>
+                  );
+                }
 
-              {/* Timestamps */}
-              <View style={[styles.timestampsBlock, { borderTopColor: themeColors.border }]}>
-                <Text style={styles.timestampRow}>
-                  🕒 Ordered: <Text style={styles.timeVal}>{order.createdAt || order.date}</Text>
-                </Text>
-                {order.pickedUpAt && (
-                  <Text style={styles.timestampRow}>
-                    📦 Picked Up: <Text style={styles.timeVal}>{order.pickedUpAt}</Text>
-                  </Text>
-                )}
-                {order.deliveredAt && (
-                  <Text style={styles.timestampRow}>
-                    ✅ Delivered: <Text style={styles.timeVal}>{order.deliveredAt}</Text>
-                  </Text>
-                )}
-              </View>
+                return list.map((item: any) => (
+                  <View key={item.id || item.Id} style={{ backgroundColor: themeColors.card, borderColor: themeColors.border, borderWidth: 1, borderRadius: 12, padding: 16, marginBottom: 12 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 0.5, borderBottomColor: themeColors.border, paddingBottom: 8, marginBottom: 8 }}>
+                      <View>
+                        <Text style={{ fontSize: 10, color: themeColors.textSecondary }}>Settlement Date</Text>
+                        <Text style={{ fontSize: 13, fontWeight: 'bold', color: themeColors.text }}>
+                          {new Date(item.settledAt || item.settled_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </Text>
+                      </View>
+                      <View style={{ backgroundColor: '#2ecc71', paddingVertical: 4, paddingHorizontal: 8, borderRadius: 4 }}>
+                        <Text style={{ color: '#FFF', fontSize: 10, fontWeight: 'bold' }}>SUCCESS</Text>
+                      </View>
+                    </View>
+                    
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                      <Text style={{ fontSize: 12, color: themeColors.textSecondary }}>Amount Paid:</Text>
+                      <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#2ecc71' }}>₹{Number(item.amount || item.Amount).toFixed(2)}</Text>
+                    </View>
 
-              <View style={[styles.cardFooter, { borderTopColor: themeColors.border }]}>
-                <Text style={styles.successLabel}>✓ DELIVERED SUCCESSFUL</Text>
-                <Text style={styles.commissionLabel}>Payout: Cash/Online</Text>
-              </View>
-            </View>
-          ))}
-
-          {!isLoading && filteredList.length === 0 && (
-            <View style={styles.emptyContainer}>
-              <Clock size={44} color="#555" style={{ marginBottom: 12 }} />
-              <Text style={styles.emptyText}>No completed delivery records found in this timeframe.</Text>
-            </View>
-          )}
-        </View>
-      </ScrollView>
+                    <View style={{ backgroundColor: themeColors.background, padding: 10, borderRadius: 8 }}>
+                      <Text style={{ fontSize: 9, color: themeColors.textSecondary }}>UTR / Reference details:</Text>
+                      <Text style={{ fontSize: 11, color: themeColors.text, fontWeight: 'bold', marginTop: 2 }}>{item.transactionDetails || item.TransactionDetails || 'N/A'}</Text>
+                    </View>
+                  </View>
+                ));
+              })()
+            )}
+          </View>
+        </ScrollView>
     </View>
   );
 }

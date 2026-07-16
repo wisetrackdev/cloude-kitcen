@@ -409,12 +409,16 @@ export default function AdminProfile() {
           <Text style={{ fontSize: 9, fontWeight: 'bold', color: 'rgba(0, 0, 0, 0.6)', textTransform: 'uppercase' }}>Superadmin System Settings</Text>
         </View>
         
-        <TouchableOpacity 
-          style={{ padding: 6, backgroundColor: 'rgba(0,0,0,0.06)', borderRadius: 20 }}
-          onPress={() => setTheme(!isDarkMode)}
-        >
-          {isDarkMode ? <Sun size={18} color="#000" /> : <Moon size={18} color="#000" />}
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#000' }}>{user?.name || 'Super Admin'}</Text>
+            <Text style={{ fontSize: 8, color: 'rgba(0,0,0,0.6)' }}>Administrator</Text>
+          </View>
+          <Image
+            source={{ uri: user?.avatar || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&auto=format&fit=crop&q=80' }}
+            style={{ width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderColor: '#FFF' }}
+          />
+        </View>
       </View>
 
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>

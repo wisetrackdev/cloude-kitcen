@@ -34,7 +34,9 @@ import {
   Bike,
   ShieldCheck,
   Plus,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Sun,
+  Moon
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
@@ -44,7 +46,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { API_BASE_URL } from '../../store/apiConfig';
 import { uploadImage } from '../../store/uploadHelper';
 
-type SubTab = 'analytics' | 'categories' | 'sellers';
+type SubTab = 'analytics' | 'categories' | 'sellers' | 'settlements';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -63,6 +65,55 @@ export default function AdminDashboard() {
   const [selectedRoleDetail, setSelectedRoleDetail] = useState<'none' | 'customer' | 'vendor' | 'rider' | 'all'>('none');
   const isDarkMode = useAuthStore(state => state.isDarkMode);
   const setTheme = useAuthStore(state => state.setTheme);
+  const user = useAuthStore(state => state.user);
+
+  const [selectedPayee, setSelectedPayee] = useState<{ id: string; name: string; type: 'vendor' | 'rider'; amount: number } | null>(null);
+  const [payeeUtr, setPayeeUtr] = useState('');
+  const [isSubmittingPayee, setIsSubmittingPayee] = useState(false);
+
+  const getNextSettlementDateStr = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + ((1 + 7 - d.getDay()) % 7 || 7));
+    return d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' });
+  };
+
+  const handleConfirmPayee = async () => {
+    if (!selectedPayee) return;
+    if (!payeeUtr.trim()) {
+      Alert.alert('Error', 'Please enter transaction UTR or reference details.');
+      return;
+    }
+    
+    setIsSubmittingPayee(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/settlements?adminUserId=${user?.id || 'usr-admin-simulated'}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: 'set-' + Math.random().toString(36).substring(2, 9),
+          userType: selectedPayee.type,
+          userId: selectedPayee.id,
+          amount: selectedPayee.amount,
+          status: 'success',
+          transactionDetails: `Paid via UPI. Ref UTR: ${payeeUtr}`
+        })
+      });
+      
+      if (res.ok) {
+        Alert.alert('Success', `Payout of ₹${selectedPayee.amount} settled successfully!`);
+        setSelectedPayee(null);
+        setPayeeUtr('');
+        fetchOrders();
+      } else {
+        Alert.alert('Error', 'Failed to submit settlement to server.');
+      }
+    } catch (err) {
+      console.warn(err);
+      Alert.alert('Error', 'Network error submitting settlement.');
+    } finally {
+      setIsSubmittingPayee(false);
+    }
+  };
   const [selectedKitchen, setSelectedKitchen] = useState<any>(null);
   const [selectedSellerForStats, setSelectedSellerForStats] = useState<any>(null);
 
@@ -493,35 +544,45 @@ export default function AdminDashboard() {
             <MessageSquare size={14} color="#000" style={{ marginRight: 4 }} />
             <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#000' }}>Support</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={{ padding: 6, backgroundColor: 'rgba(0,0,0,0.06)', borderRadius: 20 }}
-            onPress={() => setTheme(!isDarkMode)}
-          >
-            {isDarkMode ? <Sun size={18} color="#000" /> : <Moon size={18} color="#000" />}
-          </TouchableOpacity>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#000' }}>{user?.name || 'Super Admin'}</Text>
+              <Text style={{ fontSize: 8, color: 'rgba(0,0,0,0.6)' }}>Administrator</Text>
+            </View>
+            <Image
+              source={{ uri: user?.avatar || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&auto=format&fit=crop&q=80' }}
+              style={{ width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderColor: '#FFF' }}
+            />
+          </View>
         </View>
       </View>
 
       {/* Sub Tab selection row right below header */}
       <View style={{ flexDirection: 'row', backgroundColor: themeColors.card, borderBottomColor: themeColors.border, borderBottomWidth: 1, paddingVertical: 10, paddingHorizontal: 16, justifyContent: 'space-between' }}>
         <TouchableOpacity 
-          style={[{ paddingVertical: 6, paddingHorizontal: 12, borderRadius: 16 }, activeSubTab === 'analytics' ? { backgroundColor: '#FFCC00' } : {}]}
+          style={[{ paddingVertical: 6, paddingHorizontal: 10, borderRadius: 16 }, activeSubTab === 'analytics' ? { backgroundColor: '#FFCC00' } : {}]}
           onPress={() => setActiveSubTab('analytics')}
         >
-          <Text style={{ fontSize: 12, fontWeight: 'bold', color: activeSubTab === 'analytics' ? '#000' : themeColors.textSecondary }}>Dashboard</Text>
+          <Text style={{ fontSize: 11, fontWeight: 'bold', color: activeSubTab === 'analytics' ? '#000' : themeColors.textSecondary }}>Dashboard</Text>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[{ paddingVertical: 6, paddingHorizontal: 12, borderRadius: 16 }, activeSubTab === 'categories' ? { backgroundColor: '#FFCC00' } : {}]}
+          style={[{ paddingVertical: 6, paddingHorizontal: 10, borderRadius: 16 }, activeSubTab === 'categories' ? { backgroundColor: '#FFCC00' } : {}]}
           onPress={() => setActiveSubTab('categories')}
         >
-          <Text style={{ fontSize: 12, fontWeight: 'bold', color: activeSubTab === 'categories' ? '#000' : themeColors.textSecondary }}>Categories</Text>
+          <Text style={{ fontSize: 11, fontWeight: 'bold', color: activeSubTab === 'categories' ? '#000' : themeColors.textSecondary }}>Categories</Text>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[{ paddingVertical: 6, paddingHorizontal: 12, borderRadius: 16 }, activeSubTab === 'sellers' ? { backgroundColor: '#FFCC00' } : {}]}
+          style={[{ paddingVertical: 6, paddingHorizontal: 10, borderRadius: 16 }, activeSubTab === 'sellers' ? { backgroundColor: '#FFCC00' } : {}]}
           onPress={() => setActiveSubTab('sellers')}
         >
-          <Text style={{ fontSize: 12, fontWeight: 'bold', color: activeSubTab === 'sellers' ? '#000' : themeColors.textSecondary }}>Sellers Stats</Text>
+          <Text style={{ fontSize: 11, fontWeight: 'bold', color: activeSubTab === 'sellers' ? '#000' : themeColors.textSecondary }}>Sellers Stats</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[{ paddingVertical: 6, paddingHorizontal: 10, borderRadius: 16 }, activeSubTab === 'settlements' ? { backgroundColor: '#FFCC00' } : {}]}
+          onPress={() => setActiveSubTab('settlements')}
+        >
+          <Text style={{ fontSize: 11, fontWeight: 'bold', color: activeSubTab === 'settlements' ? '#000' : themeColors.textSecondary }}>Payouts</Text>
         </TouchableOpacity>
       </View>
 
@@ -802,13 +863,11 @@ export default function AdminDashboard() {
           </View>
         )}
 
-        {/* SUBTAB 3: SELLERS STATISTICS */}
         {activeSubTab === 'sellers' && (
           <View style={styles.tabContent}>
             <View style={styles.sellerSection}>
               <Text style={[styles.sellerSectionTitle, { color: themeColors.text }]}>Seller Selection</Text>
               
-              {/* Display selection chips */}
               <View style={styles.chipScrollContainer}>
                 {kitchens.map(kitchen => (
                   <TouchableOpacity
@@ -831,10 +890,8 @@ export default function AdminDashboard() {
                 ))}
               </View>
 
-              {/* Show Stats Panel if seller is selected */}
               {selectedSellerForStats ? (
                 <View style={[styles.statsPanelCard, { backgroundColor: themeColors.card, borderColor: themeColors.border, padding: 0, overflow: 'hidden' }]}>
-                  {/* Shop Banner Image */}
                   <Image 
                     source={{ uri: selectedSellerForStats.image || 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=400&auto=format&fit=crop&q=80' }} 
                     style={styles.statsBannerImage} 
@@ -850,7 +907,6 @@ export default function AdminDashboard() {
                       </Text>
                     </View>
 
-                    {/* Operational KPIs */}
                     <View style={styles.metricsGrid}>
                       <View style={[styles.metricItem, { backgroundColor: themeColors.background, borderColor: themeColors.border }]}>
                         <Text style={[styles.metricLabel, { color: themeColors.textSecondary }]}>Total Orders</Text>
@@ -868,7 +924,6 @@ export default function AdminDashboard() {
 
                     <View style={{ height: 16 }} />
 
-                    {/* Shop details fields */}
                     <View style={[styles.statsRow, { borderBottomColor: themeColors.border }]}>
                       <Text style={[styles.statsLabel, { color: themeColors.textSecondary }]}>Owner Name:</Text>
                       <Text style={[styles.statsVal, { color: themeColors.text }]}>
@@ -932,7 +987,6 @@ export default function AdminDashboard() {
                       </Text>
                     </View>
 
-                    {/* Calling/Phone Contact Row with Click Action */}
                     <View style={[styles.statsRow, { borderBottomColor: themeColors.border }]}>
                       <Text style={[styles.statsLabel, { color: themeColors.textSecondary }]}>Mobile Number:</Text>
                       <TouchableOpacity 
@@ -967,7 +1021,6 @@ export default function AdminDashboard() {
                       </Text>
                     </View>
 
-                    {/* Support Chat with Seller Action Button */}
                     <TouchableOpacity 
                       style={[styles.chatSellerBtn, { backgroundColor: themeColors.primary }]}
                       onPress={() => {
@@ -995,7 +1048,128 @@ export default function AdminDashboard() {
           </View>
         )}
 
+        {/* SUBTAB 4: SETTLEMENTS */}
+        {activeSubTab === 'settlements' && (
+          <View style={styles.tabContent}>
+            <View style={{ backgroundColor: '#FFF9E6', padding: 12, borderRadius: 10, marginHorizontal: 20, marginBottom: 15, borderWidth: 1, borderColor: '#FFEAA7' }}>
+              <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#D6A200' }}>Swiggy/Zomato 7-Day Payout Settlement Cycle</Text>
+              <Text style={{ fontSize: 10, color: '#7f8c8d', marginTop: 4 }}>Next automated settlement payout date: <Text style={{ fontWeight: 'bold', color: '#2c3e50' }}>{getNextSettlementDateStr()}</Text></Text>
+            </View>
+
+            {/* Sellers List Section */}
+            <Text style={{ fontSize: 11, fontWeight: 'bold', color: themeColors.textSecondary, marginHorizontal: 20, marginBottom: 8, textTransform: 'uppercase' }}>Seller Pending Payouts</Text>
+            <View style={{ paddingHorizontal: 16, marginBottom: 20 }}>
+              {kitchens.map((k) => {
+                const kOrders = orders.filter(o => o.kitchenId === k.id && o.status === 'delivered' && !o.isSellerSettled);
+                const pendingAmt = kOrders.reduce((sum, o) => sum + (Number(o.subtotal) - Number(o.discount || 0)), 0);
+                
+                if (pendingAmt <= 0) return null;
+
+                return (
+                  <View key={k.id} style={{ backgroundColor: themeColors.card, borderColor: themeColors.border, borderWidth: 1, borderRadius: 12, padding: 14, marginBottom: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <View style={{ flex: 1, marginRight: 8 }}>
+                      <Text style={{ fontSize: 14, fontWeight: 'bold', color: themeColors.text }}>{k.name}</Text>
+                      <Text style={{ fontSize: 10, color: themeColors.textSecondary, marginTop: 2 }}>Owner: {k.ownerName || 'Vendor partner'} • {k.ownerPhone || 'No Phone'}</Text>
+                      <Text style={{ fontSize: 11, color: '#FF9500', fontWeight: 'bold', marginTop: 4 }}>Unpaid: ₹{pendingAmt.toFixed(0)} ({kOrders.length} orders)</Text>
+                    </View>
+                    <TouchableOpacity 
+                      style={{ backgroundColor: '#2ecc71', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 6 }}
+                      onPress={() => setSelectedPayee({ id: k.owner, name: k.name, type: 'vendor', amount: pendingAmt })}
+                    >
+                      <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 11 }}>Pay Now</Text>
+                    </TouchableOpacity>
+                  </View>
+                );
+              })}
+              {kitchens.every(k => orders.filter(o => o.kitchenId === k.id && o.status === 'delivered' && !o.isSellerSettled).reduce((sum, o) => sum + (Number(o.subtotal) - Number(o.discount || 0)), 0) === 0) && (
+                <Text style={{ color: themeColors.textSecondary, fontSize: 11, textAlign: 'center', marginVertical: 10 }}>All sellers payouts are fully settled.</Text>
+              )}
+            </View>
+
+            {/* Riders List Section */}
+            <Text style={{ fontSize: 11, fontWeight: 'bold', color: themeColors.textSecondary, marginHorizontal: 20, marginBottom: 8, textTransform: 'uppercase' }}>Rider Pending Payouts</Text>
+            <View style={{ paddingHorizontal: 16 }}>
+              {systemUsers.filter(u => u.role === 'rider').map((rider) => {
+                const rOrders = orders.filter(o => o.riderId === rider.id && o.status === 'delivered' && !o.isRiderSettled);
+                const pendingAmt = rOrders.reduce((sum, o) => sum + Number(o.deliveryCharge ?? 0), 0);
+
+                if (pendingAmt <= 0) return null;
+
+                return (
+                  <View key={rider.id} style={{ backgroundColor: themeColors.card, borderColor: themeColors.border, borderWidth: 1, borderRadius: 12, padding: 14, marginBottom: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <View style={{ flex: 1, marginRight: 8 }}>
+                      <Text style={{ fontSize: 14, fontWeight: 'bold', color: themeColors.text }}>{rider.firstName} {rider.lastName}</Text>
+                      <Text style={{ fontSize: 10, color: themeColors.textSecondary, marginTop: 2 }}>Phone: {rider.phoneNumber || 'N/A'}</Text>
+                      <Text style={{ fontSize: 11, color: '#007AFF', fontWeight: 'bold', marginTop: 4 }}>Unpaid: ₹{pendingAmt.toFixed(0)} ({rOrders.length} orders)</Text>
+                    </View>
+                    <TouchableOpacity 
+                      style={{ backgroundColor: '#2ecc71', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 6 }}
+                      onPress={() => setSelectedPayee({ id: rider.id, name: `${rider.firstName} ${rider.lastName}`, type: 'rider', amount: pendingAmt })}
+                    >
+                      <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 11 }}>Pay Now</Text>
+                    </TouchableOpacity>
+                  </View>
+                );
+              })}
+              {systemUsers.filter(u => u.role === 'rider').every(rider => orders.filter(o => o.riderId === rider.id && o.status === 'delivered' && !o.isRiderSettled).reduce((sum, o) => sum + Number(o.deliveryCharge ?? 0), 0) === 0) && (
+                <Text style={{ color: themeColors.textSecondary, fontSize: 11, textAlign: 'center', marginVertical: 10 }}>All riders payouts are fully settled.</Text>
+              )}
+            </View>
+          </View>
+        )}
+
       </ScrollView>
+
+      {/* Payee Confirmation Modal */}
+      {selectedPayee && (
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={selectedPayee !== null}
+          onRequestClose={() => setSelectedPayee(null)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { backgroundColor: themeColors.card, borderColor: themeColors.border, padding: 20 }]}>
+              <Text style={{ fontSize: 16, fontWeight: 'bold', color: themeColors.text, marginBottom: 8 }}>Pay & Settle Weekly Earnings</Text>
+              <Text style={{ fontSize: 12, color: themeColors.textSecondary, marginBottom: 15 }}>
+                You are marking the weekly settlement of <Text style={{ fontWeight: 'bold', color: themeColors.text }}>{selectedPayee.name}</Text> ({selectedPayee.type.toUpperCase()}) as SUCCESS.
+              </Text>
+              
+              <View style={{ backgroundColor: themeColors.background, padding: 12, borderRadius: 8, marginBottom: 15 }}>
+                <Text style={{ fontSize: 12, color: themeColors.textSecondary }}>Payout Amount:</Text>
+                <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#2ecc71', marginTop: 4 }}>₹{selectedPayee.amount.toFixed(2)}</Text>
+              </View>
+
+              <Text style={{ fontSize: 11, fontWeight: 'bold', color: themeColors.textSecondary, marginBottom: 6 }}>Transaction Reference / UTR Details:</Text>
+              <TextInput
+                placeholder="Enter UTR, TxID, or Payment Ref..."
+                placeholderTextColor="#888"
+                value={payeeUtr}
+                onChangeText={setPayeeUtr}
+                style={{ backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border, borderWidth: 1, height: 44, borderRadius: 8, paddingHorizontal: 12, marginBottom: 20 }}
+              />
+
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <TouchableOpacity 
+                  style={{ flex: 1, backgroundColor: themeColors.border, height: 40, borderRadius: 8, justifyContent: 'center', alignItems: 'center' }}
+                  onPress={() => setSelectedPayee(null)}
+                >
+                  <Text style={{ color: themeColors.text, fontWeight: 'bold' }}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={{ flex: 1, backgroundColor: '#2ecc71', height: 40, borderRadius: 8, justifyContent: 'center', alignItems: 'center' }}
+                  onPress={handleConfirmPayee}
+                  disabled={isSubmittingPayee}
+                >
+                  {isSubmittingPayee ? <ActivityIndicator size="small" color="#FFF" /> : (
+                    <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Confirm Paid</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
 
       {/* MODAL 1: Shop Administration Details */}
       {selectedKitchen && (

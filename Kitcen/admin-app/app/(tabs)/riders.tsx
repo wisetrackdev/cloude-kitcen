@@ -8,7 +8,8 @@ import {
   ActivityIndicator, 
   Modal, 
   TextInput,
-  Alert 
+  Alert,
+  Image
 } from 'react-native';
 import { Bike, Shield, Phone, CreditCard, ChevronRight, X, Clock, MapPin, Search } from 'lucide-react-native';
 import { theme } from '../../styles/theme';
@@ -42,6 +43,7 @@ export default function AdminRidersScreen() {
   const [isSettingApproval, setIsSettingApproval] = useState(false);
 
   const isDarkMode = useAuthStore(state => state.isDarkMode);
+  const user = useAuthStore(state => state.user);
 
   const themeColors = {
     background: isDarkMode ? '#0A0A0A' : '#F5F6F8',
@@ -170,6 +172,17 @@ export default function AdminRidersScreen() {
         <View>
           <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#000' }}>Cloud Kitchen</Text>
           <Text style={{ fontSize: 9, fontWeight: 'bold', color: 'rgba(0, 0, 0, 0.6)', textTransform: 'uppercase' }}>Superadmin Riders & Payouts</Text>
+        </View>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#000' }}>{user?.name || 'Super Admin'}</Text>
+            <Text style={{ fontSize: 8, color: 'rgba(0,0,0,0.6)' }}>Administrator</Text>
+          </View>
+          <Image
+            source={{ uri: user?.avatar || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&auto=format&fit=crop&q=80' }}
+            style={{ width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderColor: '#FFF' }}
+          />
         </View>
       </View>
 
