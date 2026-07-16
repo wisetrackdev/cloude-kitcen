@@ -74,46 +74,6 @@ export default function RiderDashboard() {
   // Location tracking states
   const [riderLat, setRiderLat] = useState(28.6273);
   const [riderLon, setRiderLon] = useState(77.3725);
-  const [locationPermissionGranted, setLocationPermissionGranted] = useState(false);
-  const [isDetecting, setIsDetecting] = useState(false);
-
-  const handleRequestLocation = async () => {
-    setIsDetecting(true);
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'You must allow location permission to enter the Rider App.');
-        setIsDetecting(false);
-        return;
-      }
-      
-      const loc = await Location.getCurrentPositionAsync({});
-      setRiderLat(loc.coords.latitude);
-      setRiderLon(loc.coords.longitude);
-
-      try {
-        await fetch(`${API_BASE_URL}/api/auth/rider/location`, {
-          method: 'PUT',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${useAuthStore.getState().token}`
-          },
-          body: JSON.stringify({
-            latitude: loc.coords.latitude,
-            longitude: loc.coords.longitude
-          })
-        });
-      } catch (err) {
-        console.warn('Failed to upload location', err);
-      }
-      
-      setLocationPermissionGranted(true);
-    } catch (err: any) {
-      Alert.alert('Location Error', 'Failed to detect location. Please try again.');
-    } finally {
-      setIsDetecting(false);
-    }
-  };
 
   useEffect(() => {
     (async () => {
@@ -122,7 +82,6 @@ export default function RiderDashboard() {
         let loc = await Location.getCurrentPositionAsync({});
         setRiderLat(loc.coords.latitude);
         setRiderLon(loc.coords.longitude);
-        setLocationPermissionGranted(true);
         
         try {
           await fetch(`${API_BASE_URL}/api/auth/rider/location`, {
@@ -447,40 +406,6 @@ export default function RiderDashboard() {
 
   return (
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
-      
-      {/* Forced Location Permission Modal */}
-      <Modal
-        visible={!locationPermissionGranted}
-        animationType="slide"
-        transparent={false}
-      >
-        <View style={{ flex: 1, backgroundColor: '#0B0B0C', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
-          <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255, 204, 0, 0.1)', justifyContent: 'center', alignItems: 'center', marginBottom: 24 }}>
-            <MapPin size={40} color="#FFCC00" />
-          </View>
-          <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#FFF', textAlign: 'center', marginBottom: 12 }}>
-            Enable Location Services
-          </Text>
-          <Text style={{ fontSize: 14, color: '#AAA', textAlign: 'center', marginBottom: 32, lineHeight: 20 }}>
-            To work as a delivery rider, we must access your current location. This is required to assign nearby orders and calculate delivery distances.
-          </Text>
-          
-          <TouchableOpacity 
-            style={{ width: '100%', height: 50, borderRadius: 25, backgroundColor: '#FFCC00', justifyContent: 'center', alignItems: 'center', flexDirection: 'row', marginBottom: 16 }}
-            onPress={handleRequestLocation}
-            disabled={isDetecting}
-          >
-            {isDetecting ? (
-              <ActivityIndicator color="#000" />
-            ) : (
-              <>
-                <MapPin size={18} color="#000" style={{ marginRight: 8 }} />
-                <Text style={{ color: '#000', fontWeight: 'bold', fontSize: 16 }}>Allow & Detect Location</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
-      </Modal>
       
       {/* Header (Fixed at the top, does not scroll) */}
       <View style={[styles.header, { backgroundColor: '#FFCC00', borderBottomColor: '#E2B200' }]}>
