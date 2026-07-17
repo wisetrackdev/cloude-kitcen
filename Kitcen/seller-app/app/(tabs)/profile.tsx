@@ -32,6 +32,7 @@ import {
   Camera
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 import { theme } from '../../styles/theme';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useKitchenStore } from '../../store/useKitchenStore';
@@ -330,6 +331,20 @@ export default function SellerProfile() {
       const jsonProfile = await resProfile.json();
 
       if (myKitchen?.id) {
+        let updatedLat = myKitchen?.latitude;
+        let updatedLon = myKitchen?.longitude;
+        if (shopAddress.trim()) {
+          try {
+            const geocoded = await Location.geocodeAsync(shopAddress.trim());
+            if (geocoded && geocoded.length > 0) {
+              updatedLat = geocoded[0].latitude;
+              updatedLon = geocoded[0].longitude;
+            }
+          } catch (e) {
+            console.warn('Geocoding seller address failed:', e);
+          }
+        }
+
         await fetch(`${API_BASE_URL}/api/kitchens/${myKitchen.id}`, {
           method: 'PUT',
           headers: { 
@@ -353,7 +368,9 @@ export default function SellerProfile() {
             accountNumber: accountNumber.trim(),
             ifscCode: ifscCode.trim(),
             bankAccount: `${bankName.trim()} A/C ${accountNumber.trim()} | UPI: ${upiId.trim()}`,
-            isLive: myKitchen.isLive
+            isLive: myKitchen.isLive,
+            latitude: updatedLat,
+            longitude: updatedLon
           })
         });
       }

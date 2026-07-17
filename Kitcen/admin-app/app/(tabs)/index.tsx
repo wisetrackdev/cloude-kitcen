@@ -69,12 +69,45 @@ export default function AdminDashboard() {
 
   const [selectedPayee, setSelectedPayee] = useState<{ id: string; name: string; type: 'vendor' | 'rider'; amount: number } | null>(null);
   const [payeeUtr, setPayeeUtr] = useState('');
+  const [payeeScreenshot, setPayeeScreenshot] = useState('');
   const [isSubmittingPayee, setIsSubmittingPayee] = useState(false);
 
   const getNextSettlementDateStr = () => {
     const d = new Date();
     d.setDate(d.getDate() + ((1 + 7 - d.getDay()) % 7 || 7));
     return d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' });
+  };
+
+  const pickPayeeScreenshot = async () => {
+    Alert.alert(
+      'Select Payout Screenshot',
+      'Choose image source:',
+      [
+        {
+          text: 'Camera',
+          onPress: async () => {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') return;
+            const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 0.8 });
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+              setPayeeScreenshot(result.assets[0].uri);
+            }
+          }
+        },
+        {
+          text: 'Gallery',
+          onPress: async () => {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') return;
+            const result = await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, quality: 0.8 });
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+              setPayeeScreenshot(result.assets[0].uri);
+            }
+          }
+        },
+        { text: 'Cancel', style: 'cancel' }
+      ]
+    );
   };
 
   const handleConfirmPayee = async () => {
@@ -86,6 +119,21 @@ export default function AdminDashboard() {
     
     setIsSubmittingPayee(true);
     try {
+      let finalDetails = `Paid via UPI. Ref UTR: ${payeeUtr.trim()}`;
+      if (payeeScreenshot) {
+        try {
+          const uploadedUrl = await uploadImage(payeeScreenshot);
+          if (uploadedUrl) {
+            finalDetails = JSON.stringify({
+              utr: payeeUtr.trim(),
+              screenshot: uploadedUrl
+            });
+          }
+        } catch (uploadErr) {
+          console.warn('Screenshot upload failed:', uploadErr);
+        }
+      }
+
       const res = await fetch(`${API_BASE_URL}/api/admin/settlements?adminUserId=${user?.id || 'usr-admin-simulated'}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -95,7 +143,7 @@ export default function AdminDashboard() {
           userId: selectedPayee.id,
           amount: selectedPayee.amount,
           status: 'success',
-          transactionDetails: `Paid via UPI. Ref UTR: ${payeeUtr}`
+          transactionDetails: finalDetails
         })
       });
       
@@ -103,6 +151,7 @@ export default function AdminDashboard() {
         Alert.alert('Success', `Payout of ₹${selectedPayee.amount} settled successfully!`);
         setSelectedPayee(null);
         setPayeeUtr('');
+        setPayeeScreenshot('');
         fetchOrders();
       } else {
         Alert.alert('Error', 'Failed to submit settlement to server.');
@@ -1139,6 +1188,32 @@ export default function AdminDashboard() {
                 <Text style={{ fontSize: 12, color: themeColors.textSecondary }}>Payout Amount:</Text>
                 <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#2ecc71', marginTop: 4 }}>₹{selectedPayee.amount.toFixed(2)}</Text>
               </View>
+
+              <Text style={{ fontSize: 11, fontWeight: 'bold', color: themeColors.textSecondary, marginBottom: 6 }}>Payment Proof Screenshot (Optional):</Text>
+              <TouchableOpacity 
+                style={{ 
+                  flexDirection: 'row', 
+                  alignItems: 'center', 
+                  backgroundColor: themeColors.inputBg, 
+                  borderColor: themeColors.border, 
+                  borderWidth: 1, 
+                  borderRadius: 8, 
+                  padding: 10, 
+                  marginBottom: 15,
+                  justifyContent: 'center'
+                }}
+                onPress={pickPayeeScreenshot}
+              >
+                <Camera size={16} color="#FFB300" style={{ marginRight: 8 }} />
+                <Text style={{ color: themeColors.text, fontSize: 12, fontWeight: 'bold' }}>
+                  {payeeScreenshot ? 'Change Screenshot' : 'Upload Receipt Screenshot'}
+                </Text>
+              </TouchableOpacity>
+              {payeeScreenshot !== '' && (
+                <View style={{ marginBottom: 15, alignItems: 'center' }}>
+                  <Image source={{ uri: payeeScreenshot }} style={{ width: 120, height: 120, borderRadius: 8 }} />
+                </View>
+              )}
 
               <Text style={{ fontSize: 11, fontWeight: 'bold', color: themeColors.textSecondary, marginBottom: 6 }}>Transaction Reference / UTR Details:</Text>
               <TextInput

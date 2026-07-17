@@ -273,15 +273,17 @@ export default function CartScreen() {
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
       
       {/* Top Header */}
-      <View style={[styles.header, { borderBottomColor: themeColors.border, backgroundColor: themeColors.card }]}>
-        <TouchableOpacity style={[styles.backButton, { backgroundColor: isDarkMode ? '#121212' : '#EAEAEA' }]} onPress={() => router.back()}>
-          <ArrowLeft size={20} color={themeColors.text} />
+      <View style={styles.header}>
+        <TouchableOpacity style={[styles.backButton, { backgroundColor: 'rgba(255,255,255,0.3)' }]} onPress={() => router.back()}>
+          <ArrowLeft size={20} color="#1E2022" />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: themeColors.text }]}>Checkout Cart</Text>
+        <Text style={[styles.headerTitle, { color: '#1E2022' }]}>Checkout Cart</Text>
         <TouchableOpacity onPress={clearCart}>
           <Trash2 size={18} color="#FF3B30" />
         </TouchableOpacity>
       </View>
+
+      <View style={styles.bodyCard}>
 
       <ScrollView style={styles.scrollArea} showsVerticalScrollIndicator={false}>
         {/* Items List */}
@@ -539,6 +541,7 @@ export default function CartScreen() {
           <ChevronRight size={16} color="#FFF" />
         </TouchableOpacity>
       </View>
+      </View>
     </View>
   );
 }
@@ -574,9 +577,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 50,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
+    paddingTop: 55,
+    paddingBottom: 25,
+    backgroundColor: '#FFCC00',
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   backButton: {
     width: 36,
@@ -768,5 +778,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#FF5252',
     fontWeight: 'bold',
+  },
+  bodyCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    marginTop: -20,
+    overflow: 'hidden',
   }
 });

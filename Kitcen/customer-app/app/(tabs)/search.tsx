@@ -66,46 +66,47 @@ export default function StoresScreen() {
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
       
       {/* Search Header */}
-      <View style={[styles.searchHeader, { borderBottomColor: themeColors.border, backgroundColor: themeColors.card }]}>
-        <Text style={[styles.headerTitle, { color: themeColors.text }]}>Cloude Stores</Text>
-        <Text style={[styles.headerSubtitle, { color: themeColors.textSecondary }]}>Browse local kitchens & housewife tiffins</Text>
+      <View style={styles.searchHeader}>
+        <Text style={[styles.headerTitle, { color: '#1E2022' }]}>Cloude Stores</Text>
+        <Text style={[styles.headerSubtitle, { color: '#686E73' }]}>Browse local kitchens & housewife tiffins</Text>
         
-        <View style={[styles.inputWrapper, { backgroundColor: themeColors.inputBg, borderColor: themeColors.border }]}>
-          <Search size={18} color={themeColors.textSecondary} />
+        <View style={[styles.inputWrapper, { backgroundColor: '#FFFFFF', borderColor: '#EAEAEA' }]}>
+          <Search size={18} color="#8E8E93" />
           <TextInput
             placeholder="Search stores by name or cuisine..."
             placeholderTextColor="#888"
             value={query}
             onChangeText={setQuery}
-            style={[styles.input, { color: themeColors.text }]}
+            style={[styles.input, { color: '#1E2022' }]}
           />
         </View>
       </View>
 
-      {/* Filter Tabs */}
-      <View style={styles.filterRow}>
-        {(['all', 'home_tiffin', 'restaurant'] as FilterType[]).map((filter) => (
-          <TouchableOpacity
-            key={filter}
-            style={[
-              styles.filterTab,
-              { backgroundColor: themeColors.card, borderColor: themeColors.border },
-              activeFilter === filter && { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }
-            ]}
-            onPress={() => setActiveFilter(filter)}
-          >
-            <Text
+      <View style={styles.bodyCard}>
+        {/* Filter Tabs */}
+        <View style={styles.filterRow}>
+          {(['all', 'home_tiffin', 'restaurant'] as FilterType[]).map((filter) => (
+            <TouchableOpacity
+              key={filter}
               style={[
-                styles.filterText,
-                { color: themeColors.textSecondary },
-                activeFilter === filter && { color: '#000', fontWeight: 'bold' }
+                styles.filterTab,
+                { backgroundColor: themeColors.card, borderColor: themeColors.border },
+                activeFilter === filter && { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }
               ]}
+              onPress={() => setActiveFilter(filter)}
             >
-              {filter === 'all' ? 'All Stores' : filter === 'home_tiffin' ? 'Housewife Tiffin' : 'Restaurants'}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+              <Text
+                style={[
+                  styles.filterText,
+                  { color: themeColors.textSecondary },
+                  activeFilter === filter && { color: '#000', fontWeight: 'bold' }
+                ]}
+              >
+                {filter === 'all' ? 'All Stores' : filter === 'home_tiffin' ? 'Housewife Tiffin' : 'Restaurants'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
       {/* Store list */}
       <FlatList
@@ -162,6 +163,7 @@ export default function StoresScreen() {
           </TouchableOpacity>
         )}
       />
+      </View>
     </View>
   );
 }
@@ -171,10 +173,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   searchHeader: {
-    paddingTop: 50,
+    backgroundColor: '#FFCC00',
+    paddingTop: 55,
     paddingHorizontal: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
+    paddingBottom: 25,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   headerTitle: {
     fontSize: 22,
@@ -304,5 +313,14 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 12,
+  },
+  bodyCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    marginTop: -20,
+    paddingTop: 10,
+    overflow: 'hidden',
   }
 });

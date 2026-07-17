@@ -81,13 +81,13 @@ export default function SellerMenuScreen() {
 
   // Local Form states
   const [showAddDishModal, setShowAddDishModal] = useState(false);
+  const [isAddingDish, setIsAddingDish] = useState(false);
   const [newDishName, setNewDishName] = useState('');
   const [newDishPrice, setNewDishPrice] = useState('');
   const [newDishDesc, setNewDishDesc] = useState('');
   const [newDishImage, setNewDishImage] = useState('');
   const [newDishVeg, setNewDishVeg] = useState(true);
   const [newDishCat, setNewDishCat] = useState('Tiffin Meals');
-  const [selectedDays, setSelectedDays] = useState<string[]>(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
   const [selectedDayFilter, setSelectedDayFilter] = useState<string>('All');
 
   const getNext7Days = () => {
@@ -191,48 +191,49 @@ export default function SellerMenuScreen() {
   };
 
   const handleAddDish = async () => {
-    if (!newDishName || !newDishPrice) {
-      Alert.alert('Error', 'Please fill name and price');
+    if (!newDishName.trim() || !newDishPrice.trim() || !newDishDesc.trim() || !newDishImage.trim()) {
+      Alert.alert('Details Required', 'Please fill all details including name, price, description, and food image!');
       return;
     }
 
-    let finalCategory = newDishCat;
+    setIsAddingDish(true);
+    try {
+      let finalCategory = newDishCat;
 
-    // Upload local image URI to Cloudinary if set, otherwise fallback to placeholder
-    let finalImageUrl = '';
-    if (newDishImage.trim() !== '') {
+      // Upload local image URI to Cloudinary if set
+      let finalImageUrl = '';
       try {
         finalImageUrl = await uploadImageToServer(newDishImage);
       } catch (err: any) {
         console.warn('Image upload failed:', err.message);
-        Alert.alert('Upload Failed', 'Could not upload food image. Using default placeholder image.');
-        finalImageUrl = newDishVeg 
-          ? 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&auto=format&fit=crop&q=80'
-          : 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=300&auto=format&fit=crop&q=80';
+        Alert.alert('Upload Failed', 'Could not upload food image. Please try again.');
+        setIsAddingDish(false);
+        return;
       }
-    } else {
-      finalImageUrl = newDishVeg 
-        ? 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&auto=format&fit=crop&q=80'
-        : 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=300&auto=format&fit=crop&q=80';
+
+      const daysStr = 'Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday';
+      await addProduct(selectedKitchenId, {
+        name: newDishName,
+        price: parseFloat(newDishPrice),
+        desc: newDishDesc,
+        category: finalCategory,
+        isVeg: newDishVeg,
+        image: finalImageUrl,
+        availableDays: daysStr
+      });
+
+      setNewDishName('');
+      setNewDishPrice('');
+      setNewDishDesc('');
+      setNewDishImage('');
+      setShowAddDishModal(false);
+      Alert.alert('Success', 'Dish added successfully to your kitchen!');
+    } catch (err) {
+      console.warn('Failed to add dish:', err);
+      Alert.alert('Error', 'Failed to add dish. Please try again.');
+    } finally {
+      setIsAddingDish(false);
     }
-
-    const daysStr = selectedDays.length > 0 ? selectedDays.join(',') : 'Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday';
-    await addProduct(selectedKitchenId, {
-      name: newDishName,
-      price: parseFloat(newDishPrice),
-      desc: newDishDesc,
-      category: finalCategory,
-      isVeg: newDishVeg,
-      image: finalImageUrl,
-      availableDays: daysStr
-    });
-
-    setNewDishName('');
-    setNewDishPrice('');
-    setNewDishDesc('');
-    setNewDishImage('');
-    setShowAddDishModal(false);
-    Alert.alert('Success', 'Dish added successfully to your kitchen!');
   };
 
   const isApproved = myKitchen?.isApproved === 'approved';
@@ -469,45 +470,22 @@ export default function SellerMenuScreen() {
                 </TouchableOpacity>
               </View>
 
-              {/* Day Scheduling Selection */}
-              <Text style={[styles.sectionLabel, { color: themeColors.text, marginTop: 10 }]}>Schedule Available Days</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginVertical: 8 }}>
-                {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => {
-                  const isSelected = selectedDays.includes(day);
-                  return (
-                    <TouchableOpacity
-                      key={day}
-                      style={{
-                        backgroundColor: isSelected ? '#FFCC00' : themeColors.inputBg,
-                        borderWidth: 1,
-                        borderColor: isSelected ? '#FFCC00' : themeColors.border,
-                        paddingVertical: 6,
-                        paddingHorizontal: 10,
-                        borderRadius: 6
-                      }}
-                      onPress={() => {
-                        if (isSelected) {
-                          setSelectedDays(selectedDays.filter(d => d !== day));
-                        } else {
-                          setSelectedDays([...selectedDays, day]);
-                        }
-                      }}
-                    >
-                      <Text style={{ fontSize: 10, fontWeight: isSelected ? 'bold' : 'normal', color: isSelected ? '#000' : themeColors.textSecondary }}>
-                        {day.substring(0, 3)}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              <TouchableOpacity style={styles.saveDishBtn} onPress={handleAddDish}>
-                <Text style={styles.saveDishBtnText}>Save to Menu</Text>
+              <TouchableOpacity 
+                style={[styles.saveDishBtn, isAddingDish && { opacity: 0.7 }]} 
+                onPress={handleAddDish}
+                disabled={isAddingDish}
+              >
+                {isAddingDish ? (
+                  <ActivityIndicator color="#000" size="small" />
+                ) : (
+                  <Text style={styles.saveDishBtnText}>Save to Menu</Text>
+                )}
               </TouchableOpacity>
               
               <TouchableOpacity 
                 style={styles.cancelBtn} 
                 onPress={() => setShowAddDishModal(false)}
+                disabled={isAddingDish}
               >
                 <Text style={styles.cancelBtnText}>Cancel</Text>
               </TouchableOpacity>

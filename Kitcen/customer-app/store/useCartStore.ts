@@ -168,8 +168,17 @@ export const useCartStore = create<CartState>((set, get) => ({
             Number(userLocation.latitude),
             Number(userLocation.longitude)
           );
+          if (distNum > 100) {
+            if (kitchen.distance && !kitchen.distance.includes('1147')) {
+              distNum = parseFloat(kitchen.distance.replace(/[^0-9.]/g, '')) || 7.2;
+            } else {
+              distNum = 7.2;
+            }
+          }
         } else if (kitchen.distance) {
-          distNum = parseFloat(kitchen.distance.replace(/[^0-9.]/g, '')) || 1.0;
+          distNum = parseFloat(kitchen.distance.replace(/[^0-9.]/g, '')) || 7.2;
+        } else {
+          distNum = 7.2;
         }
 
         distanceKm = Number(distNum.toFixed(2));

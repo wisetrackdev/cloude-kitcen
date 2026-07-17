@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tabs, Redirect } from 'expo-router';
-import { Navigation, User, History } from 'lucide-react-native';
+import { Navigation, User, History, CreditCard } from 'lucide-react-native';
 import { theme } from '../../styles/theme';
 import { useAuthStore } from '../../store/useAuthStore';
 
@@ -43,6 +43,13 @@ export default function TabLayout() {
         options={{
           title: 'History',
           tabBarIcon: ({ color }) => <History size={20} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="payouts"
+        options={{
+          title: 'Payouts',
+          tabBarIcon: ({ color }) => <CreditCard size={20} color={color} />,
         }}
       />
       <Tabs.Screen

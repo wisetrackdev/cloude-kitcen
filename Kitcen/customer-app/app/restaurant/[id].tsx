@@ -97,6 +97,10 @@ export default function RestaurantDetailScreen() {
   }
 
   const handleAddPress = (item: any) => {
+    if (kitchenInfo.isLive === false) {
+      Alert.alert('Shop Closed', 'This kitchen is currently offline. You cannot add items to cart.');
+      return;
+    }
     if (item.customizable) {
       setSelectedItemForCustomization(item);
     } else {
@@ -111,6 +115,10 @@ export default function RestaurantDetailScreen() {
   };
 
   const submitCustomization = () => {
+    if (kitchenInfo.isLive === false) {
+      Alert.alert('Shop Closed', 'This kitchen is currently offline. You cannot add items to cart.');
+      return;
+    }
     if (!selectedItemForCustomization) return;
     
     let priceOffset = 0;
@@ -163,7 +171,14 @@ export default function RestaurantDetailScreen() {
         <View style={[styles.infoCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.restaurantName, { color: themeColors.text }]}>{kitchenInfo.name}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <Text style={[styles.restaurantName, { color: themeColors.text }]}>{kitchenInfo.name}</Text>
+                {kitchenInfo.isLive === false && (
+                  <View style={{ backgroundColor: '#FF3B30', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, alignSelf: 'center' }}>
+                    <Text style={{ color: '#FFF', fontSize: 9, fontWeight: 'bold' }}>CLOSED</Text>
+                  </View>
+                )}
+              </View>
               <Text style={styles.ownerText}>By {kitchenInfo.owner}</Text>
             </View>
             {kitchenInfo.logoUrl && kitchenInfo.logoUrl.trim() !== '' && (

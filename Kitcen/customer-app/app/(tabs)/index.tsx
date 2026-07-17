@@ -270,12 +270,24 @@ export default function HomeScreen() {
       return;
     }
     try {
+      let lat = parseFloat(newLat) || 28.5355;
+      let lon = parseFloat(newLon) || 77.3910;
+      try {
+        const geocoded = await Location.geocodeAsync(newAddressLine.trim());
+        if (geocoded && geocoded.length > 0) {
+          lat = geocoded[0].latitude;
+          lon = geocoded[0].longitude;
+        }
+      } catch (errGeo) {
+        console.warn("Geocoding manual address failed:", errGeo);
+      }
+
       const payload = {
         userId: user.id,
         addressName: newLabel,
         addressLine: newAddressLine,
-        latitude: parseFloat(newLat) || 28.5355,
-        longitude: parseFloat(newLon) || 77.3910,
+        latitude: lat,
+        longitude: lon,
         isDefault: newIsDefault
       };
       const res = await fetch(`${API_BASE_URL}/api/orders/address`, {

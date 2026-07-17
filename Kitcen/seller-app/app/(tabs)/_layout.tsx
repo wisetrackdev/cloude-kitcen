@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tabs, Redirect } from 'expo-router';
-import { ChefHat, Store, User } from 'lucide-react-native';
+import { ChefHat, Store, User, CreditCard } from 'lucide-react-native';
 import { theme } from '../../styles/theme';
 import { useAuthStore } from '../../store/useAuthStore';
 
@@ -52,6 +52,13 @@ export default function TabLayout() {
         options={{
           title: 'My Menu',
           tabBarIcon: ({ color }) => <Store size={20} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="payouts"
+        options={{
+          title: 'Payouts',
+          tabBarIcon: ({ color }) => <CreditCard size={20} color={color} />,
         }}
       />
       <Tabs.Screen
