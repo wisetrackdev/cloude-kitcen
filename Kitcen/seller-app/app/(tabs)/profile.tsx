@@ -72,6 +72,7 @@ export default function SellerProfile() {
   const [cuisines, setCuisines] = useState(myKitchen?.cuisines || '');
   const [logoUrl, setLogoUrl] = useState(myKitchen?.logoUrl || '');
   const [coverImageUrl, setCoverImageUrl] = useState(myKitchen?.coverImageUrl || myKitchen?.image || '');
+  const [shopType, setShopType] = useState(myKitchen?.type || 'restaurant');
 
   // Bank states
   const [bankName, setBankName] = useState(myKitchen?.bankName || '');
@@ -112,6 +113,7 @@ export default function SellerProfile() {
       setCuisines(myKitchen.cuisines || '');
       setLogoUrl(myKitchen.logoUrl || '');
       setCoverImageUrl(myKitchen.coverImageUrl || myKitchen.image || '');
+      setShopType(myKitchen.type || 'restaurant');
       setBankName(myKitchen.bankName || '');
       setAccountNumber(myKitchen.accountNumber || '');
       setIfscCode(myKitchen.ifscCode || '');
@@ -338,7 +340,7 @@ export default function SellerProfile() {
             id: myKitchen.id,
             name: shopName.trim(),
             ownerId: user.id,
-            type: myKitchen.type,
+            type: shopType,
             cuisines: cuisines.trim(),
             time: myKitchen.time,
             distance: myKitchen.distance,
@@ -557,6 +559,32 @@ export default function SellerProfile() {
                 placeholder="e.g. Grandma's Tiffins"
                 placeholderTextColor="#888"
               />
+
+              <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Shop Type</Text>
+              <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
+                {[
+                  { value: 'home_tiffin', label: 'Housewife Tiffin' },
+                  { value: 'restaurant', label: 'Restaurant / Outlet' }
+                ].map((t) => (
+                  <TouchableOpacity
+                    key={t.value}
+                    style={{
+                      flex: 1,
+                      backgroundColor: shopType === t.value ? theme.colors.primary : themeColors.inputBg,
+                      borderWidth: 1,
+                      borderColor: shopType === t.value ? theme.colors.primary : themeColors.border,
+                      borderRadius: 10,
+                      paddingVertical: 12,
+                      alignItems: 'center'
+                    }}
+                    onPress={() => setShopType(t.value)}
+                  >
+                    <Text style={{ color: shopType === t.value ? '#000' : themeColors.text, fontWeight: 'bold', fontSize: 12 }}>
+                      {t.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
 
               <Text style={[styles.inputLabel, { color: themeColors.textSecondary }]}>Shop Cuisine tags</Text>
               <TextInput

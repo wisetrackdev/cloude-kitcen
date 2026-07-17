@@ -27,6 +27,7 @@ interface AuthState {
   user: UserProfile | null;
   location: LocationCoords | null;
   isDarkMode: boolean;
+  usedCoupons: string[];
   
   // Actions
   setAuth: (token: string, refreshToken: string, user: UserProfile) => void;
@@ -36,6 +37,7 @@ interface AuthState {
   logout: () => void;
   setTheme: (isDarkMode: boolean) => void;
   setAddressName: (addressName: string) => void;
+  markCouponAsUsed: (code: string) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -48,6 +50,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     addressName: 'Bandra West, Mumbai, Maharashtra'
   },
   isDarkMode: false, // light mode by default on starting
+
+  usedCoupons: [],
 
   setAuth: (token, refreshToken, user) => set({ token, refreshToken, user }),
   
@@ -100,5 +104,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   setTheme: (isDarkMode) => set({ isDarkMode }),
   setAddressName: (addressName) => set((state) => ({
     location: state.location ? { ...state.location, addressName } : { latitude: 19.0760, longitude: 72.8777, addressName }
+  })),
+  markCouponAsUsed: (code) => set((state) => ({
+    usedCoupons: [...state.usedCoupons, code.toUpperCase()]
   }))
 }));

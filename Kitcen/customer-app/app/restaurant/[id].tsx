@@ -9,7 +9,7 @@ import {
   Modal 
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Star, Clock, ShoppingBag, Check, ShieldCheck } from 'lucide-react-native';
+import { ArrowLeft, Star, Clock, ShoppingBag, Check, ShieldCheck, MapPin } from 'lucide-react-native';
 import { theme } from '../../styles/theme';
 import { useCartStore } from '../../store/useCartStore';
 import { useKitchenStore } from '../../store/useKitchenStore';
@@ -174,13 +174,8 @@ export default function RestaurantDetailScreen() {
           
           <View style={styles.metricsRow}>
             <View style={styles.metricItem}>
-              <Star size={14} color="#FFD700" style={{ fill: '#FFD700' }} />
-              <Text style={[styles.metricText, { color: themeColors.textSecondary }]}>{kitchenInfo.rating} ({kitchenInfo.ratingCount}+ ratings)</Text>
-            </View>
-            <Text style={[styles.bullet, { color: themeColors.textSecondary }]}>•</Text>
-            <View style={styles.metricItem}>
-              <Clock size={14} color={themeColors.textSecondary} />
-              <Text style={[styles.metricText, { color: themeColors.textSecondary }]}>{kitchenInfo.time} ({kitchenInfo.distance})</Text>
+              <MapPin size={14} color={themeColors.textSecondary} />
+              <Text style={[styles.metricText, { color: themeColors.textSecondary }]}>{kitchenInfo.distance || '1.0 km'}</Text>
             </View>
           </View>
 

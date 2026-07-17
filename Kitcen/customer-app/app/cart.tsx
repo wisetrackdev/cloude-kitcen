@@ -24,6 +24,7 @@ export default function CartScreen() {
   
   const isDarkMode = useAuthStore(state => state.isDarkMode);
   const user = useAuthStore(state => state.user);
+  const usedCoupons = useAuthStore(state => state.usedCoupons);
 
   const cartItems = useCartStore(state => state.items);
   const updateQuantity = useCartStore(state => state.updateQuantity);
@@ -192,6 +193,11 @@ export default function CartScreen() {
     Alert.alert('Success', `Coupon "${cpn.code}" applied!`);
   };
 
+  const handleRemoveCoupon = () => {
+    applyCoupon(null);
+    Alert.alert('Success', 'Coupon removed.');
+  };
+
   const handleCheckout = async () => {
     if (cartItems.length === 0) return;
     if (!deliveryAddress.trim()) {
@@ -222,7 +228,8 @@ export default function CartScreen() {
             price: item.price,
             quantity: item.quantity
           }))),
-          upiId: finalAdminUpi
+          upiId: finalAdminUpi,
+          couponCode: coupon ? coupon.code : ''
         }
       });
     };
@@ -349,48 +356,92 @@ export default function CartScreen() {
 
         {/* Coupons section */}
         <View style={[styles.section, { backgroundColor: themeColors.card, borderBottomColor: themeColors.border }]}>
-          <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Apply Coupon</Text>
-          <View style={styles.couponRow}>
-            <TextInput
-              placeholder="Enter promo code"
-              placeholderTextColor="#888"
-              autoCapitalize="characters"
-              value={promoCodeInput}
-              onChangeText={setPromoCodeInput}
-              style={[styles.textInput, { flex: 1, marginBottom: 0, marginRight: 10, backgroundColor: themeColors.inputBg, color: themeColors.text, borderColor: themeColors.border }]}
-            />
-            <TouchableOpacity style={styles.couponApplyBtn} onPress={handleApplyCoupon}>
-              <Text style={styles.couponApplyBtnText}>Apply</Text>
-            </TouchableOpacity>
-          </View>
+          <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Available Coupons</Text>
 
-          {availableCoupons.length > 0 && (
-            <View style={{ marginTop: 10 }}>
-              <Text style={{ fontSize: 11, color: themeColors.textSecondary, marginBottom: 6, fontWeight: 'bold' }}>Available Offers:</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row' }}>
-                {availableCoupons.map((cpn) => (
-                  <TouchableOpacity 
+          {availableCoupons.filter(c => !usedCoupons.includes(c.code.toUpperCase())).length === 0 ? (
+            <Text style={{ fontSize: 12, color: themeColors.textSecondary, fontStyle: 'italic' }}>
+              No coupons available for this seller.
+            </Text>
+          ) : (
+            <View style={{ gap: 10 }}>
+              {availableCoupons.filter(c => !usedCoupons.includes(c.code.toUpperCase())).map((cpn) => {
+                const isApplied = coupon?.code === cpn.code;
+                return (
+                  <View 
                     key={cpn.id} 
-                    style={{ backgroundColor: isDarkMode ? '#1a1a24' : '#f0f5ff', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: '#FFCC00', marginRight: 8, minWidth: 120 }}
-                    onPress={() => handleSelectCoupon(cpn)}
+                    style={{ 
+                      flexDirection: 'row', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between', 
+                      backgroundColor: isDarkMode ? '#1A1A1E' : '#FFF9E6', 
+                      borderRadius: 14, 
+                      borderWidth: 1, 
+                      borderColor: isApplied ? '#2ECC71' : '#FFCC00', 
+                      padding: 12,
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.04,
+                      shadowRadius: 4,
+                      elevation: 2
+                    }}
                   >
-                    <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#FFCC00' }}>{cpn.code}</Text>
-                    <Text style={{ fontSize: 9, color: themeColors.text, marginTop: 2 }}>
-                      {cpn.discountType === 'percentage' ? `${cpn.discountValue}% Off` : `Flat ₹${cpn.discountValue} Off`}
-                    </Text>
-                    <Text style={{ fontSize: 8, color: themeColors.textSecondary, marginTop: 1 }}>
-                      Min Order: ₹{cpn.minOrder}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
+                    <View style={{ flex: 1, marginRight: 10 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <View style={{ 
+                          borderWidth: 1.5, 
+                          borderColor: '#FFCC00', 
+                          borderStyle: 'dashed', 
+                          borderRadius: 6, 
+                          paddingHorizontal: 8, 
+                          paddingVertical: 2, 
+                          backgroundColor: isDarkMode ? '#222' : '#FFF' 
+                        }}>
+                          <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#FFCC00' }}>{cpn.code}</Text>
+                        </View>
+                        <Text style={{ fontSize: 13, fontWeight: 'bold', color: themeColors.text }}>
+                          {cpn.discountType === 'percentage' ? `${cpn.discountValue}% Off` : `₹${cpn.discountValue} Off`}
+                        </Text>
+                      </View>
+                      <Text style={{ fontSize: 10, color: themeColors.textSecondary, marginTop: 6 }}>
+                        Min order: ₹{cpn.minOrder} {cpn.maxDiscount ? `• Max disc: ₹${cpn.maxDiscount}` : ''}
+                      </Text>
+                    </View>
+                    
+                    {isApplied ? (
+                      <TouchableOpacity 
+                        style={{ 
+                          backgroundColor: '#E74C3C', 
+                          borderRadius: 20, 
+                          paddingHorizontal: 16, 
+                          paddingVertical: 6 
+                        }}
+                        onPress={handleRemoveCoupon}
+                      >
+                        <Text style={{ color: '#FFF', fontSize: 11, fontWeight: 'bold' }}>Remove</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity 
+                        style={{ 
+                          backgroundColor: '#FFCC00', 
+                          borderRadius: 20, 
+                          paddingHorizontal: 16, 
+                          paddingVertical: 6 
+                        }}
+                        onPress={() => handleSelectCoupon(cpn)}
+                      >
+                        <Text style={{ color: '#000', fontSize: 11, fontWeight: 'bold' }}>Apply</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                );
+              })}
             </View>
           )}
 
           {coupon && (
-            <View style={styles.couponSuccessBadge}>
-              <Tag size={12} color="#2ecc71" />
-              <Text style={styles.couponSuccessText}>Applied: "{coupon.code}" (Saved ₹{totals.discount})</Text>
+            <View style={[styles.couponSuccessBadge, { marginTop: 12, backgroundColor: isDarkMode ? '#0F2617' : '#E8F8F0', borderColor: '#2ECC71', borderWidth: 1, borderRadius: 10, padding: 8, flexDirection: 'row', alignItems: 'center', gap: 6 }]}>
+              <Tag size={14} color="#2ECC71" />
+              <Text style={{ color: '#2ECC71', fontWeight: '600', fontSize: 12 }}>Applied: "{coupon.code}" (Saved ₹{totals.discount})</Text>
             </View>
           )}
         </View>

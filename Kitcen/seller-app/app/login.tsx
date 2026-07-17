@@ -53,6 +53,7 @@ export default function LoginScreen() {
 
   // Shop Details Step Inputs
   const [shopName, setShopName] = useState('');
+  const [shopType, setShopType] = useState('home_tiffin');
   const [shopImage, setShopImage] = useState('');
   const [shopLogo, setShopLogo] = useState('');
   const [shopAddress, setShopAddress] = useState('');
@@ -485,11 +486,11 @@ export default function LoginScreen() {
         body: JSON.stringify({
           name: shopName.trim(),
           ownerId: tempUser.id,
-          type: 'home_tiffin',
+          type: shopType,
           cuisines: 'Indian, Healthy Thali',
           time: '30 mins',
           distance: '1.0 km',
-          offer: 'Freshly Cooked Homestyle Food',
+          offer: '50% OFF up to ₹100',
           image: shopImage,
           logoUrl: shopLogo,
           coverImageUrl: shopImage,
@@ -617,6 +618,30 @@ export default function LoginScreen() {
             {step === 'shop_details' && (
               <View style={styles.form}>
                 <Text style={styles.stepTitle}>Register Your Shop / Kitchen</Text>
+
+                <Text style={{ fontSize: 11, fontWeight: 'bold', color: theme.colors.textSecondary, marginBottom: 8, textTransform: 'uppercase' }}>Kitchen Shop Type</Text>
+                <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
+                  {[
+                    { value: 'home_tiffin', label: 'Housewife Tiffin' },
+                    { value: 'restaurant', label: 'Restaurant' }
+                  ].map((t) => (
+                    <TouchableOpacity
+                      key={t.value}
+                      style={{
+                        flex: 1,
+                        backgroundColor: shopType === t.value ? theme.colors.primary : 'rgba(255,255,255,0.05)',
+                        borderWidth: 1,
+                        borderColor: shopType === t.value ? theme.colors.primary : '#333',
+                        borderRadius: 12,
+                        paddingVertical: 12,
+                        alignItems: 'center'
+                      }}
+                      onPress={() => setShopType(t.value)}
+                    >
+                      <Text style={{ color: shopType === t.value ? '#000' : '#FFF', fontWeight: 'bold', fontSize: 13 }}>{t.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
 
                 <View style={styles.inputWrapper}>
                   <Store size={16} color={theme.colors.textSecondary} style={styles.inputIcon} />

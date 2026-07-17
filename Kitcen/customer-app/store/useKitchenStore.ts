@@ -173,7 +173,7 @@ const initialKitchens: Kitchen[] = [
     ratingCount: 312,
     time: '30 mins', 
     distance: '1.2 km',
-    offer: 'Healthy Homestyle Food', 
+    offer: 'Flat 50% OFF', 
     image: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=600&auto=format&fit=crop&q=80',
     revenue: 24500,
     ordersCount: 56

@@ -231,20 +231,6 @@ export default function ProfileScreen() {
       <View style={styles.bodyCard}>
         {activeTab === 'main' && (
           <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 60 }}>
-            {/* Loyalty points card */}
-            <View style={styles.loyaltyCards}>
-              <View style={styles.loyaltyCard}>
-                <ShieldCheck size={20} color="#2ecc71" />
-                <Text style={styles.loyaltyVal}>₹{user?.rewardPoints || 0}</Text>
-                <Text style={styles.loyaltyLabel}>Wallet Cash</Text>
-              </View>
-              <View style={styles.loyaltyCard}>
-                <Clock size={20} color="#FFB300" />
-                <Text style={styles.loyaltyVal}>{user?.rewardPoints ? user.rewardPoints * 10 : 120}</Text>
-                <Text style={styles.loyaltyLabel}>Reward Points</Text>
-              </View>
-            </View>
-
             {/* Settings Options list */}
             <View style={styles.zomatoList}>
               <Text style={[styles.listTitle, { color: themeColors.textSecondary }]}>Account Settings</Text>

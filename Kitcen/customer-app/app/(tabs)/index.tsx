@@ -75,6 +75,46 @@ export default function HomeScreen() {
   const [locationPermissionGranted, setLocationPermissionGranted] = useState(false);
   const [isDetecting, setIsDetecting] = useState(false);
 
+  // New location details form states
+  const [showLocationDetailForm, setShowLocationDetailForm] = useState(false);
+  const [detectedAddressLine, setDetectedAddressLine] = useState('');
+  const [detectedLat, setDetectedLat] = useState(28.5355);
+  const [detectedLon, setDetectedLon] = useState(77.3910);
+  const [flatFloor, setFlatFloor] = useState('');
+  const [addrLabel, setAddrLabel] = useState('Home');
+
+  // Greeting helper functions based on time of day
+  const getGreeting = () => {
+    const hrs = new Date().getHours();
+    if (hrs >= 4 && hrs < 12) return 'Good Morning';
+    if (hrs >= 12 && hrs < 16) return 'Good Afternoon';
+    if (hrs >= 16 && hrs < 22) return 'Good Evening';
+    return 'Good Night';
+  };
+
+  const getGreetingSubtitle = () => {
+    const hrs = new Date().getHours();
+    if (hrs >= 4 && hrs < 12) return "Rise And Shine! It's Breakfast Time";
+    if (hrs >= 12 && hrs < 16) return "Time for a Delicious Lunch!";
+    if (hrs >= 16 && hrs < 21) return "Perfect Time for Dinner & Snacks!";
+    return "Late Night Cravings? We got you covered!";
+  };
+
+  const checkInitialLocationPermission = async () => {
+    try {
+      const { status } = await Location.getForegroundPermissionsAsync();
+      if (status === 'granted') {
+        setLocationPermissionGranted(true);
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
+  useEffect(() => {
+    checkInitialLocationPermission();
+  }, []);
+
   const handleRequestLocation = async () => {
     setIsDetecting(true);
     try {
@@ -85,14 +125,103 @@ export default function HomeScreen() {
         return;
       }
       
-      const detectLoc = useAuthStore.getState().detectLocation;
-      await detectLoc();
-      
-      setLocationPermissionGranted(true);
+      const currentLoc = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+      const { latitude, longitude } = currentLoc.coords;
+      setDetectedLat(latitude);
+      setDetectedLon(longitude);
+
+      const geocode = await Location.reverseGeocodeAsync({ latitude, longitude });
+      let addressName = 'My Location';
+      if (geocode && geocode.length > 0) {
+        const place = geocode[0];
+        const parts = [
+          place.name || place.street,
+          place.district || place.subregion,
+          place.city || place.region
+        ];
+        addressName = parts.filter(p => !!p).join(', ') || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+      }
+      setDetectedAddressLine(addressName);
+      setShowLocationDetailForm(true);
     } catch (err: any) {
       Alert.alert('Location Error', 'Failed to detect location. Please try again.');
     } finally {
       setIsDetecting(false);
+    }
+  };
+
+  const handleSaveDetectedAddress = async () => {
+    if (!flatFloor.trim()) {
+      Alert.alert('Details Required', 'Please enter Flat / Floor / House No. details.');
+      return;
+    }
+    const combinedAddress = `${flatFloor.trim()}, ${detectedAddressLine}`;
+    try {
+      const payload = {
+        userId: user?.id || 'usr-temp',
+        addressName: addrLabel,
+        addressLine: combinedAddress,
+        latitude: detectedLat,
+        longitude: detectedLon,
+        isDefault: true
+      };
+      const res = await fetch(`${API_BASE_URL}/api/orders/address`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success) {
+          Alert.alert('Success', 'Address saved successfully!');
+          setLocationPermissionGranted(true);
+          setShowLocationDetailForm(false);
+          fetchAddresses();
+        }
+      } else {
+        setLocationPermissionGranted(true);
+        setShowLocationDetailForm(false);
+        const mockAddr = {
+          id: 'addr-mock-' + Math.random().toString(36).substring(2, 6),
+          addressName: addrLabel,
+          addressLine: combinedAddress,
+          latitude: detectedLat,
+          longitude: detectedLon,
+          isDefault: true
+        };
+        setActiveAddress(mockAddr);
+        setSavedAddresses([mockAddr, ...savedAddresses]);
+        useAuthStore.setState({
+          location: {
+            latitude: detectedLat,
+            longitude: detectedLon,
+            addressName: combinedAddress
+          }
+        });
+      }
+    } catch (err) {
+      setLocationPermissionGranted(true);
+      setShowLocationDetailForm(false);
+      const mockAddr = {
+        id: 'addr-mock-' + Math.random().toString(36).substring(2, 6),
+        addressName: addrLabel,
+        addressLine: combinedAddress,
+        latitude: detectedLat,
+        longitude: detectedLon,
+        isDefault: true
+      };
+      setActiveAddress(mockAddr);
+      setSavedAddresses([mockAddr, ...savedAddresses]);
+      useAuthStore.setState({
+        location: {
+          latitude: detectedLat,
+          longitude: detectedLon,
+          addressName: combinedAddress
+        }
+      });
     }
   };
 
@@ -340,32 +469,103 @@ export default function HomeScreen() {
         animationType="slide"
         transparent={false}
       >
-        <View style={{ flex: 1, backgroundColor: '#0B0B0C', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
-          <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255, 204, 0, 0.1)', justifyContent: 'center', alignItems: 'center', marginBottom: 24 }}>
-            <MapPin size={40} color="#FFCC00" />
+        {!showLocationDetailForm ? (
+          <View style={{ flex: 1, backgroundColor: '#0B0B0C', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+            <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255, 204, 0, 0.1)', justifyContent: 'center', alignItems: 'center', marginBottom: 24 }}>
+              <MapPin size={40} color="#FFCC00" />
+            </View>
+            <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#FFF', textAlign: 'center', marginBottom: 12 }}>
+              Enable Location Services
+            </Text>
+            <Text style={{ fontSize: 14, color: '#AAA', textAlign: 'center', marginBottom: 32, lineHeight: 20 }}>
+              We need your permission to access your current location. This helps us find the nearest kitchens and coordinate delivery riders for you.
+            </Text>
+            
+            <TouchableOpacity 
+              style={{ width: '100%', height: 50, borderRadius: 25, backgroundColor: '#FFCC00', justifyContent: 'center', alignItems: 'center', flexDirection: 'row', marginBottom: 16 }}
+              onPress={handleRequestLocation}
+              disabled={isDetecting}
+            >
+              {isDetecting ? (
+                <ActivityIndicator color="#000" />
+              ) : (
+                <>
+                  <MapPin size={18} color="#000" style={{ marginRight: 8 }} />
+                  <Text style={{ color: '#000', fontWeight: 'bold', fontSize: 16 }}>Allow & Detect Location</Text>
+                </>
+              )}
+            </TouchableOpacity>
           </View>
-          <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#FFF', textAlign: 'center', marginBottom: 12 }}>
-            Enable Location Services
-          </Text>
-          <Text style={{ fontSize: 14, color: '#AAA', textAlign: 'center', marginBottom: 32, lineHeight: 20 }}>
-            We need your permission to access your current location. This helps us find the nearest kitchens and coordinate delivery riders for you.
-          </Text>
-          
-          <TouchableOpacity 
-            style={{ width: '100%', height: 50, borderRadius: 25, backgroundColor: '#FFCC00', justifyContent: 'center', alignItems: 'center', flexDirection: 'row', marginBottom: 16 }}
-            onPress={handleRequestLocation}
-            disabled={isDetecting}
-          >
-            {isDetecting ? (
-              <ActivityIndicator color="#000" />
-            ) : (
-              <>
-                <MapPin size={18} color="#000" style={{ marginRight: 8 }} />
-                <Text style={{ color: '#000', fontWeight: 'bold', fontSize: 16 }}>Allow & Detect Location</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
+        ) : (
+          <ScrollView contentContainerStyle={{ flexGrow: 1, backgroundColor: '#0B0B0C', padding: 24, justifyContent: 'center' }}>
+            <View style={{ alignItems: 'center', marginBottom: 30 }}>
+              <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(255, 204, 0, 0.1)', justifyContent: 'center', alignItems: 'center', marginBottom: 16 }}>
+                <MapPin size={30} color="#FFCC00" />
+              </View>
+              <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#FFF', textAlign: 'center' }}>
+                Complete Address Details
+              </Text>
+              <Text style={{ fontSize: 12, color: '#AAA', textAlign: 'center', marginTop: 8, paddingHorizontal: 20, lineHeight: 18 }}>
+                Detected: {detectedAddressLine}
+              </Text>
+            </View>
+
+            <View style={{ marginBottom: 20 }}>
+              <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#AAA', marginBottom: 8 }}>SAVE ADDRESS AS</Text>
+              <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
+                {['Home', 'Office', 'Other'].map((lbl) => (
+                  <TouchableOpacity
+                    key={lbl}
+                    style={{
+                      flex: 1,
+                      backgroundColor: addrLabel === lbl ? '#FFCC00' : 'rgba(255,255,255,0.05)',
+                      borderWidth: 1,
+                      borderColor: addrLabel === lbl ? '#FFCC00' : '#333',
+                      borderRadius: 12,
+                      paddingVertical: 12,
+                      alignItems: 'center'
+                    }}
+                    onPress={() => setAddrLabel(lbl)}
+                  >
+                    <Text style={{ color: addrLabel === lbl ? '#000' : '#FFF', fontWeight: 'bold', fontSize: 13 }}>{lbl}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#AAA', marginBottom: 8 }}>FLAT / FLOOR / HOUSE NO. / BUILDING</Text>
+              <TextInput
+                style={{
+                  backgroundColor: 'rgba(255,255,255,0.05)',
+                  borderWidth: 1,
+                  borderColor: '#333',
+                  borderRadius: 14,
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  fontSize: 14,
+                  color: '#FFF',
+                  marginBottom: 20
+                }}
+                placeholder="e.g. Flat 304, 3rd Floor, Tower B"
+                placeholderTextColor="#666"
+                value={flatFloor}
+                onChangeText={setFlatFloor}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#FFCC00',
+                borderRadius: 25,
+                height: 50,
+                justifyContent: 'center',
+                alignItems: 'center'
+              }}
+              onPress={handleSaveDetectedAddress}
+            >
+              <Text style={{ color: '#000', fontWeight: 'bold', fontSize: 15 }}>Save Address & Continue</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        )}
       </Modal>
       
       {/* 1. Gold/Yellow Top Header Block */}
@@ -424,11 +624,11 @@ export default function HomeScreen() {
         <View style={styles.greetingWrapper}>
           <View style={styles.greetingHeaderRow}>
             <Text style={styles.greetingTitle}>
-              Good Morning {user?.firstName || user?.name?.split(' ')[0] || 'Dev'} {user?.lastName || user?.name?.split(' ').slice(1).join(' ') || 'Kumar'}
+              {getGreeting()} {user?.firstName || user?.name?.split(' ')[0] || 'Dev'} {user?.lastName || user?.name?.split(' ').slice(1).join(' ') || 'Kumar'}
             </Text>
             <View style={styles.cyanUnderline} />
           </View>
-          <Text style={styles.greetingSubtitle}>Rise And Shine! It's Breakfast Time</Text>
+          <Text style={styles.greetingSubtitle}>{getGreetingSubtitle()}</Text>
         </View>
       </View>
 
@@ -511,54 +711,35 @@ export default function HomeScreen() {
               </ScrollView>
 
               {/* Dynamic Promo Banners Slider */}
-              <ScrollView horizontal={true} nestedScrollEnabled={true} showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
-                {liveBanners.map((banner, index) => (
-                  <TouchableOpacity 
-                    key={banner.id || index} 
-                    style={[styles.promoBanner, { marginRight: 15, width: width - 40 }]}
-                    onPress={() => {
-                      const targetRoute = banner.linkUrl || 'restaurant/shp-seed-1';
-                      router.push(`/${targetRoute}`);
-                    }}
-                  >
-                    <View style={styles.promoLeft}>
-                      <Text style={styles.promoTextMain}>Chef Special</Text>
-                      <Text style={styles.promoTextMain}>Exclusive Offer</Text>
-                      <Text style={styles.promoDiscount}>30% OFF</Text>
-                    </View>
-                    <Image 
-                      source={{ uri: banner.image_url || banner.imageUrl || 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300' }} 
-                      style={styles.promoImage} 
-                    />
-                  </TouchableOpacity>
-                ))}
-
-                {liveBanners.length === 0 && (
-                  /* Fallback Promo Banner if empty */
-                  <TouchableOpacity 
-                    style={[styles.promoBanner, { width: width - 40, marginHorizontal: 20 }]}
-                    onPress={() => router.push('/restaurant/shp-seed-2')}
-                  >
-                    <View style={styles.promoLeft}>
-                      <Text style={styles.promoTextMain}>Experience our</Text>
-                      <Text style={styles.promoTextMain}>delicious new dish</Text>
-                      <Text style={styles.promoDiscount}>30% OFF</Text>
-                    </View>
-                    <Image 
-                      source={{ uri: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300' }} 
-                      style={styles.promoImage} 
-                    />
-                  </TouchableOpacity>
-                )}
-              </ScrollView>
-              
-              {/* Carousel dots indicator */}
-              <View style={styles.dotsRow}>
-                <View style={styles.dot} />
-                <View style={styles.dot} />
-                <View style={[styles.dot, styles.dotActive]} />
-                <View style={styles.dot} />
-              </View>
+              {liveBanners.length > 0 && (
+                <>
+                  <ScrollView horizontal={true} nestedScrollEnabled={true} showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 10 }}>
+                    {liveBanners.map((banner, index) => (
+                      <TouchableOpacity 
+                        key={banner.id || index} 
+                        style={{ marginRight: 15, width: width - 40, height: 130, borderRadius: 16, overflow: 'hidden' }}
+                        onPress={() => {
+                          const targetRoute = banner.linkUrl || `restaurant/${banner.kitchenId || 'shp-seed-1'}`;
+                          router.push(`/${targetRoute}`);
+                        }}
+                      >
+                        <Image 
+                          source={{ uri: banner.image_url || banner.imageUrl }} 
+                          style={{ width: '100%', height: '100%' }}
+                          resizeMode="cover"
+                        />
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                  
+                  {/* Carousel dots indicator */}
+                  <View style={styles.dotsRow}>
+                    {liveBanners.map((_, i) => (
+                      <View key={i} style={[styles.dot, i === 0 && styles.dotActive]} />
+                    ))}
+                  </View>
+                </>
+              )}
 
               {/* Recommend Section */}
               <Text style={[styles.sectionTitle, { marginLeft: 20, marginBottom: 15 }]}>
@@ -574,12 +755,6 @@ export default function HomeScreen() {
                   >
                     <Image source={{ uri: item.image }} style={styles.recommendImage} />
                     
-                    {/* Rating Badge */}
-                    <View style={styles.ratingBadge}>
-                      <Text style={styles.ratingText}>{item.rating || '5.0'}</Text>
-                      <Star size={9} color="#FFD700" fill="#FFD700" style={{ marginLeft: 2 }} />
-                    </View>
-
                     {/* Heart Badge */}
                     <TouchableOpacity style={styles.heartBadge}>
                       <Heart size={12} color="#FF3B30" fill="#FF3B30" />

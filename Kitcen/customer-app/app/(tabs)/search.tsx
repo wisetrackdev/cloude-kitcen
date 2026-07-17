@@ -137,10 +137,6 @@ export default function StoresScreen() {
             <View style={styles.itemDetails}>
               <View style={styles.nameRow}>
                 <Text style={[styles.itemName, { color: themeColors.text }]} numberOfLines={1}>{item.name}</Text>
-                <View style={styles.ratingBadge}>
-                  <Text style={styles.ratingText}>{item.rating || '4.5'}</Text>
-                  <Star size={8} color="#000" style={{ marginLeft: 2 }} />
-                </View>
               </View>
 
               <Text style={[styles.itemCuisines, { color: themeColors.textSecondary }]} numberOfLines={1}>
@@ -148,15 +144,12 @@ export default function StoresScreen() {
               </Text>
 
               <View style={styles.metaRow}>
-                <View style={styles.metaItem}>
-                  <Clock size={11} color={themeColors.textSecondary} />
-                  <Text style={[styles.metaText, { color: themeColors.textSecondary }]}>{item.time || '20-30 mins'}</Text>
-                </View>
-                <Text style={{ color: themeColors.textSecondary, marginHorizontal: 4 }}>•</Text>
+                <MapPin size={11} color={themeColors.textSecondary} style={{ marginRight: 4 }} />
                 <Text style={[styles.metaText, { color: themeColors.textSecondary }]}>{item.distance || '1.5 km'}</Text>
                 
                 <View style={[styles.typeBadge, { 
-                  backgroundColor: item.type === 'home_tiffin' ? 'rgba(46,204,113,0.1)' : 'rgba(255,107,0,0.1)' 
+                  backgroundColor: item.type === 'home_tiffin' ? 'rgba(46,204,113,0.1)' : 'rgba(255,107,0,0.1)',
+                  marginLeft: 10
                 }]}>
                   <Text style={[styles.typeText, { 
                     color: item.type === 'home_tiffin' ? theme.colors.veg : theme.colors.primary 

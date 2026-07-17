@@ -24,6 +24,7 @@ export default function PaymentVerifyScreen() {
   const user = useAuthStore(state => state.user);
   const clearCart = useCartStore(state => state.clearCart);
   const verifyPayment = useKitchenStore(state => state.verifyPayment);
+  const markCouponAsUsed = useAuthStore(state => state.markCouponAsUsed);
 
   const [transactionId, setTransactionId] = useState('');
   const [utrNumber, setUtrNumber] = useState('');
@@ -82,6 +83,9 @@ export default function PaymentVerifyScreen() {
       const result = await verifyPayment(payload);
 
       if (result.success && result.orderId) {
+        if (params.couponCode) {
+          markCouponAsUsed(params.couponCode as string);
+        }
         Alert.alert(
           'Payment Verified',
           'Your payment was verified and order has been confirmed!',
