@@ -409,7 +409,11 @@ export default function AdminProfile() {
           <Text style={{ fontSize: 9, fontWeight: 'bold', color: 'rgba(0, 0, 0, 0.6)', textTransform: 'uppercase' }}>Superadmin System Settings</Text>
         </View>
         
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <TouchableOpacity 
+          onPress={() => setShowProfileModal(true)} 
+          activeOpacity={0.7}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+        >
           <View style={{ alignItems: 'flex-end' }}>
             <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#000' }}>{user?.name || 'Super Admin'}</Text>
             <Text style={{ fontSize: 8, color: 'rgba(0,0,0,0.6)' }}>Administrator</Text>
@@ -418,33 +422,10 @@ export default function AdminProfile() {
             source={{ uri: user?.avatar || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&auto=format&fit=crop&q=80' }}
             style={{ width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderColor: '#FFF' }}
           />
-        </View>
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-        {/* Profile info */}
-        <TouchableOpacity 
-          style={[styles.profileHeader, { backgroundColor: '#FFCC00', marginTop: 10 }]}
-          onPress={() => setShowProfileModal(true)}
-        >
-        <View style={{ position: 'relative' }}>
-          <Image 
-            source={{ uri: user?.avatar || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80' }} 
-            style={styles.avatar} 
-          />
-          <TouchableOpacity 
-            style={styles.avatarCameraBadge} 
-            onPress={requestProfileImageSource}
-          >
-            <Camera size={12} color="#FFF" />
-          </TouchableOpacity>
-        </View>
-        <View style={styles.meta}>
-          <Text style={[styles.name, { color: '#FFF' }]}>{user?.name || 'Super Admin'}</Text>
-          <Text style={[styles.email, { color: 'rgba(255, 255, 255, 0.85)' }]}>{user?.email || 'admin@cludekitchen.com'}</Text>
-          <Text style={[styles.roleTag, { color: '#FFF' }]}>Master Controller</Text>
-        </View>
-      </TouchableOpacity>
 
 
 
